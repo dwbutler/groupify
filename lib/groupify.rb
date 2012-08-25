@@ -42,7 +42,7 @@ module Groupify
     end
     
     def members
-      self.class.default_member_class.any_in(group_ids: [self.id])
+      self.class.default_member_class.any_in(:group_ids => [self.id])
     end
     
     def add(member)
@@ -56,7 +56,7 @@ module Groupify
       def has_members(name)
         klass = name.to_s.classify.constantize
         define_method name.to_s.pluralize.underscore do
-          klass.any_in(group_ids: [self.id])
+          klass.any_in(:group_ids => [self.id])
         end
       end
     end
@@ -88,7 +88,7 @@ module Groupify
       def group_class_name; @group_class_name || 'Group'; end
       def group_class_name=(klass);  @group_class_name = klass; end
       
-      def none; where(id: nil); end
+      def none; where(:id => nil); end
       def in_group(group); group.present? ? where(:group_ids.in => [group.id]) : none; end
       def in_any_group(*groups); groups.present? ? where(:group_ids.in => groups.flatten.map{|g|g.id}) : none; end
       def in_all_groups(*groups); groups.present? ? where(:group_ids => groups.flatten.map{|g|g.id}) : none; end

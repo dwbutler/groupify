@@ -17,11 +17,12 @@ Gem::Specification.new do |gem|
   
   gem.add_development_dependency "rails", "~> 3.2"
   gem.add_development_dependency "rspec"
-  gem.add_development_dependency 'mongoid-rspec', '~> 1.5.1'
   
   if RUBY_VERSION < '1.9'
     gem.add_development_dependency "mongoid", "~> 2.0"
+    gem.add_development_dependency 'mongoid-rspec', '1.4.5'
   else
     gem.add_development_dependency "mongoid", "~> 3.0"
+    gem.add_development_dependency 'mongoid-rspec', '~> 1.5.1'
   end
 end
