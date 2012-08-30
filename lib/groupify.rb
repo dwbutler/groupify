@@ -11,7 +11,7 @@ module Groupify
       include Groupify::Group
       
       if (member_klass = opts.delete :default_members)
-        default_member_class = member_klass.to_s.classify.constantize
+        self.default_member_class = member_klass.to_s.classify.constantize
       end
       
       if (member_klasses = opts.delete :members)
@@ -50,9 +50,14 @@ module Groupify
     end
     
     module ClassMethods
+      def with_member(member)
+        criteria.for_ids(member.group_ids)
+      end
+      
       def default_member_class; @default_member_class || User; end
       def default_member_class=(klass); @default_member_class = klass; end
       
+      # Define which classes are members of this group
       def has_members(name)
         klass = name.to_s.classify.constantize
         define_method name.to_s.pluralize.underscore do

@@ -1,0 +1,9 @@
+development:
+  database: groupify_development
+  host: localhost
+  port: 27017
+
+test:
+  database: groupify_test
+  host: localhost
+  port: 27017
