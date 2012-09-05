@@ -1,4 +1,3 @@
-require "groupify/version"
 require 'active_support'
 require 'mongoid'
 
