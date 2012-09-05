@@ -60,11 +60,20 @@ user.groups << :admin
 user.in_group?(:admin)	=> true
 ```
 
+Check if two group members share any of the same groups:
+
+```ruby
+user1.shares_any_group?(user2)
+```
+
 Query for groups & members:
 
 ```ruby
 User.in_group(group)	# Find all users in this group
 Group.with_member(user)	# Find all groups with this user
+
+User.shares_any_group(user)	# Find all users that share any groups with this user
+User.shares_any_named_group(user)	# Find all users that share any named groups with this user
 ```
 
 Check the specs for more details.

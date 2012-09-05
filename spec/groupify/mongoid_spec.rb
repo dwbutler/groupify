@@ -103,4 +103,20 @@ describe "MongoidUser" do
     MongoidUser.in_any_named_group(:admin, :test).first.should eql(user)
     MongoidUser.in_all_named_groups(:admin, :user).first.should eql(user)
   end
+  
+  it "can check if groups are shared" do
+    user.groups << group
+    user2 = MongoidUser.create(:groups => [group])
+    
+    user.shares_any_group?(user2).should be_true
+    MongoidUser.shares_any_group(user).to_a.should include(user2)
+  end
+  
+  it "can check if named groups are shared" do
+    user.groups << :admin
+    user2 = MongoidUser.create(:named_groups => [:admin])
+    
+    user.shares_any_group?(user2).should be_true
+    MongoidUser.shares_any_named_group(user).to_a.should include(user2)
+  end
 end
