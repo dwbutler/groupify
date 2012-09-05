@@ -98,7 +98,7 @@ module Groupify
         when groups.metadata.klass
           self.groups.include?(group)
         else
-          self.named_groups.include?(group.to_s)
+          self.named_groups ? self.named_groups.include?(group.to_s) : false
         end
     end
     
@@ -117,7 +117,7 @@ module Groupify
     end
     
     def shares_any_group?(other)
-      in_any_group?(other.groups + (other.group_names || []))
+      in_any_group?(other.groups + (other.named_groups || []))
     end
     
     module ClassMethods
@@ -160,7 +160,7 @@ module Groupify
         in_any_group(other.groups)
       end
       
-      def shares_any_named_groups(other)
+      def shares_any_named_group(other)
         in_any_named_group(other.named_groups)
       end
       
