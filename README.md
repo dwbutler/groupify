@@ -63,8 +63,9 @@ user.in_group?(:admin)	=> true
 Query for groups & members:
 
 ```ruby
-User.in_group(group)		# Find all users in this group
+User.in_group(group)	# Find all users in this group
 Group.with_member(user)	# Find all groups with this user
+```
 
 Check the specs for more details.
 
