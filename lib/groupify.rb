@@ -85,7 +85,7 @@ module Groupify
           when self.metadata.klass
             super
           else
-            (self.base.named_groups ||= []) << group.to_s
+            (self.base.named_groups ||= []) << group
             self.base.save if self.metadata.autosave
           end
         end
@@ -97,7 +97,7 @@ module Groupify
         when groups.metadata.klass
           self.groups.include?(group)
         else
-          self.named_groups ? self.named_groups.include?(group.to_s) : false
+          self.named_groups ? self.named_groups.include?(group) : false
         end
     end
     
@@ -136,7 +136,7 @@ module Groupify
       end
       
       def in_named_group(named_group)
-        named_group.present? ? where(:named_groups.in => [named_group.to_s]) : none
+        named_group.present? ? where(:named_groups.in => [named_group]) : none
       end
       
       def in_any_group(*groups)
@@ -144,7 +144,7 @@ module Groupify
       end
       
       def in_any_named_group(*named_groups)
-        named_groups.present? ? where(:named_groups.in => named_groups.flatten.map{|g|g.to_s}) : none
+        named_groups.present? ? where(:named_groups.in => named_groups.flatten) : none
       end
       
       def in_all_groups(*groups)
@@ -152,7 +152,7 @@ module Groupify
       end
       
       def in_all_named_groups(*named_groups)
-        named_groups.present? ? where(:named_groups => named_groups.flatten.map{|g|g.to_s}) : none
+        named_groups.present? ? where(:named_groups => named_groups.flatten) : none
       end
       
       def shares_any_group(other)

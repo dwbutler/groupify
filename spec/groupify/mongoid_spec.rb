@@ -91,12 +91,12 @@ describe "MongoidUser" do
   it "can have named groups" do
     user.groups << :admin
     user.groups << :user
-    user.named_groups.should include('admin')
+    user.named_groups.should include(:admin)
     
     user.in_group?(:admin).should be_true
     user.in_any_group?(:admin, :user, :test).should be_true
     user.in_all_groups?(:admin, :user).should be_true
-    user.in_all_groups?(:admin, 'user', :test).should be_false
+    user.in_all_groups?(:admin, :user, :test).should be_false
     
     MongoidUser.in_group(:admin).first.should eql(user)
     MongoidUser.in_named_group(:admin).first.should eql(user)
