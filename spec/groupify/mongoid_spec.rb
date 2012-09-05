@@ -22,6 +22,11 @@ class MongoidGroup
   alias_method :users, :mongoid_users
 end
 
+class MongoidProject < MongoidGroup
+  
+  alias_method :tasks, :mongoid_tasks
+end
+
 describe MongoidGroup do
   it { should respond_to :members}
   it { should respond_to :add }
@@ -81,5 +86,21 @@ describe "MongoidUser" do
     MongoidUser.in_any_group(group).first.should eql(user)
     MongoidUser.in_all_groups(group, group2).first.should eql(user)
     MongoidUser.in_all_groups([group, group2]).first.should eql(user)
+  end
+  
+  it "can have named groups" do
+    user.groups << :admin
+    user.groups << :user
+    user.named_groups.should include('admin')
+    
+    user.in_group?(:admin).should be_true
+    user.in_any_group?(:admin, :user, :test).should be_true
+    user.in_all_groups?(:admin, :user).should be_true
+    user.in_all_groups?(:admin, 'user', :test).should be_false
+    
+    MongoidUser.in_group(:admin).first.should eql(user)
+    MongoidUser.in_named_group(:admin).first.should eql(user)
+    MongoidUser.in_any_named_group(:admin, :test).first.should eql(user)
+    MongoidUser.in_all_named_groups(:admin, :user).first.should eql(user)
   end
 end

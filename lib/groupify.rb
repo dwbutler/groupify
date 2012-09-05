@@ -79,14 +79,45 @@ module Groupify
     
     included do
       group_class_name='Group' unless defined?(@group_class_name)
-      has_and_belongs_to_many :groups, :autosave => true, :inverse_of => nil, :class_name => @group_class_name
+      field :named_groups, :type => Array
+      has_and_belongs_to_many :groups, :autosave => true, :inverse_of => nil, :class_name => @group_class_name do
+        def <<(group)
+          case group
+          when self.metadata.klass
+            super
+          else
+            (self.base.named_groups ||= []) << group.to_s
+            self.base.save if self.metadata.autosave
+          end
+        end
+      end
     end
     
-    def in_group?(group); self.groups.include? group; end
-    def in_any_group?(*groups); (self.groups & groups.flatten).present?; end
-    def in_all_groups?(*groups); self.groups == groups.flatten; end
+    def in_group?(group)
+      case group
+        when groups.metadata.klass
+          self.groups.include?(group)
+        else
+          self.named_groups.include?(group.to_s)
+        end
+    end
+    
+    def in_any_group?(*groups)
+      groups.flatten.each do |group|
+        return true if in_group?(group)
+      end
+      return false
+    end
+    
+    def in_all_groups?(*groups)
+      groups.flatten.each do |group|
+        return false unless in_group?(group)
+      end
+      return true
+    end
+    
     def shares_any_group?(other)
-      in_any_group?(other.groups)
+      in_any_group?(other.groups + (other.group_names || []))
     end
     
     module ClassMethods
@@ -94,10 +125,45 @@ module Groupify
       def group_class_name=(klass);  @group_class_name = klass; end
       
       def none; where(:id => nil); end
-      def in_group(group); group.present? ? where(:group_ids.in => [group.id]) : none; end
-      def in_any_group(*groups); groups.present? ? where(:group_ids.in => groups.flatten.map{|g|g.id}) : none; end
-      def in_all_groups(*groups); groups.present? ? where(:group_ids => groups.flatten.map{|g|g.id}) : none; end
-      def shares_any_group(other); in_any_group(other.groups); end
+      
+      def in_group(group)
+        return none unless group.present?
+        case group
+          when self.reflect_on_association(:groups).klass
+            where(:group_ids.in => [group.id])
+          else
+            in_named_group(group)
+        end
+      end
+      
+      def in_named_group(named_group)
+        named_group.present? ? where(:named_groups.in => [named_group.to_s]) : none
+      end
+      
+      def in_any_group(*groups)
+        groups.present? ? where(:group_ids.in => groups.flatten.map{|g|g.id}) : none
+      end
+      
+      def in_any_named_group(*named_groups)
+        named_groups.present? ? where(:named_groups.in => named_groups.flatten.map{|g|g.to_s}) : none
+      end
+      
+      def in_all_groups(*groups)
+        groups.present? ? where(:group_ids => groups.flatten.map{|g|g.id}) : none
+      end
+      
+      def in_all_named_groups(*named_groups)
+        named_groups.present? ? where(:named_groups => named_groups.flatten.map{|g|g.to_s}) : none
+      end
+      
+      def shares_any_group(other)
+        in_any_group(other.groups)
+      end
+      
+      def shares_any_named_groups(other)
+        in_any_named_group(other.named_groups)
+      end
+      
     end
   end
 end
