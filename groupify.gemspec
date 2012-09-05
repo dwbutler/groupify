@@ -25,4 +25,5 @@ Gem::Specification.new do |gem|
     gem.add_development_dependency "mongoid", "~> 3.0"
     gem.add_development_dependency 'mongoid-rspec', '~> 1.5.1'
   end
+  gem.add_development_dependency 'database_cleaner'
 end
