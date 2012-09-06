@@ -72,7 +72,7 @@ Query for groups & members:
 
 ```ruby
 User.in_group(group)	# Find all users in this group
-User.in_named_group(:admin)	# Find all users in this named
+User.in_named_group(:admin)	# Find all users in this named group
 Group.with_member(user)	# Find all groups with this user
 
 User.shares_any_group(user)	# Find all users that share any groups with this user
