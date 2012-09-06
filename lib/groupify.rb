@@ -1,9 +1,14 @@
 require 'active_support'
 require 'mongoid'
+require 'set'
 
 # Groups and members
 module Groupify
   extend ActiveSupport::Concern
+  
+  included do
+    def none; where(:id => nil); end
+  end
   
   module ClassMethods
     def acts_as_group(opts = {})
@@ -24,14 +29,19 @@ module Groupify
       class_eval { @group_class_name = opts[:class_name] || 'Group' }
       include Groupify::GroupMember
     end
+    
+    def acts_as_named_group_member(opts = {})
+      include Groupify::NamedGroupMember
+    end
   end
 
-  # Functionality related to groups.
   # Usage:
   #    class Group
   #        acts_as_group, :members => [:users]
   #        ...
   #    end
+  #
+  #   group.add(member)
   #
   module Group
     extend ActiveSupport::Concern
@@ -66,39 +76,24 @@ module Groupify
     end
   end
   
-  # Functionality related to group members.
   # Usage:
   #    class User
   #        acts_as_group_member
   #        ...
   #    end
   #
+  #    user.groups << group
+  #
   module GroupMember
     extend ActiveSupport::Concern
     
     included do
       group_class_name='Group' unless defined?(@group_class_name)
-      field :named_groups, :type => Array
-      has_and_belongs_to_many :groups, :autosave => true, :inverse_of => nil, :class_name => @group_class_name do
-        def <<(group)
-          case group
-          when self.metadata.klass
-            super
-          else
-            (self.base.named_groups ||= []) << group
-            self.base.save if self.metadata.autosave
-          end
-        end
-      end
+      has_and_belongs_to_many :groups, :autosave => true, :inverse_of => nil, :class_name => @group_class_name
     end
     
     def in_group?(group)
-      case group
-        when groups.metadata.klass
-          self.groups.include?(group)
-        else
-          self.named_groups ? self.named_groups.include?(group) : false
-        end
+      self.groups.include?(group)
     end
     
     def in_any_group?(*groups)
@@ -109,60 +104,86 @@ module Groupify
     end
     
     def in_all_groups?(*groups)
-      groups.flatten.each do |group|
-        return false unless in_group?(group)
-      end
-      return true
+      Set.new(groups.flatten) == Set.new(self.named_groups)
     end
     
     def shares_any_group?(other)
-      in_any_group?(other.groups + (other.named_groups || []))
+      in_any_group?(other.groups)
     end
     
     module ClassMethods
       def group_class_name; @group_class_name || 'Group'; end
       def group_class_name=(klass);  @group_class_name = klass; end
       
-      def none; where(:id => nil); end
-      
       def in_group(group)
-        return none unless group.present?
-        case group
-          when self.reflect_on_association(:groups).klass
-            where(:group_ids.in => [group.id])
-          else
-            in_named_group(group)
-        end
-      end
-      
-      def in_named_group(named_group)
-        named_group.present? ? where(:named_groups.in => [named_group]) : none
+        group.present? ? where(:group_ids.in => [group.id]) : none
       end
       
       def in_any_group(*groups)
         groups.present? ? where(:group_ids.in => groups.flatten.map{|g|g.id}) : none
       end
       
-      def in_any_named_group(*named_groups)
-        named_groups.present? ? where(:named_groups.in => named_groups.flatten) : none
-      end
-      
       def in_all_groups(*groups)
         groups.present? ? where(:group_ids => groups.flatten.map{|g|g.id}) : none
-      end
-      
-      def in_all_named_groups(*named_groups)
-        named_groups.present? ? where(:named_groups => named_groups.flatten) : none
       end
       
       def shares_any_group(other)
         in_any_group(other.groups)
       end
       
+    end
+  end
+  
+  # Usage:
+  #    class User
+  #        acts_as_named_group_member
+  #        ...
+  #    end
+  #
+  #    user.named_groups << :admin
+  #
+  module NamedGroupMember
+    extend ActiveSupport::Concern
+    
+    included do
+      field :named_groups, :type => Array, :default => []
+    end
+    
+    def in_named_group?(group)
+      self.named_groups.include?(group)
+    end
+    
+    def in_any_named_group?(*groups)
+      groups.flatten.each do |group|
+        return true if in_named_group?(group)
+      end
+      return false
+    end
+    
+    def in_all_named_groups?(*groups)
+      Set.new(groups.flatten) == Set.new(self.named_groups)
+    end
+    
+    def shares_any_named_group?(other)
+      in_any_named_group?(other.named_groups)
+    end
+    
+    module ClassMethods
+      def in_named_group(named_group)
+        named_group.present? ? where(:named_groups.in => [named_group]) : none
+      end
+      
+      def in_any_named_group(*named_groups)
+        named_groups.present? ? where(:named_groups.in => named_groups.flatten) : none
+      end
+      
+      def in_all_named_groups(*named_groups)
+        named_groups.present? ? where(:named_groups => named_groups.flatten) : none
+      end
+      
       def shares_any_named_group(other)
         in_any_named_group(other.named_groups)
       end
-      
     end
   end
 end

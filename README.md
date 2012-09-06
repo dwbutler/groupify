@@ -35,6 +35,7 @@ class User
 	include Mongoid::Document
 	
 	acts_as_group_member
+	acts_as_named_group_member
 end
 ```
 
@@ -56,20 +57,22 @@ user.in_group?(group)	=> true
 Add to named groups:
 
 ```ruby
-user.groups << :admin
-user.in_group?(:admin)	=> true
+user.named_groups << :admin
+user.in_named_group?(:admin)	=> true
 ```
 
 Check if two group members share any of the same groups:
 
 ```ruby
 user1.shares_any_group?(user2)
+user2.shares_any_named_group?(user1)
 ```
 
 Query for groups & members:
 
 ```ruby
 User.in_group(group)	# Find all users in this group
+User.in_named_group(:admin)	# Find all users in this named
 Group.with_member(user)	# Find all groups with this user
 
 User.shares_any_group(user)	# Find all users that share any groups with this user

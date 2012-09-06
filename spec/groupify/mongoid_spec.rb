@@ -7,6 +7,7 @@ class MongoidUser
   include Mongoid::Document
   
   acts_as_group_member :class_name => 'MongoidGroup'
+  acts_as_named_group_member
 end
 
 class MongoidTask
@@ -89,16 +90,16 @@ describe "MongoidUser" do
   end
   
   it "can have named groups" do
-    user.groups << :admin
-    user.groups << :user
+    user.named_groups << :admin
+    user.named_groups << :user
+    user.save
     user.named_groups.should include(:admin)
     
-    user.in_group?(:admin).should be_true
-    user.in_any_group?(:admin, :user, :test).should be_true
-    user.in_all_groups?(:admin, :user).should be_true
-    user.in_all_groups?(:admin, :user, :test).should be_false
-    
-    MongoidUser.in_group(:admin).first.should eql(user)
+    user.in_named_group?(:admin).should be_true
+    user.in_any_named_group?(:admin, :user, :test).should be_true
+    user.in_all_named_groups?(:admin, :user).should be_true
+    user.in_all_named_groups?(:admin, :user, :test).should be_false
+
     MongoidUser.in_named_group(:admin).first.should eql(user)
     MongoidUser.in_any_named_group(:admin, :test).first.should eql(user)
     MongoidUser.in_all_named_groups(:admin, :user).first.should eql(user)
@@ -113,10 +114,10 @@ describe "MongoidUser" do
   end
   
   it "can check if named groups are shared" do
-    user.groups << :admin
+    user.named_groups << :admin
     user2 = MongoidUser.create(:named_groups => [:admin])
     
-    user.shares_any_group?(user2).should be_true
+    user.shares_any_named_group?(user2).should be_true
     MongoidUser.shares_any_named_group(user).to_a.should include(user2)
   end
 end
