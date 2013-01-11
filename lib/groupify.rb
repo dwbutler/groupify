@@ -147,6 +147,12 @@ module Groupify
     
     included do
       field :named_groups, :type => Array, :default => []
+      
+      before_save :uniq_named_groups
+      protected
+      def uniq_named_groups
+        named_groups.uniq!
+      end
     end
     
     def in_named_group?(group)

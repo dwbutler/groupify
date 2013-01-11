@@ -44,7 +44,7 @@ describe MongoidUser do
   it { should have_and_belong_to_many(:groups).of_type(MongoidGroup) }
 end
 
-describe "MongoidUser" do
+describe "Mongoid Model" do
   let!(:user) { MongoidUser.create }
   let!(:group) { MongoidGroup.create }
   
@@ -103,6 +103,11 @@ describe "MongoidUser" do
     MongoidUser.in_named_group(:admin).first.should eql(user)
     MongoidUser.in_any_named_group(:admin, :test).first.should eql(user)
     MongoidUser.in_all_named_groups(:admin, :user).first.should eql(user)
+    
+    # Uniqueness
+    user.named_groups << :admin
+    user.save
+    user.named_groups.count{|g| g == :admin}.should == 1
   end
   
   it "can check if groups are shared" do
