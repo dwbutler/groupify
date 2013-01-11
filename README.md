@@ -1,4 +1,4 @@
-# Groupify [![Build Status](https://secure.travis-ci.org/dwbutler/groupify.png)](http://travis-ci.org/dwbutler/groupify)
+# Groupify [![Build Status](https://secure.travis-ci.org/dwbutler/groupify.png)](http://travis-ci.org/dwbutler/groupify) [![Dependency Status](https://gemnasium.com/dwbutler/groupify.png)](https://gemnasium.com/dwbutler/groupify)
 Adds group and membership functionality to Rails models.
 
 Currently only Mongoid 2 and 3 are supported. Tested in Ruby 1.8.7 and 1.9.3 (MRI, REE, JRuby, and Rubinius).
