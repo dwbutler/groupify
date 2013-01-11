@@ -3,6 +3,17 @@ require 'mongoid'
 require 'mongoid-rspec'
 include Mongoid::Matchers
 
+# Load mongoid config
+if Mongoid::VERSION < '3'
+  ENV["MONGOID_ENV"] = "test"
+  Mongoid.load!('./spec/groupify/mongoid2.yml')
+  Mongoid.logger.level = :info
+else
+  Mongoid.load!('./spec/groupify/mongoid3.yml', :test)
+end
+
+require 'groupify'
+
 class MongoidUser
   include Mongoid::Document
   
