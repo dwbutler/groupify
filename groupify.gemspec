@@ -15,15 +15,11 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = Groupify::VERSION
   
-  gem.add_development_dependency "rails", "~> 3.2"
+  gem.add_dependency "mongoid", '>= 2'
+  
+  gem.add_development_dependency "rake"
   gem.add_development_dependency "rspec"
   
-  if RUBY_VERSION < '1.9'
-    gem.add_development_dependency "mongoid", "~> 2.0"
-    gem.add_development_dependency 'mongoid-rspec', '1.4.5'
-  else
-    gem.add_development_dependency "mongoid", "~> 3.0"
-    gem.add_development_dependency 'mongoid-rspec', '~> 1.5.1'
-  end
+  gem.add_development_dependency 'mongoid-rspec'
   gem.add_development_dependency 'database_cleaner'
 end

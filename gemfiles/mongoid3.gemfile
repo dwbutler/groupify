@@ -1,0 +1,8 @@
+source :rubygems
+
+gem "mongoid", ">= 3.0", "< 4"
+gem 'mongoid-rspec', '>= 1.5.1'
+
+gem 'database_cleaner'
+gem "rspec"
+gem "rake"

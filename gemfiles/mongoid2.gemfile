@@ -1,0 +1,10 @@
+source :rubygems
+
+gem "mongoid", "~> 2.0"
+gem 'mongoid-rspec', '1.4.5'
+
+gem "bson_ext", :platforms => [:ruby]
+
+gem 'database_cleaner'
+gem "rspec"
+gem "rake"

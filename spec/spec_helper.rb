@@ -3,19 +3,14 @@ require 'bundler/setup'
 
 Bundler.require(:default, :test, :development)
 
-require 'active_support'
-require 'active_support/all'
-require 'rails'
-require 'active_record'
-
 # Load mongoid config
 if Mongoid::VERSION < '3'
   ENV["MONGOID_ENV"] = "test"
   Mongoid.load!('./spec/mongoid2.yml')
+  Mongoid.logger.level = :info
 else
   Mongoid.load!('./spec/mongoid3.yml', :test)
 end
-#Mongoid.logger.level = :info
 
 RSpec.configure do |config|
   config.order = "random"
