@@ -7,7 +7,7 @@ include Mongoid::Matchers
 if Mongoid::VERSION < '3'
   ENV["MONGOID_ENV"] = "test"
   Mongoid.load!('./spec/groupify/mongoid2.yml')
-  Mongoid.logger.level = :info
+  Mongoid.logger.level = Logger::INFO
 else
   Mongoid.load!('./spec/groupify/mongoid3.yml', :test)
 end
