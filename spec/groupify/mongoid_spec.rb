@@ -1,10 +1,27 @@
 require 'spec_helper'
+
+RSpec.configure do |config|
+  config.order = "random"
+  
+  config.before(:suite) do
+    DatabaseCleaner[:mongoid].strategy = :truncation
+  end
+
+  config.before(:each) do
+    DatabaseCleaner[:mongoid].start
+  end
+
+  config.after(:each) do
+    DatabaseCleaner[:mongoid].clean
+  end
+end
+
 require 'mongoid'
 require 'mongoid-rspec'
 include Mongoid::Matchers
 
 # Load mongoid config
-if Mongoid::VERSION < '3'
+if defined?(Mongoid::VERSION) && Mongoid::VERSION < '3'
   ENV["MONGOID_ENV"] = "test"
   Mongoid.load!('./spec/groupify/mongoid2.yml')
   Mongoid.logger.level = Logger::INFO
@@ -13,6 +30,7 @@ else
 end
 
 require 'groupify'
+require 'groupify/adapter/mongoid'
 
 class MongoidUser
   include Mongoid::Document
@@ -55,7 +73,7 @@ describe MongoidUser do
   it { should have_and_belong_to_many(:groups).of_type(MongoidGroup) }
 end
 
-describe "Mongoid Model" do
+describe Groupify::Mongoid do
   let!(:user) { MongoidUser.create }
   let!(:group) { MongoidGroup.create }
   

@@ -14,8 +14,13 @@ Gem::Specification.new do |gem|
   gem.name          = "groupify"
   gem.require_paths = ["lib"]
   gem.version       = Groupify::VERSION
-  
-  gem.add_dependency "mongoid", '>= 2'
+
+  gem.add_development_dependency "mongoid", ">= 3.1"
+  gem.add_development_dependency "activerecord", ">= 3.2"
+
+  unless defined?(JRUBY_VERSION)
+    gem.add_development_dependency "sqlite3"
+  end
   
   gem.add_development_dependency "rake"
   gem.add_development_dependency "rspec"

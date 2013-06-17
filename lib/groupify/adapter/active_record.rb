@@ -1,0 +1,272 @@
+require 'active_record'
+require 'set'
+
+# Groups and members
+module Groupify
+  module ActiveRecord
+    extend ActiveSupport::Concern
+    
+    included do
+      # Define a scope that returns nothing.
+      # This is built into ActiveRecord 4, but not 3
+      unless self.class.respond_to? :none
+        def self.none
+          where(arel_table[:id].eq(nil).and(arel_table[:id].not_eq(nil)))
+        end
+      end
+    end
+    
+    module ClassMethods
+      def acts_as_group(opts = {})
+        include Groupify::ActiveRecord::Group
+
+        if (member_klass = opts.delete :default_members)
+          self.default_member_class = member_klass.to_s.classify.constantize
+        end
+        
+        if (member_klasses = opts.delete :members)
+          member_klasses.each do |member_klass|
+            has_members(member_klass)
+          end
+        end
+      end
+      
+      def acts_as_group_member(opts = {})
+        @group_class_name = opts[:class_name] || 'Group'
+        include Groupify::ActiveRecord::GroupMember
+      end
+      
+      def acts_as_named_group_member(opts = {})
+        include Groupify::ActiveRecord::NamedGroupMember
+      end
+
+      def acts_as_group_membership(opts = {})
+        include Groupify::ActiveRecord::GroupMembership
+      end
+    end
+
+    # Usage:
+    #    class Group < ActiveRecord::Base
+    #        acts_as_group, :members => [:users]
+    #        ...
+    #    end
+    #
+    #   group.add(member)
+    #
+    module Group
+      extend ActiveSupport::Concern
+      
+      included do
+        @default_member_class = nil
+        has_many :group_memberships, :as => :member
+      end
+      
+      def members
+        self.class.default_member_class.joins(:group_memberships).where(:group_memberships => {:member_type => self.class.default_member_class.to_s})
+      end
+      
+      def add(member)
+        member.groups << self
+      end
+      
+      module ClassMethods
+        def with_member(member)
+          #joins(:group_memberships).where(:group_memberships => {:member_id => member.id, :member_type => member.class.to_s})
+          member.groups
+        end
+        
+        def default_member_class; @default_member_class || User; end
+        def default_member_class=(klass); @default_member_class = klass; end
+        
+        # Define which classes are members of this group
+        def has_members(name)
+          klass = name.to_s.classify.constantize
+          define_method name.to_s.pluralize.underscore do
+            klass.joins(:group_memberships).where(:group_memberships => {:group_id => self.id})
+          end
+        end
+      end
+    end
+
+    # Join table that tracks which members belong to which groups
+    #
+    # Usage:
+    #    class GroupMembership < ActiveRecord::Base
+    #        acts_as_group_membership
+    #        ...
+    #    end
+    #
+    module GroupMembership
+      extend ActiveSupport::Concern
+
+      included do
+        belongs_to :member, :polymorphic => true
+        belongs_to :group
+      end
+
+      module ClassMethods
+        def named(group_name=nil)
+          if group_name.present?
+            where(group_name: group_name)
+          else
+            where("group_name IS NOT NULL")
+          end
+        end
+      end
+    end
+
+    # Usage:
+    #    class User < ActiveRecord::Base
+    #        acts_as_group_member
+    #        ...
+    #    end
+    #
+    #    user.groups << group
+    #
+    module GroupMember
+      extend ActiveSupport::Concern
+      
+      included do
+        has_many :group_memberships, :as => :member, :autosave => true
+        has_many :groups, :through => :group_memberships, :class_name => @group_class_name
+      end
+      
+      def in_group?(group)
+        self.group_memberships.exists?(:group_id => group.id)
+      end
+      
+      def in_any_group?(*groups)
+        groups.flatten.each do |group|
+          return true if in_group?(group)
+        end
+        return false
+      end
+      
+      def in_all_groups?(*groups)
+        Set.new(groups.flatten) == Set.new(self.named_groups)
+      end
+      
+      def shares_any_group?(other)
+        in_any_group?(other.groups)
+      end
+      
+      module ClassMethods
+        def group_class_name; @group_class_name ||= 'Group'; end
+        def group_class_name=(klass);  @group_class_name = klass; end
+        
+        def in_group(group)
+          group.present? ? joins(:group_memberships).where(:group_memberships => {:group_id => group.id}) : none
+        end
+        
+        def in_any_group(*groups)
+          groups.present? ? joins(:group_memberships).where(:group_memberships => {:group_id => groups.flatten.map(&:id)}) : none
+        end
+        
+        def in_all_groups(*groups)
+          if groups.present?
+            groups = groups.flatten
+
+            joins(:group_memberships).
+            group(:"group_memberships.member_id").
+            where(:group_memberships => {:group_id => groups.map(&:id)}).
+            having("COUNT(group_memberships.group_id) = #{groups.count}")
+          else
+            none
+          end
+        end
+        
+        def shares_any_group(other)
+          in_any_group(other.groups)
+        end
+        
+      end
+    end
+
+    class NamedGroupCollection < Set
+      def initialize(member)
+        @member = member
+        super(member.group_memberships.named.pluck(:group_name).map(&:to_sym))
+      end
+
+      def <<(named_group)
+        named_group = named_group.to_sym
+        unless include?(named_group)
+          @member.group_memberships.build(:group_name => named_group)
+          super(named_group)
+        end
+        named_group
+      end
+    end
+
+    
+    # Usage:
+    #    class User < ActiveRecord::Base
+    #        acts_as_named_group_member
+    #        ...
+    #    end
+    #
+    #    user.named_groups << :admin
+    #
+    module NamedGroupMember
+      extend ActiveSupport::Concern
+
+      def named_groups
+        @named_groups ||= NamedGroupCollection.new(self)
+      end
+
+      def named_groups=(named_groups)
+        named_groups.each do |named_group|
+          self.named_groups << named_group
+        end
+      end
+      
+      def in_named_group?(group)
+        named_groups.include?(group)
+      end
+      
+      def in_any_named_group?(*groups)
+        groups.flatten.each do |group|
+          return true if in_named_group?(group)
+        end
+        return false
+      end
+      
+      def in_all_named_groups?(*groups)
+        Set.new(groups.flatten) == Set.new(self.named_groups)
+      end
+      
+      def shares_any_named_group?(other)
+        in_any_named_group?(other.named_groups.to_a)
+      end
+      
+      module ClassMethods
+        def in_named_group(named_group)
+          named_group.present? ? joins(:group_memberships).where(:group_memberships => {:group_name => named_group})  : none
+        end
+        
+        def in_any_named_group(*named_groups)
+          named_groups.present? ? joins(:group_memberships).where(:group_memberships => {:group_name => named_groups.flatten}) : none
+        end
+        
+        def in_all_named_groups(*named_groups)
+          if named_groups.present?
+            named_groups = named_groups.flatten.map(&:to_s)
+
+            joins(:group_memberships).
+            group(:"group_memberships.member_id").
+            where(:group_memberships => {:group_name => named_groups}).
+            having("COUNT(group_memberships.group_name) = #{named_groups.count}")
+          else
+            none
+          end
+        end
+        
+        def shares_any_named_group(other)
+          in_any_named_group(other.named_groups.to_a)
+        end
+      end
+    end
+  end
+end
+
+ActiveRecord::Base.send :include, Groupify::ActiveRecord
