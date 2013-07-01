@@ -19,17 +19,57 @@ Or install it yourself as:
     $ gem install groupify
 
 ## Getting Started
+### Active Record
+Add a migration similar to the following:
+```ruby
+class CreateGroups < ActiveRecord::Migration
+  def change
+    create_table :groups do |t|
+      t.string     :type			# Only needed if using single table inheritence
+    end
+    
+    create_table :group_memberships do |t|
+      t.string     :member_type		# Needed to make polymorphic members work
+      t.integer    :member_id		# The member that belongs to this group
+      t.integer    :group_id		# The group to which the member belongs
+      t.string     :group_name		# Links a member to a named group (if using named groups)
+    end
+
+    add_index :group_memberships, [:member_id, :member_type]
+    add_index :group_memberships, :group_id
+    add_index :group_memberships, :group_name
+  end
+end
+
+In your group model:
+
+```ruby
+class Group < ActiveRecord::Base  
+  acts_as_group :members => [:users], :default_members => :users
+end
+```
+
+In your member models (i.e. `User`):
+
+```ruby
+class User <  ActiveRecord::Base
+	acts_as_group_member
+	acts_as_named_group_member
+end
+```
+
+### Mongoid
 In your group model:
 
 ```ruby
 class Group
 	include Mongoid::Document
 
-	acts_as_group
+	acts_as_group :members => [:users], :default_members => :users
 end
 ```
 
-In your user model:
+In your member models (i.e. `User`):
 
 ```ruby
 class User
@@ -40,7 +80,7 @@ class User
 end
 ```
 
-## Usage
+## Basic Usage
 
 Create groups and add members:
 
@@ -62,7 +102,7 @@ user.named_groups << :admin
 user.in_named_group?(:admin)	=> true
 ```
 
-Check if two group members share any of the same groups:
+Check if two members share any of the same groups:
 
 ```ruby
 user1.shares_any_group?(user2)
@@ -80,7 +120,36 @@ User.shares_any_group(user)	# Find all users that share any groups with this use
 User.shares_any_named_group(user)	# Find all users that share any named groups with this user
 ```
 
+Merge one group into another:
+
+```ruby
+# Moves the members of source into destination, and destroys source
+destination_group.merge!(source_group)
+```
+
 Check the specs for more details.
+
+## Using for Authorization
+Groupify was originally created to help implement user authorization, althought it can be used
+generically for much more than that. Here are some examples of how to do it.
+
+### With CanCan
+
+```ruby
+class Ability
+
+  include CanCan::Ability
+
+  def initialize(user)
+    …
+    # Implements group authorization
+    # Users can only manage assignment which belong to the same group
+    can [:manage], Assignment, Assignment.shares_any_group(user) do |assignment|
+    	assignment.shares_any_group?(user)
+  	end
+  end
+end
+```
 
 ## Contributing
 
