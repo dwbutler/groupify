@@ -45,16 +45,23 @@ class MongoidTask
   acts_as_group_member :class_name => 'MongoidGroup'
 end
 
+class MongoidIssue
+  include Mongoid::Document
+
+  acts_as_group_member :class_name => 'MongoidProject'
+end
+
 class MongoidGroup
   include Mongoid::Document
   
   acts_as_group :members => [:mongoid_users, :mongoid_tasks], :default_members => :mongoid_users
   alias_method :users, :mongoid_users
+  alias_method :tasks, :mongoid_tasks
 end
 
 class MongoidProject < MongoidGroup
-  
-  alias_method :tasks, :mongoid_tasks
+  has_members :mongoid_issues
+  alias_method :issues, :mongoid_issues
 end
 
 describe MongoidGroup do
@@ -74,37 +81,88 @@ describe MongoidUser do
 end
 
 describe Groupify::Mongoid do
-  let!(:user) { MongoidUser.create }
-  let!(:group) { MongoidGroup.create }
+  let!(:user) { MongoidUser.create! }
+  let!(:group) { MongoidGroup.create! }
   
-  it "can have a group added to it" do
+  it "adds a group to a member" do
     user.groups << group
     user.groups.should include(group)
     group.members.should include(user)
     group.users.should include(user)
   end
   
-  it "can be added to a group" do
+  it "adds a member to a group" do
     group.add user
     user.groups.should include(group)
     group.members.should include(user)
   end
+
+  it 'lists which member classes can belong to this group' do
+    group.class.member_classes.should include(MongoidUser, MongoidTask)
+    group.member_classes.should include(MongoidUser, MongoidTask)
+
+    MongoidProject.member_classes.should include(MongoidUser, MongoidTask, MongoidIssue)
+  end
   
-  it "can be found by group" do
+  it "finds members by group" do
     group.add user
     
     MongoidUser.in_group(group).first.should eql(user)
   end
 
-  it "can find the group it belongs to" do
+  it "finds the groups a member belongs to" do
     group.add user
     
     MongoidGroup.with_member(user).first.should == group
   end
 
-  it "can belong to many groups" do
+  context 'when merging' do
+    let(:task) { MongoidTask.create! }
+    let(:issue) { MongoidIssue.create! }
+
+    it "moves the members from source to destination and destroys the source" do
+      source = MongoidGroup.create!
+      destination = MongoidProject.create!
+
+      source.add(user)
+      destination.add(task)
+
+      destination.merge!(source)
+      source.destroyed?.should be_true
+      
+      destination.users.should include(user)
+      destination.tasks.should include(task)
+    end
+
+    it "fails to merge if the destination group cannot contain the source group's members" do
+      source = MongoidProject.create!
+      destination = MongoidGroup.create!
+
+      source.add(issue)
+      destination.add(user)
+
+      # Issues cannot be members of a MongoidGroup
+      expect {destination.merge!(source)}.to raise_error(ArgumentError)
+    end
+
+    it "merges incompatible groups as long as all the source members can be moved to the destination" do
+      source = MongoidProject.create!
+      destination = MongoidGroup.create!
+
+      source.add(user)
+      destination.add(task)
+
+      expect {destination.merge!(source)}.to_not raise_error
+
+      source.destroyed?.should be_true
+      destination.users.to_a.should include(user)
+      destination.tasks.to_a.should include(task)
+    end
+  end
+
+  it "members can belong to many groups" do
     user.groups << group
-    group2 = MongoidGroup.create
+    group2 = MongoidGroup.create!
     user.groups << group2
     
     user.groups.should include(group)
@@ -118,7 +176,7 @@ describe Groupify::Mongoid do
     MongoidUser.in_all_groups([group, group2]).first.should eql(user)
   end
   
-  it "can have named groups" do
+  it "members can have named groups" do
     user.named_groups << :admin
     user.named_groups << :user
     user.save
@@ -139,17 +197,17 @@ describe Groupify::Mongoid do
     user.named_groups.count{|g| g == :admin}.should == 1
   end
   
-  it "can check if groups are shared" do
+  it "members can check if groups are shared" do
     user.groups << group
-    user2 = MongoidUser.create(:groups => [group])
+    user2 = MongoidUser.create!(:groups => [group])
     
     user.shares_any_group?(user2).should be_true
     MongoidUser.shares_any_group(user).to_a.should include(user2)
   end
   
-  it "can check if named groups are shared" do
+  it "members can check if named groups are shared" do
     user.named_groups << :admin
-    user2 = MongoidUser.create(:named_groups => [:admin])
+    user2 = MongoidUser.create!(:named_groups => [:admin])
     
     user.shares_any_named_group?(user2).should be_true
     MongoidUser.shares_any_named_group(user).to_a.should include(user2)

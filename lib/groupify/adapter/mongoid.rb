@@ -50,14 +50,24 @@ module Groupify
       
       included do
         @default_member_class = nil
+        @member_klasses ||= Set.new
       end
       
       def members
         self.class.default_member_class.any_in(:group_ids => [self.id])
       end
+
+      def member_classes
+        self.class.member_classes
+      end
       
       def add(member)
         member.groups << self
+      end
+
+      # Merge a source group into this group.
+      def merge!(source)
+        self.class.merge!(source, self)
       end
       
       module ClassMethods
@@ -65,15 +75,51 @@ module Groupify
           criteria.for_ids(member.group_ids)
         end
         
-        def default_member_class; @default_member_class || User; end
-        def default_member_class=(klass); @default_member_class = klass; end
+        def default_member_class
+          @default_member_class ||= register(User)
+        end
+
+        def default_member_class=(klass)
+          @default_member_class = klass
+        end
+
+        # Returns the member classes defined for this class, as well as for the super classes
+        def member_classes
+          (@member_klasses ||= Set.new).merge(superclass.method_defined?(:member_classes) ? superclass.member_classes : [])
+        end
         
         # Define which classes are members of this group
         def has_members(name)
           klass = name.to_s.classify.constantize
+          register(klass)
+
+          # Define specific members accessor, i.e. group.users
           define_method name.to_s.pluralize.underscore do
             klass.any_in(:group_ids => [self.id])
           end
+        end
+
+        # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
+        def merge!(source_group, destination_group)
+          # Ensure that all the members of the source can be members of the destination
+          invalid_member_classes = (source_group.member_classes - destination_group.member_classes)
+          invalid_member_classes.each do |klass|
+            if klass.any_in(:group_ids => [source_group.id]).count > 0
+              raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
+            end
+          end
+
+          source_group.member_classes.each do |klass|
+            klass.any_in(:group_ids => [source_group.id]).update(:$set => {:"group_ids.$" => destination_group.id})
+          end
+          source_group.destroy
+        end
+
+        protected
+
+        def register(member_klass)
+          (@member_klasses ||= Set.new) << member_klass
+          member_klass
         end
       end
     end
