@@ -21,13 +21,7 @@ require 'mongoid-rspec'
 include Mongoid::Matchers
 
 # Load mongoid config
-if defined?(Mongoid::VERSION) && Mongoid::VERSION < '3'
-  ENV["MONGOID_ENV"] = "test"
-  Mongoid.load!('./spec/groupify/mongoid2.yml')
-  Mongoid.logger.level = Logger::INFO
-else
-  Mongoid.load!('./spec/groupify/mongoid3.yml', :test)
-end
+Mongoid.load!('./spec/groupify/mongoid.yml', :test)
 
 require 'groupify'
 require 'groupify/adapter/mongoid'
@@ -130,8 +124,8 @@ describe Groupify::Mongoid do
       destination.merge!(source)
       source.destroyed?.should be_true
       
-      destination.users.should include(user)
-      destination.tasks.should include(task)
+      destination.users.to_a.should include(user)
+      destination.tasks.to_a.should include(task)
     end
 
     it "fails to merge if the destination group cannot contain the source group's members" do

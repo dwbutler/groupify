@@ -1,0 +1,22 @@
+source 'https://rubygems.org'
+
+gem 'activerecord', "~> 3.2"
+gem "mongoid", ">= 3.0", "< 4"
+gem 'mongoid-rspec', '>= 1.5.1'
+
+gem 'database_cleaner'
+gem "rspec"
+gem "rake"
+
+platform :ruby do
+  gem 'sqlite3'
+end
+
+platform :jruby do
+  gem "jdbc-sqlite3"
+  gem "activerecord-jdbcsqlite3-adapter"
+  
+  if defined?(RUBY_VERSION) && RUBY_VERSION < '1.9'
+    gem "json"
+  end
+end
