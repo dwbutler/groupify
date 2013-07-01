@@ -5,7 +5,7 @@ The following ORMs are supported:
 Mongoid 3.1 & 4.0, ActiveRecord 3.2 & 4.0
 
 The following Rubies are supported:
-Ruby 1.8.7, 1.9.3, 2.0.0 (MRI, REE, JRuby, and Rubinius).
+Ruby 1.9.3, 2.0.0 (MRI, REE, JRuby, and Rubinius).
 
 ## Installation
 
