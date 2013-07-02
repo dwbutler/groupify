@@ -59,7 +59,7 @@ module Groupify
       included do
         @default_member_class = nil
         @member_klasses ||= Set.new
-        has_many :group_memberships
+        has_many :group_memberships, :dependent => :destroy
       end
       
       def members
@@ -173,7 +173,7 @@ module Groupify
       extend ActiveSupport::Concern
       
       included do
-        has_many :group_memberships, :as => :member, :autosave => true
+        has_many :group_memberships, :as => :member, :autosave => true, :dependent => :destroy
         has_many :groups, :through => :group_memberships, :class_name => @group_class_name
       end
       

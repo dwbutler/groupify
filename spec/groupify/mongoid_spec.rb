@@ -77,6 +77,8 @@ end
 describe Groupify::Mongoid do
   let!(:user) { MongoidUser.create! }
   let!(:group) { MongoidGroup.create! }
+  let(:task) { MongoidTask.create! }
+  let(:issue) { MongoidIssue.create! }
   
   it "adds a group to a member" do
     user.groups << group
@@ -110,10 +112,26 @@ describe Groupify::Mongoid do
     MongoidGroup.with_member(user).first.should == group
   end
 
-  context 'when merging' do
-    let(:task) { MongoidTask.create! }
-    let(:issue) { MongoidIssue.create! }
+  it "removes the membership relation when a member is destroyed" do
+    group.add user
+    user.destroy
+    group.should_not be_destroyed
+    group.users.should_not include(user)
+  end
 
+  it "removes the membership relations when a group is destroyed" do
+    group.add user
+    group.add task
+    group.destroy
+
+    user.should_not be_destroyed
+    user.reload.groups.should be_empty
+
+    task.should_not be_destroyed
+    task.reload.groups.should be_empty
+  end
+
+  context 'when merging' do
     it "moves the members from source to destination and destroys the source" do
       source = MongoidGroup.create!
       destination = MongoidProject.create!

@@ -132,6 +132,25 @@ describe Groupify::ActiveRecord do
     Group.with_member(user).first.should == group
   end
 
+  it "removes the membership relation when a member is destroyed" do
+    group.add user
+    user.destroy
+    group.should_not be_destroyed
+    group.users.should_not include(user)
+  end
+
+  it "removes the membership relations when a group is destroyed" do
+    group.add user
+    group.add widget
+    group.destroy
+
+    user.should_not be_destroyed
+    user.reload.groups.should be_empty
+
+    widget.should_not be_destroyed
+    widget.reload.groups.should be_empty
+  end
+
   context 'when merging' do
     let(:task) { Task.create! }
     let(:manager) { Manager.create! }
