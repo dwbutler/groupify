@@ -63,7 +63,7 @@ module Groupify
       end
       
       def members
-        self.class.default_member_class.joins(:group_memberships).where(:group_memberships => {:member_type => self.class.default_member_class.to_s})
+        self.class.default_member_class.joins(:group_memberships).where(:group_memberships => {:member_type => self.class.default_member_class.to_s}).uniq
       end
 
       def member_classes
@@ -105,7 +105,7 @@ module Groupify
 
           # Define specific members accessor, i.e. group.users
           define_method name.to_s.pluralize.underscore do
-            klass.joins(:group_memberships).where(:group_memberships => {:group_id => self.id})
+            klass.joins(:group_memberships).where(:group_memberships => {:group_id => self.id}).uniq
           end
         end
 
@@ -201,11 +201,11 @@ module Groupify
         def group_class_name=(klass);  @group_class_name = klass; end
         
         def in_group(group)
-          group.present? ? joins(:group_memberships).where(:group_memberships => {:group_id => group.id}) : none
+          group.present? ? joins(:group_memberships).where(:group_memberships => {:group_id => group.id}).uniq : none
         end
         
         def in_any_group(*groups)
-          groups.present? ? joins(:group_memberships).where(:group_memberships => {:group_id => groups.flatten.map(&:id)}) : none
+          groups.present? ? joins(:group_memberships).where(:group_memberships => {:group_id => groups.flatten.map(&:id)}).uniq : none
         end
         
         def in_all_groups(*groups)
@@ -215,7 +215,8 @@ module Groupify
             joins(:group_memberships).
             group(:"group_memberships.member_id").
             where(:group_memberships => {:group_id => groups.map(&:id)}).
-            having("COUNT(group_memberships.group_id) = #{groups.count}")
+            having("COUNT(group_memberships.group_id) = #{groups.count}").
+            uniq
           else
             none
           end
@@ -287,11 +288,11 @@ module Groupify
       
       module ClassMethods
         def in_named_group(named_group)
-          named_group.present? ? joins(:group_memberships).where(:group_memberships => {:group_name => named_group})  : none
+          named_group.present? ? joins(:group_memberships).where(:group_memberships => {:group_name => named_group}).uniq  : none
         end
         
         def in_any_named_group(*named_groups)
-          named_groups.present? ? joins(:group_memberships).where(:group_memberships => {:group_name => named_groups.flatten}) : none
+          named_groups.present? ? joins(:group_memberships).where(:group_memberships => {:group_name => named_groups.flatten}).uniq : none
         end
         
         def in_all_named_groups(*named_groups)
@@ -301,7 +302,8 @@ module Groupify
             joins(:group_memberships).
             group(:"group_memberships.member_id").
             where(:group_memberships => {:group_name => named_groups}).
-            having("COUNT(group_memberships.group_name) = #{named_groups.count}")
+            having("COUNT(group_memberships.group_name) = #{named_groups.count}").
+            uniq
           else
             none
           end
