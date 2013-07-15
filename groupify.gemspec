@@ -14,6 +14,7 @@ Gem::Specification.new do |gem|
   gem.name          = "groupify"
   gem.require_paths = ["lib"]
   gem.version       = Groupify::VERSION
+  gem.license       = 'MIT'
 
   gem.add_development_dependency "mongoid", ">= 3.1"
   gem.add_development_dependency "activerecord", ">= 3.2"
