@@ -2,10 +2,10 @@
 Adds group and membership functionality to Rails models.
 
 The following ORMs are supported:
-Mongoid 3.1 & 4.0, ActiveRecord 3.2 & 4.0
+Mongoid 3.1 & 4.0, ActiveRecord 3.2 & 4.x
 
 The following Rubies are supported:
-Ruby 1.9.3, 2.0.0 (MRI, REE, JRuby, and Rubinius).
+Ruby 1.9.3, 2.0.0, 2.1.0 (MRI, REE, JRuby, and Rubinius).
 
 ## Installation
 
