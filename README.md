@@ -1,5 +1,5 @@
 # Groupify [![Build Status](https://secure.travis-ci.org/dwbutler/groupify.png)](http://travis-ci.org/dwbutler/groupify) [![Dependency Status](https://gemnasium.com/dwbutler/groupify.png)](https://gemnasium.com/dwbutler/groupify)
-Adds group and membership functionality to Rails models.
+Adds group and membership functionality to Rails models. [![Code Climate](https://codeclimate.com/github/dwbutler/groupify.png)](https://codeclimate.com/github/dwbutler/groupify)
 
 The following ORMs are supported:
 Mongoid 3.1 & 4.0, ActiveRecord 3.2 & 4.x
