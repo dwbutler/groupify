@@ -69,6 +69,14 @@ class Assignment < ActiveRecord::Base
 end
 ```
 
+You will also need to define a `GroupMembership` model to join groups to members:
+
+```ruby
+class GroupMembership < ActiveRecord::Base  
+  acts_as_group_membership
+end
+```
+
 ### Mongoid
 In your group model:
 
