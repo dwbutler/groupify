@@ -63,15 +63,15 @@ class User < ActiveRecord::Base
   acts_as_named_group_member
 end
 
+class Manager < User
+end
+
 class Widget < ActiveRecord::Base
   acts_as_group_member
 end
 
 class Group < ActiveRecord::Base  
   acts_as_group :members => [:users, :widgets], :default_members => :users
-end
-
-class Manager < User
 end
 
 class Organization < Group
@@ -94,6 +94,8 @@ describe User do
   it { should respond_to :in_all_groups?}
   it { should respond_to :shares_any_group?}
 end
+
+ActiveRecord::Base.logger = Logger.new(STDOUT)
 
 describe Groupify::ActiveRecord do
   let(:user) { User.create! }
@@ -234,8 +236,13 @@ describe Groupify::ActiveRecord do
   
   it "members can check if groups are shared" do
     user.groups << group
+    widget.groups << group
     user2 = User.create!(:groups => [group])
     
+    user.shares_any_group?(widget).should be_true
+    Widget.shares_any_group(user).to_a.should include(widget)
+    User.shares_any_group(widget).to_a.should include(user, user2)
+
     user.shares_any_group?(user2).should be_true
     User.shares_any_group(user).to_a.should include(user2)
   end

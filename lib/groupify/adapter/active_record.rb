@@ -61,10 +61,6 @@ module Groupify
         @member_klasses ||= Set.new
         has_many :group_memberships, :dependent => :destroy
       end
-      
-      def members
-        self.class.default_member_class.joins(:group_memberships).where(:group_memberships => {:member_type => self.class.default_member_class.to_s}).uniq
-      end
 
       def member_classes
         self.class.member_classes
@@ -86,7 +82,7 @@ module Groupify
         end
         
         def default_member_class
-          @default_member_class ||= register(User)
+          @default_member_class ||= (User rescue false)
         end
 
         def default_member_class=(klass)
@@ -102,11 +98,6 @@ module Groupify
         def has_members(name)
           klass = name.to_s.classify.constantize
           register(klass)
-
-          # Define specific members accessor, i.e. group.users
-          define_method name.to_s.pluralize.underscore do
-            klass.joins(:group_memberships).where(:group_memberships => {:group_id => self.id}).uniq
-          end
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
@@ -129,7 +120,20 @@ module Groupify
 
         def register(member_klass)
           (@member_klasses ||= Set.new) << member_klass
+
+          associate_member_class(member_klass)
+
           member_klass
+        end
+
+        def associate_member_class(member_klass)
+          association_name = member_klass.name.to_s.pluralize.underscore
+          source_type = member_klass.base_class
+          has_many association_name, :through => :group_memberships, :source => :member, :source_type => source_type
+
+          if member_klass == default_member_class
+            has_many :members, :through => :group_memberships, :source => :member, :source_type => source_type
+          end
         end
       end
     end

@@ -52,10 +52,6 @@ module Groupify
         @default_member_class = nil
         @member_klasses ||= Set.new
       end
-      
-      def members
-        self.class.default_member_class.any_in(:group_ids => [self.id])
-      end
 
       def member_classes
         self.class.member_classes
@@ -81,6 +77,8 @@ module Groupify
 
         def default_member_class=(klass)
           @default_member_class = klass
+          has_many :members, :class_name => klass.name, :inverse_of => :group
+          klass
         end
 
         # Returns the member classes defined for this class, as well as for the super classes
@@ -92,11 +90,6 @@ module Groupify
         def has_members(name)
           klass = name.to_s.classify.constantize
           register(klass)
-
-          # Define specific members accessor, i.e. group.users
-          define_method name.to_s.pluralize.underscore do
-            klass.any_in(:group_ids => [self.id])
-          end
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
@@ -119,6 +112,11 @@ module Groupify
 
         def register(member_klass)
           (@member_klasses ||= Set.new) << member_klass
+
+          # Define association, i.e. group.users
+          association_name = member_klass.name.to_s.pluralize.underscore
+          has_many association_name, :class_name => member_klass.name, :inverse_of => :group
+
           member_klass
         end
       end
