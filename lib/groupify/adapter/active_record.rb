@@ -67,6 +67,8 @@ module Groupify
       end
       
       def add(*members)
+        clear_association_cache
+        
         members.flatten.each do |member|
           member.groups << self
         end
