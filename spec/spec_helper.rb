@@ -1,8 +1,9 @@
 require 'rubygems'
 require 'bundler/setup'
-require 'pry'
 
 Bundler.require(:default, :test, :development)
+
+require 'pry'
 
 JRUBY = defined?(JRUBY_VERSION)
 
