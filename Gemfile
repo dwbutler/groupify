@@ -1,6 +1,8 @@
 source 'https://rubygems.org'
 
-gem 'pry'
+group :development do
+  gem 'pry'
+end
 
 # Specify your gem's dependencies in groupify.gemspec
 gemspec

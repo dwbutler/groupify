@@ -3,7 +3,7 @@ require 'bundler/setup'
 
 Bundler.require(:default, :test, :development)
 
-require 'pry'
+#require 'pry'
 
 JRUBY = defined?(JRUBY_VERSION)
 
