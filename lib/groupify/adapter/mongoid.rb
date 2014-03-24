@@ -110,9 +110,10 @@ module Groupify
           end
 
           source_group.member_classes.each do |klass|
-            klass.any_in(:group_ids => [source_group.id]).update(:$set => {:"group_ids.$" => destination_group.id})
+            klass.any_in(:group_ids => [source_group.id]).update_all(:$set => {:"group_ids.$" => destination_group.id})
           end
-          source_group.destroy
+
+          source_group.delete
         end
 
         protected
