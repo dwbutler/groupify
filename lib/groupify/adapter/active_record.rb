@@ -129,7 +129,7 @@ module Groupify
         end
 
         def associate_member_class(member_klass)
-          association_name = member_klass.name.to_s.pluralize.underscore
+          association_name = member_klass.name.to_s.pluralize.underscore.to_sym
           source_type = member_klass.base_class
           has_many association_name, :through => :group_memberships, :source => :member, :source_type => source_type
 
