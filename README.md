@@ -22,8 +22,6 @@ Or install it yourself as:
 
     $ gem install groupify
 
-## Getting Started
-
 ### Active Record
 Add a migration similar to the following:
 
@@ -113,6 +111,9 @@ group.add user
 
 user.in_group?(group)
 # => true
+
+# Add multiple members at once
+group.add(user, widget, task)
 ```
 
 Add to named groups:
