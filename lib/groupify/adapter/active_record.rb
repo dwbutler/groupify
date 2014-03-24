@@ -66,8 +66,10 @@ module Groupify
         self.class.member_classes
       end
       
-      def add(member)
-        member.groups << self
+      def add(*members)
+        members.flatten.each do |member|
+          member.groups << self
+        end
       end
 
       # Merge a source group into this group.

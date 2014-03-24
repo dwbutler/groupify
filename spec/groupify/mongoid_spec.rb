@@ -110,6 +110,16 @@ describe Groupify::Mongoid do
     group.members.should include(user)
   end
 
+  it "adds multiple members to a group" do
+    group.add(user, task)
+    group.users.should include(user)
+    group.tasks.should include(task)
+
+    users = [MongoidUser.create!, MongoidUser.create!]
+    group.add(users)
+    group.users.should include(*users)
+  end
+
   it 'lists which member classes can belong to this group' do
     group.class.member_classes.should include(MongoidUser, MongoidTask)
     group.member_classes.should include(MongoidUser, MongoidTask)

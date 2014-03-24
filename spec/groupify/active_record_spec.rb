@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'active_record'
 
-puts "ActiveRecord version #{ActiveSupport::VERSION}"
+puts "ActiveRecord version #{ActiveSupport::VERSION::STRING}"
 
 # Load database config
 if JRUBY
@@ -123,6 +123,16 @@ describe Groupify::ActiveRecord do
     group.add user
     user.groups.should include(group)
     group.members.should include(user)
+  end
+
+  it "adds multiple members to a group" do
+    group.add(user, widget)
+    group.users.should include(user)
+    group.widgets.should include(widget)
+
+    users = [User.create!, User.create!]
+    group.add(users)
+    group.users.should include(*users)
   end
 
   it 'lists which member classes can belong to this group' do
