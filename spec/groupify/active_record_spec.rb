@@ -103,6 +103,14 @@ describe Groupify::ActiveRecord do
   let(:user) { User.create! }
   let(:group) { Group.create! }
   let(:widget) { Widget.create! }
+
+  it "members and groups are empty when initialized" do
+    user.groups.should be_empty
+    User.new.groups.should be_empty
+
+    Group.new.members.should be_empty
+    group.members.should be_empty
+  end
   
   it "adds a group to a member" do
     user.groups << group

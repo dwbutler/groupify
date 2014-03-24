@@ -36,6 +36,9 @@ class MongoidUser
   acts_as_named_group_member
 end
 
+class MongoidManager < MongoidUser
+end
+
 class MongoidTask
   include Mongoid::Document
   
@@ -58,7 +61,9 @@ end
 
 class MongoidProject < MongoidGroup
   has_members :mongoid_issues
+  has_members :mongoid_managers
   alias_method :issues, :mongoid_issues
+  alias_method :managers, :mongoid_managers
 end
 
 describe MongoidGroup do
@@ -82,6 +87,15 @@ describe Groupify::Mongoid do
   let!(:group) { MongoidGroup.create! }
   let(:task) { MongoidTask.create! }
   let(:issue) { MongoidIssue.create! }
+  let(:manager) { MongoidManager.create! }
+
+  it "members and groups are empty when initialized" do
+    user.groups.should be_empty
+    MongoidUser.new.groups.should be_empty
+
+    MongoidGroup.new.members.should be_empty
+    group.members.should be_empty
+  end
   
   it "adds a group to a member" do
     user.groups << group
@@ -140,12 +154,14 @@ describe Groupify::Mongoid do
       destination = MongoidProject.create!
 
       source.add(user)
+      source.add(manager)
       destination.add(task)
 
       destination.merge!(source)
       source.destroyed?.should be_true
       
       destination.users.to_a.should include(user)
+      destination.managers.to_a.should include(manager)
       destination.tasks.to_a.should include(task)
     end
 
