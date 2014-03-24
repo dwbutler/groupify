@@ -17,11 +17,14 @@ RSpec.configure do |config|
 end
 
 require 'mongoid'
+puts "Mongoid version #{Mongoid::VERSION}"
+
 require 'mongoid-rspec'
 include Mongoid::Matchers
 
 # Load mongoid config
 Mongoid.load!('./spec/groupify/mongoid.yml', :test)
+#Moped.logger = Logger.new(STDOUT)
 
 require 'groupify'
 require 'groupify/adapter/mongoid'

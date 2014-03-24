@@ -1,6 +1,8 @@
 require 'spec_helper'
 require 'active_record'
 
+puts "ActiveRecord version #{ActiveSupport::VERSION}"
+
 # Load database config
 if JRUBY
   require 'jdbc/sqlite3'
@@ -95,7 +97,7 @@ describe User do
   it { should respond_to :shares_any_group?}
 end
 
-ActiveRecord::Base.logger = Logger.new(STDOUT)
+#ActiveRecord::Base.logger = Logger.new(STDOUT)
 
 describe Groupify::ActiveRecord do
   let(:user) { User.create! }
