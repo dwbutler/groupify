@@ -41,6 +41,7 @@ ActiveRecord::Schema.define(:version => 1) do
     t.integer    :member_id
     t.integer    :group_id
     t.string     :group_name
+    t.string     :type
   end
 
   create_table :users do |t|
@@ -240,6 +241,33 @@ describe Groupify::ActiveRecord do
     user.named_groups.should include(:admin)
     
     user.in_named_group?(:admin).should be_true
+    user.in_any_named_group?(:admin, :user, :test).should be_true
+    user.in_all_named_groups?(:admin, :user).should be_true
+    user.in_all_named_groups?(:admin, :user, :test).should be_false
+
+    User.in_named_group(:admin).first.should eql(user)
+    User.in_any_named_group(:admin, :test).first.should eql(user)
+    User.in_all_named_groups(:admin, :user).first.should eql(user)
+    
+    # Uniqueness
+    user.named_groups << :admin
+    user.save
+    user.named_groups.count{|g| g == :admin}.should == 1
+  end
+
+  it "typed members can have named groups" do
+    user.named_groups << :admin           # no type passed, just a normal membership
+    user.named_groups << {:named_group => :user, :type => :manager}  # set a type for the membership
+    user.save
+    user.named_groups.should include(:admin)
+    user.named_groups.should include(:user)
+    
+    user.in_named_group?(:admin).should be_true
+    user.in_named_group?(:admin, nil).should be_true
+    user.in_named_group?(:user, :manager).should be_true
+    
+    user.in_named_group?(:user, :test).should be_false
+    
     user.in_any_named_group?(:admin, :user, :test).should be_true
     user.in_all_named_groups?(:admin, :user).should be_true
     user.in_all_named_groups?(:admin, :user, :test).should be_false
