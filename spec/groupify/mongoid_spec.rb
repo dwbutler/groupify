@@ -90,60 +90,60 @@ describe Groupify::Mongoid do
   let(:manager) { MongoidManager.create! }
 
   it "members and groups are empty when initialized" do
-    user.groups.should be_empty
-    MongoidUser.new.groups.should be_empty
+    expect(user.groups).to be_empty
+    expect(MongoidUser.new.groups).to be_empty
 
-    MongoidGroup.new.members.should be_empty
-    group.members.should be_empty
+    expect(MongoidGroup.new.members).to be_empty
+    expect(group.members).to be_empty
   end
   
   it "adds a group to a member" do
     user.groups << group
-    user.groups.should include(group)
-    group.members.should include(user)
-    group.users.should include(user)
+    expect(user.groups).to include(group)
+    expect(group.members).to include(user)
+    expect(group.users).to include(user)
   end
   
   it "adds a member to a group" do
     group.add user
-    user.groups.should include(group)
-    group.members.should include(user)
+    expect(user.groups).to include(group)
+    expect(group.members).to include(user)
   end
 
   it "adds multiple members to a group" do
     group.add(user, task)
-    group.users.should include(user)
-    group.tasks.should include(task)
+    expect(group.users).to include(user)
+    expect(group.tasks).to include(task)
 
     users = [MongoidUser.create!, MongoidUser.create!]
     group.add(users)
-    group.users.should include(*users)
+    expect(group.users).to include(*users)
   end
 
   it 'lists which member classes can belong to this group' do
-    group.class.member_classes.should include(MongoidUser, MongoidTask)
-    group.member_classes.should include(MongoidUser, MongoidTask)
+    expect(group.class.member_classes).to include(MongoidUser, MongoidTask)
+    expect(group.member_classes).to include(MongoidUser, MongoidTask)
 
-    MongoidProject.member_classes.should include(MongoidUser, MongoidTask, MongoidIssue)
+    expect(MongoidProject.member_classes).to include(MongoidUser, MongoidTask, MongoidIssue)
   end
   
   it "finds members by group" do
     group.add user
     
-    MongoidUser.in_group(group).first.should eql(user)
+    expect(MongoidUser.in_group(group).first).to eql(user)
   end
 
   it "finds the groups a member belongs to" do
     group.add user
     
-    MongoidGroup.with_member(user).first.should == group
+    expect(MongoidGroup.with_member(user).first).to eq(group)
   end
 
   it "removes the membership relation when a member is destroyed" do
     group.add user
     user.destroy
-    group.should_not be_destroyed
-    group.users.should_not include(user)
+    expect(group).not_to be_destroyed
+    expect(group.users).not_to include(user)
   end
 
   it "removes the membership relations when a group is destroyed" do
@@ -151,11 +151,11 @@ describe Groupify::Mongoid do
     group.add task
     group.destroy
 
-    user.should_not be_destroyed
-    user.reload.groups.should be_empty
+    expect(user).not_to be_destroyed
+    expect(user.reload.groups).to be_empty
 
-    task.should_not be_destroyed
-    task.reload.groups.should be_empty
+    expect(task).not_to be_destroyed
+    expect(task.reload.groups).to be_empty
   end
 
   context 'when merging' do
@@ -168,11 +168,11 @@ describe Groupify::Mongoid do
       destination.add(task)
 
       destination.merge!(source)
-      source.destroyed?.should be_true
+      expect(source.destroyed?).to be_true
       
-      destination.users.to_a.should include(user)
-      destination.managers.to_a.should include(manager)
-      destination.tasks.to_a.should include(task)
+      expect(destination.users.to_a).to include(user)
+      expect(destination.managers.to_a).to include(manager)
+      expect(destination.tasks.to_a).to include(task)
     end
 
     it "fails to merge if the destination group cannot contain the source group's members" do
@@ -195,9 +195,9 @@ describe Groupify::Mongoid do
 
       expect {destination.merge!(source)}.to_not raise_error
 
-      source.destroyed?.should be_true
-      destination.users.to_a.should include(user)
-      destination.tasks.to_a.should include(task)
+      expect(source.destroyed?).to be_true
+      expect(destination.users.to_a).to include(user)
+      expect(destination.tasks.to_a).to include(task)
     end
   end
 
@@ -206,51 +206,51 @@ describe Groupify::Mongoid do
     group2 = MongoidGroup.create!
     user.groups << group2
     
-    user.groups.should include(group)
-    user.groups.should include(group2)
+    expect(user.groups).to include(group)
+    expect(user.groups).to include(group2)
     
-    MongoidUser.in_group(group).first.should eql(user)
-    MongoidUser.in_group(group2).first.should eql(user)
+    expect(MongoidUser.in_group(group).first).to eql(user)
+    expect(MongoidUser.in_group(group2).first).to eql(user)
     
-    MongoidUser.in_any_group(group).first.should eql(user)
-    MongoidUser.in_all_groups(group, group2).first.should eql(user)
-    MongoidUser.in_all_groups([group, group2]).first.should eql(user)
+    expect(MongoidUser.in_any_group(group).first).to eql(user)
+    expect(MongoidUser.in_all_groups(group, group2).first).to eql(user)
+    expect(MongoidUser.in_all_groups([group, group2]).first).to eql(user)
   end
   
   it "members can have named groups" do
     user.named_groups << :admin
     user.named_groups << :user
     user.save
-    user.named_groups.should include(:admin)
+    expect(user.named_groups).to include(:admin)
     
-    user.in_named_group?(:admin).should be_true
-    user.in_any_named_group?(:admin, :user, :test).should be_true
-    user.in_all_named_groups?(:admin, :user).should be_true
-    user.in_all_named_groups?(:admin, :user, :test).should be_false
+    expect(user.in_named_group?(:admin)).to be_true
+    expect(user.in_any_named_group?(:admin, :user, :test)).to be_true
+    expect(user.in_all_named_groups?(:admin, :user)).to be_true
+    expect(user.in_all_named_groups?(:admin, :user, :test)).to be_false
 
-    MongoidUser.in_named_group(:admin).first.should eql(user)
-    MongoidUser.in_any_named_group(:admin, :test).first.should eql(user)
-    MongoidUser.in_all_named_groups(:admin, :user).first.should eql(user)
+    expect(MongoidUser.in_named_group(:admin).first).to eql(user)
+    expect(MongoidUser.in_any_named_group(:admin, :test).first).to eql(user)
+    expect(MongoidUser.in_all_named_groups(:admin, :user).first).to eql(user)
     
     # Uniqueness
     user.named_groups << :admin
     user.save
-    user.named_groups.count{|g| g == :admin}.should == 1
+    expect(user.named_groups.count{|g| g == :admin}).to eq(1)
   end
   
   it "members can check if groups are shared" do
     user.groups << group
     user2 = MongoidUser.create!(:groups => [group])
     
-    user.shares_any_group?(user2).should be_true
-    MongoidUser.shares_any_group(user).to_a.should include(user2)
+    expect(user.shares_any_group?(user2)).to be_true
+    expect(MongoidUser.shares_any_group(user).to_a).to include(user2)
   end
   
   it "members can check if named groups are shared" do
     user.named_groups << :admin
     user2 = MongoidUser.create!(:named_groups => [:admin])
     
-    user.shares_any_named_group?(user2).should be_true
-    MongoidUser.shares_any_named_group(user).to_a.should include(user2)
+    expect(user.shares_any_named_group?(user2)).to be_true
+    expect(MongoidUser.shares_any_named_group(user).to_a).to include(user2)
   end
 end
