@@ -161,9 +161,13 @@ module Groupify
       end
 
       module ClassMethods
-        def named(group_name=nil)
+        def named(group_name=nil, type=nil)
           if group_name.present?
-            where(group_name: group_name)
+            if type.present?
+              where(group_name: group_name, type: type)
+            else
+              where(group_name: group_name)
+            end    
           else
             where("group_name IS NOT NULL")
           end
@@ -240,15 +244,25 @@ module Groupify
     end
 
     class NamedGroupCollection < Set
-      def initialize(member)
+      def initialize(member, type=nil)
         @member = member
-        super(member.group_memberships.named.pluck(:group_name).map(&:to_sym))
+        super(member.group_memberships.named(type).pluck(:group_name).map(&:to_sym))
       end
 
-      def <<(named_group)
+      def <<(opts)
+        if opts.is_a? Hash
+          named_group = opts[:named_group]
+          type = opts[:type]
+        else
+          named_group = opts
+          type = nil
+        end    
+        
         named_group = named_group.to_sym
+        type = type.to_sym unless type.nil?
+
         unless include?(named_group)
-          @member.group_memberships.build(:group_name => named_group)
+          @member.group_memberships.build(:group_name => named_group, :type => type)
           super(named_group)
         end
         named_group
@@ -267,18 +281,18 @@ module Groupify
     module NamedGroupMember
       extend ActiveSupport::Concern
 
-      def named_groups
-        @named_groups ||= NamedGroupCollection.new(self)
+      def named_groups(type=nil)
+        @named_groups ||= NamedGroupCollection.new(self, type)
       end
 
-      def named_groups=(named_groups)
+      def named_groups=(named_groups, type=nil)
         named_groups.each do |named_group|
           self.named_groups << named_group
         end
       end
       
-      def in_named_group?(group)
-        named_groups.include?(group)
+      def in_named_group?(group, type=nil)
+        named_groups(type).include?(group)
       end
       
       def in_any_named_group?(*groups)
