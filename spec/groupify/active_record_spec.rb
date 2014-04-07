@@ -41,6 +41,7 @@ ActiveRecord::Schema.define(:version => 1) do
     t.integer    :member_id
     t.integer    :group_id
     t.string     :group_name
+    t.string     :type
   end
 
   create_table :users do |t|
@@ -173,6 +174,35 @@ describe Groupify::ActiveRecord do
     expect(widget.reload.groups).to be_empty
   end
 
+  it "members can check if they belong to any/all groups" do
+    user.groups << group
+    group2 = Group.create!
+    user.groups << group2
+    
+    expect(user.groups).to include(group)
+    expect(user.groups).to include(group2)
+    
+    expect(User.in_group(group).first).to eql(user)
+    expect(User.in_group(group2).first).to eql(user)
+    
+    expect(User.in_any_group(group).first).to eql(user)
+    expect(User.in_all_groups(group, group2).first).to eql(user)
+    expect(User.in_all_groups([group, group2]).first).to eql(user)
+  end
+
+  it "members can check if groups are shared" do
+    user.groups << group
+    widget.groups << group
+    user2 = User.create!(:groups => [group])
+    
+    expect(user.shares_any_group?(widget)).to be_true
+    expect(Widget.shares_any_group(user).to_a).to include(widget)
+    expect(User.shares_any_group(widget).to_a).to include(user, user2)
+
+    expect(user.shares_any_group?(user2)).to be_true
+    expect(User.shares_any_group(user).to_a).to include(user2)
+  end
+
   context 'when merging' do
     let(:task) { Task.create! }
     let(:manager) { Manager.create! }
@@ -216,62 +246,103 @@ describe Groupify::ActiveRecord do
       expect(destination.widgets.to_a).to include(widget)
     end
   end
-
-  it "members can belong to many groups" do
-    user.groups << group
-    group2 = Group.create!
-    user.groups << group2
-    
-    expect(user.groups).to include(group)
-    expect(user.groups).to include(group2)
-    
-    expect(User.in_group(group).first).to eql(user)
-    expect(User.in_group(group2).first).to eql(user)
-    
-    expect(User.in_any_group(group).first).to eql(user)
-    expect(User.in_all_groups(group, group2).first).to eql(user)
-    expect(User.in_all_groups([group, group2]).first).to eql(user)
-  end
   
-  it "members can have named groups" do
-    user.named_groups << :admin
-    user.named_groups << :user
-    user.save
-    expect(user.named_groups).to include(:admin)
-    
-    expect(user.in_named_group?(:admin)).to be_true
-    expect(user.in_any_named_group?(:admin, :user, :test)).to be_true
-    expect(user.in_all_named_groups?(:admin, :user)).to be_true
-    expect(user.in_all_named_groups?(:admin, :user, :test)).to be_false
+  context 'when using named groups' do
+    it "members can have named groups" do
+      user.named_groups << :admin
+      user.named_groups << :user
+      user.save
+      expect(user.named_groups).to include(:admin)
+      
+      expect(user.in_named_group?(:admin)).to be_true
+      expect(user.in_any_named_group?(:admin, :user, :test)).to be_true
+      expect(user.in_all_named_groups?(:admin, :user)).to be_true
+      expect(user.in_all_named_groups?(:admin, :user, :test)).to be_false
 
-    expect(User.in_named_group(:admin).first).to eql(user)
-    expect(User.in_any_named_group(:admin, :test).first).to eql(user)
-    expect(User.in_all_named_groups(:admin, :user).first).to eql(user)
-    
-    # Uniqueness
-    user.named_groups << :admin
-    user.save
-    expect(user.named_groups.count{|g| g == :admin}).to eq(1)
-  end
-  
-  it "members can check if groups are shared" do
-    user.groups << group
-    widget.groups << group
-    user2 = User.create!(:groups => [group])
-    
-    expect(user.shares_any_group?(widget)).to be_true
-    expect(Widget.shares_any_group(user).to_a).to include(widget)
-    expect(User.shares_any_group(widget).to_a).to include(user, user2)
+      expect(User.in_named_group(:admin).first).to eql(user)
+      expect(User.in_any_named_group(:admin, :test).first).to eql(user)
+      expect(User.in_all_named_groups(:admin, :user).first).to eql(user)
+      
+      # Uniqueness
+      user.named_groups << :admin
+      user.save
+      expect(user.named_groups.count{|g| g == :admin}).to eq(1)
+    end
 
-    expect(user.shares_any_group?(user2)).to be_true
-    expect(User.shares_any_group(user).to_a).to include(user2)
+    it "members can check if named groups are shared" do
+      user.named_groups << :admin
+      user2 = User.create!(:named_groups => [:admin])
+      
+      expect(user.shares_any_named_group?(user2)).to be_true
+      expect(User.shares_any_named_group(user).to_a).to include(user2)
+    end
   end
-  
-  it "members can check if named groups are shared" do
-    user.named_groups << :admin
-    user2 = User.create!(:named_groups => [:admin])
-    
-    expect(user.shares_any_named_group?(user2)).to be_true
-    expect(User.shares_any_named_group(user).to_a).to include(user2)
+
+  context 'when using membership types' do
+    it 'adds groups to a member with a specific membership type' do
+      user.group_memberships.create!(group: group, as: :admin)
+      
+      expect(user.groups).to include(group)
+      expect(group.members).to include(user)
+      expect(group.users).to include(user)
+
+      expect(user.groups(:as => :admin)).to include(group)
+      expect(group.members).to include(user)
+      expect(group.users).to include(user)
+    end
+
+    it 'adds members to a group with specific membership types' do
+      group.add(user, as: 'manager')
+      group.add(widget)
+
+      expect(user.groups).to include(group)
+      expect(group.members).to include(user)
+      expect(group.users).to include(user)
+      expect(group.widgets).to include(widget)
+
+      expect(user.groups(:as => :manager)).to include(group)
+      expect(group.members).to include(user)
+      expect(group.users).to include(user)
+    end
+
+    it "adds multiple members to a group with a specific membership type" do
+      manager = User.create!
+      group.add(user, manager, as: :manager)
+
+      expect(group.users(as: :manager)).to include(user, manager)
+    end
+
+    it "finds members by group with membership type" do
+      group.add user, as: 'employee'
+      
+      expect(User.in_group(group, as: 'employee').first).to eql(user)
+    end
+
+    it "finds the group a member belongs to with a membership type" do
+      group.add user, as: Manager
+      
+      expect(Group.with_member(user, as: Manager).first).to eq(group)
+    end
+
+    it "members can check if they belong to any/all groups with the same membership type" do
+      group2 = Group.create!
+      user.group_memberships.create!([{group: group, as: 'employee'}, {group: group2, as: 'employee'}])
+      
+      expect(User.in_any_group(group, as: 'employee').first).to eql(user)
+      expect(User.in_all_groups(group, group2, as: 'employee').first).to eql(user)
+      expect(User.in_all_groups([group, group2], as: 'employee').first).to eql(user)
+    end
+
+    it "members can check if groups are shared with the same membership type" do
+      user2 = User.create!
+      group.add(user, user2, widget, as: "Sub Group #1")
+      
+      expect(user.shares_any_group?(widget, as: "Sub Group #1")).to be_true
+      expect(Widget.shares_any_group(user, as: "Sub Group #1").to_a).to include(widget)
+      expect(User.shares_any_group(widget, as: "Sub Group #1").to_a).to include(user, user2)
+
+      expect(user.shares_any_group?(user2, as: "Sub Group #1")).to be_true
+      expect(User.shares_any_group(user, as: "Sub Group #1").to_a).to include(user2)
+    end
   end
 end

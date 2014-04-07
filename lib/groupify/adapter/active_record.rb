@@ -68,11 +68,16 @@ module Groupify
         self.class.member_classes
       end
       
-      def add(*members)
+      def add(*args)
+        opts = args.last.is_a?(Hash) ? args.pop : {}
+        membership_type = opts[:as]
+        members = args
+        return unless members.present?
+
         clear_association_cache
         
         members.flatten.each do |member|
-          member.groups << self
+          member.group_memberships.create!(group: self, type: membership_type)
         end
       end
 
@@ -82,9 +87,9 @@ module Groupify
       end
       
       module ClassMethods
-        def with_member(member)
+        def with_member(member, opts={})
           #joins(:group_memberships).where(:group_memberships => {:member_id => member.id, :member_type => member.class.to_s})
-          member.groups
+          member.groups(opts)
         end
         
         def default_member_class
@@ -135,10 +140,25 @@ module Groupify
         def associate_member_class(member_klass)
           association_name = member_klass.name.to_s.pluralize.underscore.to_sym
           source_type = member_klass.base_class
+
           has_many association_name, :through => :group_memberships, :source => :member, :source_type => source_type
+          override_member_accessor(association_name)
 
           if member_klass == default_member_class
             has_many :members, :through => :group_memberships, :source => :member, :source_type => source_type
+            override_member_accessor(:members)
+          end
+        end
+
+        def override_member_accessor(association_name)
+          define_method(association_name) do |*args|
+            opts = args.last.is_a?(Hash) ? args.pop : {}
+            membership_type = opts[:as]
+            if membership_type.present?
+              super.joins(:group_memberships).where("group_memberships.type" => membership_type)
+            else
+              super
+            end
           end
         end
       end
@@ -156,8 +176,22 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
+        attr_accessible(:member, :group, :group_name, :type, :as) if respond_to?(:attr_accessible)
+
         belongs_to :member, :polymorphic => true
         belongs_to :group
+      end
+
+      def type=(type)
+        self[:type] = type.to_s if type.present?
+      end
+
+      def as=(type)
+        self.type = type
+      end
+
+      def as
+        type
       end
 
       module ClassMethods
@@ -186,14 +220,32 @@ module Groupify
         has_many :group_memberships, :as => :member, :autosave => true, :dependent => :destroy
         has_many :groups, :through => :group_memberships, :class_name => @group_class_name
       end
-      
-      def in_group?(group)
-        self.group_memberships.exists?(:group_id => group.id)
+
+      def groups(*args)
+        opts = args.last.is_a?(Hash) ? args.pop : {}
+        groups = super
+        if opts[:as]
+          groups.joins(:group_memberships).where("group_memberships.type" => opts[:as])
+        else
+          groups
+        end
       end
       
-      def in_any_group?(*groups)
+      def in_group?(group, opts={})
+        criteria = {:group_id => group.id}
+        if opts[:as]
+          criteria.merge!(type: opts[:as])
+        end
+
+        group_memberships.exists?(criteria)
+      end
+      
+      def in_any_group?(*args)
+        opts = (args.last.is_a?(Hash) ? args.pop : {})
+        groups = args
+
         groups.flatten.each do |group|
-          return true if in_group?(group)
+          return true if in_group?(group, opts)
         end
         return false
       end
@@ -202,38 +254,61 @@ module Groupify
         Set.new(groups.flatten) == Set.new(self.named_groups)
       end
       
-      def shares_any_group?(other)
-        in_any_group?(other.groups)
+      def shares_any_group?(other, opts={})
+        in_any_group?(other.groups, opts)
       end
       
       module ClassMethods
         def group_class_name; @group_class_name ||= 'Group'; end
         def group_class_name=(klass);  @group_class_name = klass; end
         
-        def in_group(group)
-          group.present? ? joins(:group_memberships).where(:group_memberships => {:group_id => group.id}).uniq : none
+        def in_group(group, opts={})
+          return none unless group.present?
+
+          scope = joins(:group_memberships).where(:group_memberships => {:group_id => group.id}).uniq
+          if opts[:as]
+            scope.where(:group_memberships => {:type => opts[:as]})
+          end
+          scope
         end
         
-        def in_any_group(*groups)
-          groups.present? ? joins(:group_memberships).where(:group_memberships => {:group_id => groups.flatten.map(&:id)}).uniq : none
+        def in_any_group(*args)
+          opts = (args.last.is_a?(Hash) ? args.pop : {})
+          groups = args
+          return none unless groups.present?
+          
+          scope = joins(:group_memberships).where(:group_memberships => {:group_id => groups.flatten.map(&:id)}).uniq
+          if opts[:as]
+            scope.where(:group_memberships => {:type => opts[:as]})
+          end
+          scope
         end
         
-        def in_all_groups(*groups)
+        def in_all_groups(*args)
+          opts = (args.last.is_a?(Hash) ? args.pop : {})
+          groups = args
+
           if groups.present?
             groups = groups.flatten
 
-            joins(:group_memberships).
+            scope = joins(:group_memberships).
             group(:"group_memberships.member_id").
             where(:group_memberships => {:group_id => groups.map(&:id)}).
             having("COUNT(group_memberships.group_id) = #{groups.count}").
             uniq
+
+            if opts[:as]
+              scope.where(:group_memberships => {:type => opts[:as]})
+            end
+
+            scope
           else
             none
           end
         end
         
-        def shares_any_group(other)
-          in_any_group(other.groups)
+        def shares_any_group(other, opts={})
+          in_any_group(other.groups, opts)
         end
         
       end
