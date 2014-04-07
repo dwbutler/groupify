@@ -1,4 +1,6 @@
 language: ruby
+bundler_args: --without development --deployment
+cache: bundler
 services: mongodb
 rvm:
   - 1.9.3
@@ -6,8 +8,10 @@ rvm:
   - 2.1.0
   - 2.1.1
   - jruby-19mode
-  #- rbx
+  - rbx
 gemfile:
   - gemfiles/activesupport3.gemfile
   - gemfiles/activesupport4.gemfile
-
+matrix:
+  allow_failures:
+    - rvm: rbx
