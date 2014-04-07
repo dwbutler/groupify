@@ -77,7 +77,7 @@ module Groupify
         clear_association_cache
         
         members.flatten.each do |member|
-          member.group_memberships.create!(group: self, type: membership_type)
+          member.group_memberships.create!(group: self, membership_type: membership_type)
         end
       end
 
@@ -155,7 +155,7 @@ module Groupify
             opts = args.last.is_a?(Hash) ? args.pop : {}
             membership_type = opts[:as]
             if membership_type.present?
-              super().joins(:group_memberships).where("group_memberships.type" => membership_type)
+              super().joins(:group_memberships).where("group_memberships.membership_type" => membership_type)
             else
               super()
             end
@@ -176,22 +176,22 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
-        attr_accessible(:member, :group, :group_name, :type, :as) if ActiveSupport::VERSION::MAJOR < 4
+        attr_accessible(:member, :group, :group_name, :membership_type, :as) if ActiveSupport::VERSION::MAJOR < 4
 
         belongs_to :member, :polymorphic => true
         belongs_to :group
       end
 
-      def type=(type)
-        self[:type] = type.to_s if type.present?
+      def membership_type=(membership_type)
+        self[:membership_type] = membership_type.to_s if membership_type.present?
       end
 
-      def as=(type)
-        self.type = type
+      def as=(membership_type)
+        self.membership_type = membership_type
       end
 
       def as
-        type
+        membership_type
       end
 
       module ClassMethods
@@ -225,7 +225,7 @@ module Groupify
         opts = args.last.is_a?(Hash) ? args.pop : {}
         groups = super
         if opts[:as]
-          groups.joins(:group_memberships).where("group_memberships.type" => opts[:as])
+          groups.joins(:group_memberships).where("group_memberships.membership_type" => opts[:as])
         else
           groups
         end
@@ -234,7 +234,7 @@ module Groupify
       def in_group?(group, opts={})
         criteria = {:group_id => group.id}
         if opts[:as]
-          criteria.merge!(type: opts[:as])
+          criteria.merge!(membership_type: opts[:as])
         end
 
         group_memberships.exists?(criteria)
@@ -267,7 +267,7 @@ module Groupify
 
           scope = joins(:group_memberships).where(:group_memberships => {:group_id => group.id}).uniq
           if opts[:as]
-            scope.where(:group_memberships => {:type => opts[:as]})
+            scope.where(:group_memberships => {:membership_type => opts[:as]})
           end
           scope
         end
@@ -279,7 +279,7 @@ module Groupify
           
           scope = joins(:group_memberships).where(:group_memberships => {:group_id => groups.flatten.map(&:id)}).uniq
           if opts[:as]
-            scope.where(:group_memberships => {:type => opts[:as]})
+            scope.where(:group_memberships => {:membership_type => opts[:as]})
           end
           scope
         end
@@ -298,7 +298,7 @@ module Groupify
             uniq
 
             if opts[:as]
-              scope.where(:group_memberships => {:type => opts[:as]})
+              scope.where(:group_memberships => {:membership_type => opts[:as]})
             end
 
             scope

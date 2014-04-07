@@ -41,7 +41,7 @@ ActiveRecord::Schema.define(:version => 1) do
     t.integer    :member_id
     t.integer    :group_id
     t.string     :group_name
-    t.string     :type
+    t.string     :membership_type
   end
 
   create_table :users do |t|
