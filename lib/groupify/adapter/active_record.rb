@@ -155,9 +155,9 @@ module Groupify
             opts = args.last.is_a?(Hash) ? args.pop : {}
             membership_type = opts[:as]
             if membership_type.present?
-              super.joins(:group_memberships).where("group_memberships.type" => membership_type)
+              super().joins(:group_memberships).where("group_memberships.type" => membership_type)
             else
-              super
+              super()
             end
           end
         end
@@ -176,7 +176,7 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
-        attr_accessible(:member, :group, :group_name, :type, :as) if respond_to?(:attr_accessible)
+        attr_accessible(:member, :group, :group_name, :type, :as) if ActiveSupport::VERSION::MAJOR < 4
 
         belongs_to :member, :polymorphic => true
         belongs_to :group
