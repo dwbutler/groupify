@@ -221,7 +221,10 @@ module Groupify
       extend ActiveSupport::Concern
       
       included do
-        has_many :group_memberships, :as => :member, :autosave => true, :dependent => :destroy
+        unless respond_to?(:group_memberships)
+          has_many :group_memberships, :as => :member, :autosave => true, :dependent => :destroy
+        end
+
         has_many :groups, :through => :group_memberships, :class_name => @group_class_name do
           def as(membership_type)
             joins(:group_memberships).where("group_memberships.membership_type" => membership_type)
@@ -383,6 +386,12 @@ module Groupify
     module NamedGroupMember
       extend ActiveSupport::Concern
 
+      included do
+        unless respond_to?(:group_memberships)
+          has_many :group_memberships, :as => :member, :autosave => true, :dependent => :destroy
+        end
+      end
+
       def named_groups(opts={})
         @named_groups ||= NamedGroupCollection.new(self)
 
@@ -469,7 +478,7 @@ module Groupify
         end
         
         def shares_any_named_group(other, opts={})
-          in_any_named_group(other.named_groups(opts).to_a, opts)
+          in_any_named_group(other.named_groups.to_a, opts)
         end
       end
     end

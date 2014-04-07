@@ -53,6 +53,10 @@ ActiveRecord::Schema.define(:version => 1) do
     t.string     :name
   end
 
+  create_table :projects do |t|
+    t.string     :name
+  end
+
   create_table :organizations do |t|
     t.string     :name
   end
@@ -71,6 +75,10 @@ end
 
 class Widget < ActiveRecord::Base
   acts_as_group_member
+end
+
+class Project < ActiveRecord::Base
+  acts_as_named_group_member
 end
 
 class Group < ActiveRecord::Base  
@@ -399,12 +407,11 @@ describe Groupify::ActiveRecord do
       expect(User.in_all_named_groups(:team1, :team2, as: 'employee').first).to eql(user)
     end
 
-    it "checks if named groups are shared" do
-      user2 = User.create!
-      user2.group_memberships.create!(group_name: :team3, membership_type: 'manager')
+    it "checks if a member shares any named groups with a certain membership type" do
+      project = Project.create!(:named_groups => [:team3])
 
-      expect(user.shares_any_named_group?(user2, as: 'manager')).to be_true
-      expect(User.shares_any_named_group(user, as: 'manager').to_a).to include(user2)
+      expect(user.shares_any_named_group?(project, as: 'manager')).to be_true
+      expect(User.shares_any_named_group(project, as: 'manager').to_a).to include(user)
     end
   end
 end
