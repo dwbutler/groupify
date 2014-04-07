@@ -286,7 +286,7 @@ describe Groupify::ActiveRecord do
     end
   end
 
-  context 'when using membership types' do
+  context "when using membership types with groups" do
     it 'adds groups to a member with a specific membership type' do
       user.group_memberships.create!(group: group, as: :admin)
       
@@ -295,6 +295,7 @@ describe Groupify::ActiveRecord do
       expect(group.users).to include(user)
 
       expect(user.groups(:as => :admin)).to include(group)
+      expect(user.groups.as(:admin)).to include(group)
       expect(group.members).to include(user)
       expect(group.users).to include(user)
     end
@@ -351,6 +352,59 @@ describe Groupify::ActiveRecord do
 
       expect(user.shares_any_group?(user2, as: "Sub Group #1")).to be_true
       expect(User.shares_any_group(user, as: "Sub Group #1").to_a).to include(user2)
+    end
+  end
+
+  context 'when using membership types with named groups' do
+    before(:each) do
+      user.named_groups.concat :team1, :team2, as: 'employee'
+      user.named_groups.push :team3, as: 'manager'
+    end
+
+    it "queries named groups, filtering by membership type" do
+      expect(user.named_groups).to include(:team1, :team2, :team3)
+      expect(user.named_groups.as('manager')).to eq([:team3])
+      expect(user.named_groups(as: 'manager')).to eq([:team3])
+    end
+
+    it "enforces uniqueness of named groups" do
+      user.named_groups << :team1
+      expect(user.named_groups.count{|g| g == :team1}).to eq(1)
+      expect(user.group_memberships.where(group_name: :team1).count).to eq(1)
+      expect(user.group_memberships.where(group_name: :team1, membership_type: 'employee').count).to eq(1)
+      expect(user.named_groups.as('employee').count{|g| g == :team1}).to eq(1)
+    end
+
+    it "enforces uniqueness of group name and membership type for group memberships" do
+      user.named_groups.push :team1, as: 'employee'
+      expect(user.group_memberships.where(group_name: :team1).count).to eq(1)
+      expect(user.group_memberships.where(group_name: :team1, membership_type: 'employee').count).to eq(1)
+      expect(user.named_groups.count{|g| g == :team1}).to eq(1)
+      expect(user.named_groups(as: 'employee').count{|g| g == :team1}).to eq(1)
+    end
+
+    it "checks if a member belongs to one named group with a certain membership type" do
+      expect(user.in_named_group?(:team1, as: 'employee')).to be_true
+      expect(User.in_named_group(:team1, as: 'employee').first).to eql(user)
+    end
+
+    it "checks if a member belongs to any named group with a certain membership type" do
+      expect(user.in_any_named_group?(:team1, :team3, as: 'employee')).to be_true
+      expect(User.in_any_named_group(:team2, :team3, as: 'manager').first).to eql(user)
+    end
+
+    it "checks if a member belongs to all named groups with a certain membership type" do
+      expect(user.in_all_named_groups?(:team1, :team2, as: 'employee')).to be_true
+      expect(user.in_all_named_groups?(:team1, :team3, as: 'employee')).to be_false
+      expect(User.in_all_named_groups(:team1, :team2, as: 'employee').first).to eql(user)
+    end
+
+    it "checks if named groups are shared" do
+      user2 = User.create!
+      user2.group_memberships.create!(group_name: :team3, membership_type: 'manager')
+
+      expect(user.shares_any_named_group?(user2, as: 'manager')).to be_true
+      expect(User.shares_any_named_group(user, as: 'manager').to_a).to include(user2)
     end
   end
 end

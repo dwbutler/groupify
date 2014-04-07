@@ -202,6 +202,10 @@ module Groupify
             where("group_name IS NOT NULL")
           end
         end
+
+        def as(membership_type)
+          where(membership_type: membership_type)
+        end
       end
     end
 
@@ -218,14 +222,18 @@ module Groupify
       
       included do
         has_many :group_memberships, :as => :member, :autosave => true, :dependent => :destroy
-        has_many :groups, :through => :group_memberships, :class_name => @group_class_name
+        has_many :groups, :through => :group_memberships, :class_name => @group_class_name do
+          def as(membership_type)
+            joins(:group_memberships).where("group_memberships.membership_type" => membership_type)
+          end
+        end
       end
 
       def groups(*args)
         opts = args.last.is_a?(Hash) ? args.pop : {}
         groups = super
         if opts[:as]
-          groups.joins(:group_memberships).where("group_memberships.membership_type" => opts[:as])
+          groups.as(opts[:as])
         else
           groups
         end
@@ -317,14 +325,15 @@ module Groupify
     class NamedGroupCollection < Set
       def initialize(member)
         @member = member
-        group_names = member.group_memberships.named.pluck(:group_name).map(&:to_sym)
-        super(group_names)
+        @named_group_memberships = member.group_memberships.named
+        @group_names = @named_group_memberships.pluck(:group_name).map(&:to_sym)
+        super(@group_names)
       end
 
-      def <<(named_group, opts={})
+      def add(named_group, opts={})
         named_group = named_group.to_sym
         unless include?(named_group)
-          attributes = opts.merge(:group_name => named_group)
+          attributes = opts.merge(group_name: named_group)
           if @member.new_record?
             @member.group_memberships.build(attributes)
           else
@@ -335,10 +344,30 @@ module Groupify
         named_group
       end
 
-      def concat(*named_groups)
-        named_groups.flatten.each do |named_group|
-          self << named_group
+      alias_method :push, :add
+      alias_method :<<, :add
+
+      def merge(*args)
+        opts = (args.last.is_a?(Hash) ? args.pop : {})
+        named_groups = args.flatten
+        named_groups.each do |named_group|
+          add(named_group, opts)
         end
+      end
+
+      alias_method :concat, :merge
+
+      def include?(named_group, opts={})
+        if opts[:as]
+          as(opts[:as]).include?(named_group)
+        else
+          super(named_group)
+        end
+      end
+
+      # Criteria to filter by membership type
+      def as(membership_type)
+        @named_group_memberships.as(membership_type).pluck(:group_name).map(&:to_sym)
       end
     end
 
@@ -354,60 +383,93 @@ module Groupify
     module NamedGroupMember
       extend ActiveSupport::Concern
 
-      def named_groups
+      def named_groups(opts={})
         @named_groups ||= NamedGroupCollection.new(self)
+
+        if opts[:as]
+          @named_groups.as(opts[:as])
+        else
+          @named_groups
+        end
       end
 
-      def named_groups=(named_groups)
-        named_groups.each do |named_group|
-          self.named_groups << named_group
+      def named_groups=(groups)
+        groups.each do |group|
+          self.named_groups << group
         end
       end
       
-      def in_named_group?(group)
-        named_groups.include?(group)
+      def in_named_group?(group, opts={})
+        named_groups.include?(group, opts)
       end
       
-      def in_any_named_group?(*groups)
-        groups.flatten.each do |group|
-          return true if in_named_group?(group)
+      def in_any_named_group?(*args)
+        opts = (args.last.is_a?(Hash) ? args.pop : {})
+        groups = args.flatten
+        groups.each do |group|
+          return true if in_named_group?(group, opts)
         end
         return false
       end
       
-      def in_all_named_groups?(*groups)
-        Set.new(groups.flatten) == Set.new(self.named_groups)
+      def in_all_named_groups?(*args)
+        opts = (args.last.is_a?(Hash) ? args.pop : {})
+        groups = args.flatten.to_set
+        groups == named_groups(opts).to_set
       end
       
-      def shares_any_named_group?(other)
-        in_any_named_group?(other.named_groups.to_a)
+      def shares_any_named_group?(other, opts={})
+        in_any_named_group?(other.named_groups.to_a, opts)
       end
       
       module ClassMethods
-        def in_named_group(named_group)
-          named_group.present? ? joins(:group_memberships).where(:group_memberships => {:group_name => named_group}).uniq  : none
+        def in_named_group(named_group, opts={})
+          return none unless named_group.present?
+          scope = joins(:group_memberships).where(group_memberships: {group_name: named_group}).uniq
+          if opts[:as]
+            scope.where(group_memberships: {membership_type: opts[:as]})
+          else
+            scope
+          end
         end
         
-        def in_any_named_group(*named_groups)
-          named_groups.present? ? joins(:group_memberships).where(:group_memberships => {:group_name => named_groups.flatten}).uniq : none
+        def in_any_named_group(*args)
+          opts = (args.last.is_a?(Hash) ? args.pop : {})
+          named_groups = args.flatten
+          return none unless named_groups.present?
+          scope = joins(:group_memberships).where(group_memberships: {group_name: named_groups.flatten}).uniq
+          if opts[:as]
+            scope.where(group_memberships: {membership_type: opts[:as]})
+          else
+            scope
+          end
         end
         
-        def in_all_named_groups(*named_groups)
-          if named_groups.present?
-            named_groups = named_groups.flatten.map(&:to_s)
+        def in_all_named_groups(*args)
+          opts = (args.last.is_a?(Hash) ? args.pop : {})
+          named_groups = args.flatten
 
-            joins(:group_memberships).
+          if named_groups.present?
+            named_groups = named_groups.map(&:to_s)
+
+            scope = joins(:group_memberships).
             group(:"group_memberships.member_id").
             where(:group_memberships => {:group_name => named_groups}).
             having("COUNT(group_memberships.group_name) = #{named_groups.count}").
             uniq
+
+            if opts[:as]
+              scope.where(group_memberships: {membership_type: opts[:as]})
+            else
+              scope
+            end
           else
             none
           end
         end
         
-        def shares_any_named_group(other)
-          in_any_named_group(other.named_groups.to_a)
+        def shares_any_named_group(other, opts={})
+          in_any_named_group(other.named_groups(opts).to_a, opts)
         end
       end
     end
