@@ -247,29 +247,37 @@ describe Groupify::ActiveRecord do
     end
   end
   
-  context 'when using named groups' do
-    it "members can have named groups" do
-      user.named_groups << :admin
-      user.named_groups << :user
-      user.save
-      expect(user.named_groups).to include(:admin)
-      
+  context 'when members are using named groups' do
+    before(:each) do
+      user.named_groups.concat :admin, :user
+    end
+
+    it "queries named groups" do
+      expect(user.named_groups).to include(:user, :admin)
+    end
+     
+    it "checks if it is a member of one named groups" do
       expect(user.in_named_group?(:admin)).to be_true
+      expect(User.in_named_group(:admin).first).to eql(user)
+    end
+
+    it "checks if it is a member of any named group" do
       expect(user.in_any_named_group?(:admin, :user, :test)).to be_true
+      expect(User.in_any_named_group(:admin, :test).first).to eql(user)
+    end
+
+    it "checks if it is a member of all named groups" do
       expect(user.in_all_named_groups?(:admin, :user)).to be_true
       expect(user.in_all_named_groups?(:admin, :user, :test)).to be_false
-
-      expect(User.in_named_group(:admin).first).to eql(user)
-      expect(User.in_any_named_group(:admin, :test).first).to eql(user)
       expect(User.in_all_named_groups(:admin, :user).first).to eql(user)
+    end
       
-      # Uniqueness
+    it "enforces uniqueness" do
       user.named_groups << :admin
-      user.save
       expect(user.named_groups.count{|g| g == :admin}).to eq(1)
     end
 
-    it "members can check if named groups are shared" do
+    it "checks if named groups are shared" do
       user.named_groups << :admin
       user2 = User.create!(:named_groups => [:admin])
       

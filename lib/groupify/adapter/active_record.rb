@@ -317,16 +317,28 @@ module Groupify
     class NamedGroupCollection < Set
       def initialize(member)
         @member = member
-        super(member.group_memberships.named.pluck(:group_name).map(&:to_sym))
+        group_names = member.group_memberships.named.pluck(:group_name).map(&:to_sym)
+        super(group_names)
       end
 
-      def <<(named_group)
+      def <<(named_group, opts={})
         named_group = named_group.to_sym
         unless include?(named_group)
-          @member.group_memberships.build(:group_name => named_group)
+          attributes = opts.merge(:group_name => named_group)
+          if @member.new_record?
+            @member.group_memberships.build(attributes)
+          else
+            @member.group_memberships.create!(attributes)
+          end
           super(named_group)
         end
         named_group
+      end
+
+      def concat(*named_groups)
+        named_groups.flatten.each do |named_group|
+          self << named_group
+        end
       end
     end
 
