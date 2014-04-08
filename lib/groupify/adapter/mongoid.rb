@@ -162,7 +162,7 @@ module Groupify
       end
       
       def shares_any_group?(other)
-        in_any_group?(other.groups)
+        in_any_group?(other.groups.to_a)
       end
       
       module ClassMethods
@@ -182,7 +182,7 @@ module Groupify
         end
         
         def shares_any_group(other)
-          in_any_group(other.groups)
+          in_any_group(other.groups.to_a)
         end
         
       end
