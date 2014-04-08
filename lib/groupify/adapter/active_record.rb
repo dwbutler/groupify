@@ -141,11 +141,19 @@ module Groupify
           association_name = member_klass.name.to_s.pluralize.underscore.to_sym
           source_type = member_klass.base_class
 
-          has_many association_name, :through => :group_memberships, :source => :member, :source_type => source_type
+          has_many association_name, through: :group_memberships, source: :member, source_type: source_type do
+            def as(membership_type)
+              where(group_memberships: {membership_type: membership_type})
+            end
+          end
           override_member_accessor(association_name)
 
           if member_klass == default_member_class
-            has_many :members, :through => :group_memberships, :source => :member, :source_type => source_type
+            has_many :members, through: :group_memberships, source: :member, source_type: source_type do
+              def as(membership_type)
+                where(group_memberships: {membership_type: membership_type})
+              end
+            end
             override_member_accessor(:members)
           end
         end
@@ -155,7 +163,7 @@ module Groupify
             opts = args.last.is_a?(Hash) ? args.pop : {}
             membership_type = opts[:as]
             if membership_type.present?
-              super().joins(:group_memberships).where("group_memberships.membership_type" => membership_type)
+              super().as(membership_type)
             else
               super()
             end
@@ -227,7 +235,7 @@ module Groupify
 
         has_many :groups, :through => :group_memberships, :class_name => @group_class_name do
           def as(membership_type)
-            joins(:group_memberships).where("group_memberships.membership_type" => membership_type)
+            where(group_memberships: {membership_type: membership_type})
           end
         end
       end

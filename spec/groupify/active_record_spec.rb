@@ -314,8 +314,8 @@ describe Groupify::ActiveRecord do
 
       expect(user.groups).to include(group)
       expect(group.members).to include(user)
+      expect(group.members.as(:manager)).to include(user)
       expect(group.users).to include(user)
-      expect(group.widgets).to include(widget)
 
       expect(user.groups(:as => :manager)).to include(group)
       expect(group.members).to include(user)
@@ -326,6 +326,7 @@ describe Groupify::ActiveRecord do
       manager = User.create!
       group.add(user, manager, as: :manager)
 
+      expect(group.users.as(:manager)).to include(user, manager)
       expect(group.users(as: :manager)).to include(user, manager)
     end
 
