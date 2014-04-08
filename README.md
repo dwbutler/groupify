@@ -204,7 +204,7 @@ class Ability
 
   def initialize(user)
     …
-    # Implements group-based. authorization
+    # Implements group-based authorization
     # Users can only manage assignment which belong to the same group.
     can [:manage], Assignment, Assignment.shares_any_group(user) do |assignment|
       assignment.shares_any_group?(user)
