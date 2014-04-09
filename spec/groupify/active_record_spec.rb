@@ -257,7 +257,7 @@ describe Groupify::ActiveRecord do
   
   context 'when using named groups' do
     before(:each) do
-      user.named_groups.concat :admin, :user
+      user.named_groups.concat :admin, :user, :poster
     end
 
     it "enforces uniqueness" do
@@ -283,6 +283,17 @@ describe Groupify::ActiveRecord do
       expect(user.in_all_named_groups?(:admin, :user)).to be_true
       expect(user.in_all_named_groups?(:admin, :user, :test)).to be_false
       expect(User.in_all_named_groups(:admin, :user).first).to eql(user)
+    end
+
+    it "checks if a member belongs to only certain named groups" do
+      expect(user.in_only_named_groups?(:admin, :user, :poster)).to be_true
+      expect(user.in_only_named_groups?(:admin, :user, :poster, :foo)).to be_false
+      expect(user.in_only_named_groups?(:admin, :user)).to be_false
+      expect(user.in_only_named_groups?(:admin, :user, :test)).to be_false
+
+      expect(User.in_only_named_groups(:admin, :user, :poster).first).to eql(user)
+      expect(User.in_only_named_groups(:admin, :user, :poster, :foo)).to be_empty
+      expect(User.in_only_named_groups(:admin)).to be_empty
     end
 
     it "checks if named groups are shared" do

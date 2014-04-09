@@ -430,9 +430,15 @@ module Groupify
       end
       
       def in_all_named_groups?(*args)
-        opts = (args.last.is_a?(Hash) ? args.pop : {})
-        groups = args.flatten.to_set
-        groups == named_groups(opts).to_set
+        opts = args.extract_options!
+        named_groups = args.flatten.to_set
+        named_groups <= self.named_groups(opts).to_set
+      end
+
+      def in_only_named_groups?(*args)
+        opts = args.extract_options!
+        named_groups = args.flatten.to_set
+        named_groups == self.named_groups(opts).to_set
       end
       
       def shares_any_named_group?(other, opts={})
@@ -472,7 +478,29 @@ module Groupify
             scope = joins(:group_memberships).
             group(:"group_memberships.member_id").
             where(:group_memberships => {:group_name => named_groups}).
-            having("COUNT(group_memberships.group_name) = #{named_groups.count}").
+            having("COUNT(DISTINCT group_memberships.group_name) = #{named_groups.count}").
+            uniq
+
+            if opts[:as]
+              scope.where(group_memberships: {membership_type: opts[:as]})
+            else
+              scope
+            end
+          else
+            none
+          end
+        end
+
+        def in_only_named_groups(*args)
+          opts = args.extract_options!
+          named_groups = args.flatten
+
+          if named_groups.present?
+            named_groups = named_groups.map(&:to_s)
+
+            scope = joins(:group_memberships).
+                group("group_memberships.member_id").
+                having("COUNT(DISTINCT group_memberships.group_name) = #{named_groups.count}").
             uniq
 
             if opts[:as]

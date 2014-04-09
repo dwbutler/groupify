@@ -158,7 +158,11 @@ module Groupify
       end
       
       def in_all_groups?(*groups)
-        Set.new(groups.flatten) == Set.new(self.named_groups)
+        groups.flatten.to_set <= self.groups.to_set
+      end
+
+      def in_only_groups?(*groups)
+        groups.flatten.to_set == self.groups.to_set
       end
       
       def shares_any_group?(other)
@@ -170,14 +174,18 @@ module Groupify
         def group_class_name=(klass);  @group_class_name = klass; end
         
         def in_group(group)
-          group.present? ? where(:group_ids.in => [group.id]) : none
+          group.present? ? self.in(group_ids: group.id) : none
         end
         
         def in_any_group(*groups)
-          groups.present? ? where(:group_ids.in => groups.flatten.map(&:id)) : none
+          groups.present? ? self.in(group_ids: groups.flatten.map(&:id)) : none
+        end
+
+        def in_all_groups(*groups)
+          groups.present? ? where(:group_ids.all => groups.flatten.map(&:id)) : none
         end
         
-        def in_all_groups(*groups)
+        def in_only_groups(*groups)
           groups.present? ? where(:group_ids => groups.flatten.map(&:id)) : none
         end
         
@@ -223,7 +231,11 @@ module Groupify
       end
       
       def in_all_named_groups?(*groups)
-        Set.new(groups.flatten) == Set.new(self.named_groups)
+        groups.flatten.to_set <= self.named_groups.to_set
+      end
+
+      def in_only_named_groups?(*groups)
+        groups.flatten.to_set == self.named_groups.to_set
       end
       
       def shares_any_named_group?(other)
@@ -232,14 +244,18 @@ module Groupify
       
       module ClassMethods
         def in_named_group(named_group)
-          named_group.present? ? where(:named_groups.in => [named_group]) : none
+          named_group.present? ? self.in(named_groups: named_group) : none
         end
         
         def in_any_named_group(*named_groups)
-          named_groups.present? ? where(:named_groups.in => named_groups.flatten) : none
+          named_groups.present? ? self.in(named_groups: named_groups.flatten) : none
+        end
+
+        def in_all_named_groups(*named_groups)
+          named_groups.present? ? where(:named_groups.all => named_groups.flatten) : none
         end
         
-        def in_all_named_groups(*named_groups)
+        def in_only_named_groups(*named_groups)
           named_groups.present? ? where(:named_groups => named_groups.flatten) : none
         end
         

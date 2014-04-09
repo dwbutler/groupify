@@ -136,12 +136,24 @@ user2.shares_any_named_group?(user1)
 ### Query for groups & members:
 
 ```ruby
-User.in_group(group)         # Find all users in this group
-User.in_named_group(:admin)  # Find all users in this named group
-Group.with_member(user)      # Find all groups with this user
+User.in_group(group)                # Find all users in this group
+User.in_named_group(:admin)         # Find all users in this named group
+Group.with_member(user)             # Find all groups with this user
 
-User.shares_any_group(user)       # Find all users that share any groups with this user
-User.shares_any_named_group(user) # Find all users that share any named groups with this user
+User.shares_any_group(user)         # Find all users that share any groups with this user
+User.shares_any_named_group(user)   # Find all users that share any named groups with this user
+```
+
+### Check if member belongs to any/all groups
+
+```ruby
+User.in_any_group(group1, group2)               # Find users that belong to any of these groups
+User.in_all_groups(group1, group2)              # Find users that belong to all of these groups
+Widget.in_only_groups(group2, group3)           # Find widgets that belong to only these groups
+
+widget.in_any_named_group?(:foo, :bar)          # Check if widget belongs to any of these named groups
+user.in_all_named_groups?(:manager, :poster)    # Check if user belongs to all of these named groups
+user.in_only_named_groups?(:employee, :worker)  # Check if user belongs to only these named groups
 ```
 
 ### Merge one group into another:

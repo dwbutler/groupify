@@ -205,22 +205,43 @@ describe Groupify::Mongoid do
     user.groups << group
     group2 = MongoidGroup.create!
     user.groups << group2
+
+    group3 = user.groups.create!
+
+    user.save!
+
+    group4 = MongoidGroup.create!
     
-    expect(user.groups).to include(group)
-    expect(user.groups).to include(group2)
-    
+    expect(user.groups).to include(group, group2, group3)
+
     expect(MongoidUser.in_group(group).first).to eql(user)
     expect(MongoidUser.in_group(group2).first).to eql(user)
+    expect(user.in_group?(group)).to be_true
+    expect(user.in_group?(group4)).to be_false
     
-    expect(MongoidUser.in_any_group(group).first).to eql(user)
+    expect(MongoidUser.in_any_group(group, group4).first).to eql(user)
+    expect(MongoidUser.in_any_group(group4)).to be_empty
+    expect(user.in_any_group?(group2, group4)).to be_true
+    expect(user.in_any_group?(group4)).to be_false
+
     expect(MongoidUser.in_all_groups(group, group2).first).to eql(user)
-    expect(MongoidUser.in_all_groups([group, group2]).first).to eql(user)
+    expect(MongoidUser.in_all_groups([group, group3]).first).to eql(user)
+    expect(MongoidUser.in_all_groups([group2, group4])).to be_empty
+    expect(user.in_all_groups?(group, group3)).to be_true
+    expect(user.in_all_groups?(group, group4)).to be_false
+
+    expect(MongoidUser.in_only_groups(group, group2, group3).first).to eql(user)
+    expect(MongoidUser.in_only_groups(group, group2, group3, group4)).to be_empty
+    expect(MongoidUser.in_only_groups(group, group2)).to be_empty
+    expect(user.in_only_groups?(group, group2, group3)).to be_true
+    expect(user.in_only_groups?(group, group2)).to be_false
+    expect(user.in_only_groups?(group, group2, group3, group4)).to be_false
   end
   
   it "members can have named groups" do
     user.named_groups << :admin
-    user.named_groups << :user
-    user.save
+    user.named_groups.concat [:user, :poster]
+    user.save!
     expect(user.named_groups).to include(:admin)
     
     expect(user.in_named_group?(:admin)).to be_true
@@ -228,13 +249,18 @@ describe Groupify::Mongoid do
     expect(user.in_all_named_groups?(:admin, :user)).to be_true
     expect(user.in_all_named_groups?(:admin, :user, :test)).to be_false
 
+    expect(user.in_only_named_groups?(:admin, :user, :poster)).to be_true
+    expect(user.in_only_named_groups?(:admin, :user)).to be_false
+    expect(user.in_only_named_groups?(:admin, :user, :foo)).to be_false
+
     expect(MongoidUser.in_named_group(:admin).first).to eql(user)
     expect(MongoidUser.in_any_named_group(:admin, :test).first).to eql(user)
     expect(MongoidUser.in_all_named_groups(:admin, :user).first).to eql(user)
+    expect(MongoidUser.in_only_named_groups(:admin, :user, :poster).first).to eql(user)
     
     # Uniqueness
     user.named_groups << :admin
-    user.save
+    user.save!
     expect(user.named_groups.count{|g| g == :admin}).to eq(1)
   end
   
