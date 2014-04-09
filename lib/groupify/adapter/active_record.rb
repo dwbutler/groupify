@@ -160,7 +160,7 @@ module Groupify
 
         def override_member_accessor(association_name)
           define_method(association_name) do |*args|
-            opts = args.last.is_a?(Hash) ? args.pop : {}
+            opts = args.extract_options!
             membership_type = opts[:as]
             if membership_type.present?
               super().as(membership_type)
@@ -241,7 +241,7 @@ module Groupify
       end
 
       def groups(*args)
-        opts = args.last.is_a?(Hash) ? args.pop : {}
+        opts = args.extract_options!
         groups = super
         if opts[:as]
           groups.as(opts[:as])
@@ -260,7 +260,7 @@ module Groupify
       end
       
       def in_any_group?(*args)
-        opts = (args.last.is_a?(Hash) ? args.pop : {})
+        opts = args.extract_options!
         groups = args
 
         groups.flatten.each do |group|
@@ -391,7 +391,7 @@ module Groupify
       alias_method :<<, :add
 
       def merge(*args)
-        opts = (args.last.is_a?(Hash) ? args.pop : {})
+        opts = args.extract_options!
         named_groups = args.flatten
         named_groups.each do |named_group|
           add(named_group, opts)
@@ -453,7 +453,7 @@ module Groupify
       end
       
       def in_any_named_group?(*args)
-        opts = (args.last.is_a?(Hash) ? args.pop : {})
+        opts = args.extract_options!
         groups = args.flatten
         groups.each do |group|
           return true if in_named_group?(group, opts)
@@ -489,7 +489,7 @@ module Groupify
         end
         
         def in_any_named_group(*args)
-          opts = (args.last.is_a?(Hash) ? args.pop : {})
+          opts = args.extract_options!
           named_groups = args.flatten
           return none unless named_groups.present?
           scope = joins(:group_memberships).where(group_memberships: {group_name: named_groups.flatten}).uniq
@@ -501,7 +501,7 @@ module Groupify
         end
         
         def in_all_named_groups(*args)
-          opts = (args.last.is_a?(Hash) ? args.pop : {})
+          opts = args.extract_options!
           named_groups = args.flatten
 
           if named_groups.present?
