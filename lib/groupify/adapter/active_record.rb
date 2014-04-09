@@ -273,7 +273,7 @@ module Groupify
         opts = args.extract_options!
         groups = args
 
-        groups.flatten.to_set <= self.groups(opts).to_set
+        groups.flatten.to_set.subset? self.groups(opts).to_set
       end
 
       def in_only_groups?(*args)
@@ -464,7 +464,7 @@ module Groupify
       def in_all_named_groups?(*args)
         opts = args.extract_options!
         named_groups = args.flatten.to_set
-        named_groups <= self.named_groups(opts).to_set
+        named_groups.subset? self.named_groups(opts).to_set
       end
 
       def in_only_named_groups?(*args)

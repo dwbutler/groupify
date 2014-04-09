@@ -158,7 +158,7 @@ module Groupify
       end
       
       def in_all_groups?(*groups)
-        groups.flatten.to_set <= self.groups.to_set
+        groups.flatten.to_set.subset? self.groups.to_set
       end
 
       def in_only_groups?(*groups)
@@ -231,7 +231,7 @@ module Groupify
       end
       
       def in_all_named_groups?(*groups)
-        groups.flatten.to_set <= self.named_groups.to_set
+        groups.flatten.to_set.subset? self.named_groups.to_set
       end
 
       def in_only_named_groups?(*groups)
