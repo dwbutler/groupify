@@ -269,8 +269,18 @@ module Groupify
         return false
       end
       
-      def in_all_groups?(*groups)
-        Set.new(groups.flatten) == Set.new(self.named_groups)
+      def in_all_groups?(*args)
+        opts = args.extract_options!
+        groups = args
+
+        groups.flatten.to_set <= self.groups(opts).to_set
+      end
+
+      def in_only_groups?(*args)
+        opts = args.extract_options!
+        groups = args
+
+        groups.flatten.to_set == self.groups(opts).to_set
       end
       
       def shares_any_group?(other, opts={})
@@ -286,25 +296,25 @@ module Groupify
 
           scope = joins(:group_memberships).where(:group_memberships => {:group_id => group.id}).uniq
           if opts[:as]
-            scope.where(:group_memberships => {:membership_type => opts[:as]})
+            scope = scope.where(:group_memberships => {:membership_type => opts[:as]})
           end
           scope
         end
         
         def in_any_group(*args)
-          opts = (args.last.is_a?(Hash) ? args.pop : {})
+          opts = args.extract_options!
           groups = args
           return none unless groups.present?
           
           scope = joins(:group_memberships).where(:group_memberships => {:group_id => groups.flatten.map(&:id)}).uniq
           if opts[:as]
-            scope.where(:group_memberships => {:membership_type => opts[:as]})
+            scope = scope.where(:group_memberships => {:membership_type => opts[:as]})
           end
           scope
         end
         
         def in_all_groups(*args)
-          opts = (args.last.is_a?(Hash) ? args.pop : {})
+          opts = args.extract_options!
           groups = args
 
           if groups.present?
@@ -317,7 +327,29 @@ module Groupify
             uniq
 
             if opts[:as]
-              scope.where(:group_memberships => {:membership_type => opts[:as]})
+              scope = scope.where(:group_memberships => {:membership_type => opts[:as]})
+            end
+
+            scope
+          else
+            none
+          end
+        end
+
+        def in_only_groups(*args)
+          opts = args.extract_options!
+          groups = args
+
+          if groups.present?
+            groups = groups.flatten
+
+            scope = joins(:group_memberships).
+                group(:"group_memberships.member_id").
+                having("COUNT(DISTINCT group_memberships.group_id) = #{groups.count}").
+                uniq
+
+            if opts[:as]
+              scope = scope.where(:group_memberships => {:membership_type => opts[:as]})
             end
 
             scope
