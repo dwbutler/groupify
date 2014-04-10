@@ -1,6 +1,9 @@
 # Groupify [![Build Status](https://secure.travis-ci.org/dwbutler/groupify.png)](http://travis-ci.org/dwbutler/groupify) [![Dependency Status](https://gemnasium.com/dwbutler/groupify.png)](https://gemnasium.com/dwbutler/groupify) [![Code Climate](https://codeclimate.com/github/dwbutler/groupify.png)](https://codeclimate.com/github/dwbutler/groupify)
 
-Adds group and membership functionality to Rails models.
+Adds group and membership functionality to Rails models. Defines a polymorphic
+relationship between a Group model and any member model. Don't need a Group
+model? Use named groups instead to add members to named groups such as
+`:admin` or `"Team Rocketpants"`.
 
 The following ORMs are supported:
 Mongoid 3.1 & 4.0, ActiveRecord 3.2 & 4.x
@@ -122,15 +125,21 @@ group.add(user, widget, task)
 
 ```ruby
 user.named_groups << :admin
-user.in_named_group?(:admin)
-# => true
+user.in_named_group?(:admin)        # => true
+```
+
+# Remove from groups
+
+```ruby
+users.groups.destroy(group)          # Destroys this user's group membership for this group
+group.users.delete(user)             # Deletes this group's group membership for this user
 ```
 
 ### Check if two members share any of the same groups:
 
 ```ruby
-user1.shares_any_group?(user2)
-user2.shares_any_named_group?(user1)
+user1.shares_any_group?(user2)          # Returns true if user1 and user2 are in any of the same groups
+user2.shares_any_named_group?(user1)    # Also works for named groups
 ```
 
 ### Query for groups & members:
@@ -189,6 +198,10 @@ user.named_groups.add user, as: 'manager'
 user.groups.as(:manager)
 user.named_groups(as: 'manager')
 Group.with_member(user, as: 'manager')
+
+# Remove a member's membership type from a group
+group.users.delete(user, as: 'manager')         # Deletes this group's 'manager' group membership for this user
+user.groups.destroy(group, as: 'employee')      # Destroys this user's 'employee' group membrership for this group
 
 # Find all members that have a certain membership type in a group
 User.in_group(group, as: :manager)

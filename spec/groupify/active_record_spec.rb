@@ -163,6 +163,17 @@ describe Groupify::ActiveRecord do
     expect(Group.with_member(user).first).to eq(group)
   end
 
+  it "removes members from a group" do
+    group.add user
+    group.add widget
+
+    group.users.destroy(user)
+    widget.groups.destroy(group)
+
+    expect(group.widgets).to_not include(widget)
+    expect(user.groups).to_not include(group)
+  end
+
   it "removes the membership relation when a member is destroyed" do
     group.add user
     user.destroy
@@ -268,6 +279,17 @@ describe Groupify::ActiveRecord do
     it "queries named groups" do
       expect(user.named_groups).to include(:user, :admin)
     end
+
+    it "removes named groups" do
+      user.named_groups.delete(:admin, :poster)
+      expect(user.named_groups).to include(:user)
+      expect(user.named_groups).to_not include(:admin, :poster)
+    end
+
+    it "removes all named groups" do
+      user.named_groups.destroy_all
+      expect(user.named_groups).to be_empty
+    end
      
     it "checks if a member belongs to one named group" do
       expect(user.in_named_group?(:admin)).to be_true
@@ -341,6 +363,34 @@ describe Groupify::ActiveRecord do
       expect(group.users(as: :manager)).to include(user, manager)
     end
 
+    context "when removing" do
+      before(:each) do
+        group.add user, as: 'employee'
+        group.add user, as: 'manager'
+      end
+
+      it "removes all membership types when removing a member from a group" do
+        group.add user
+
+        group.users.destroy(user)
+
+        expect(user.groups).to_not include(group)
+        expect(group.users).to_not include(user)
+      end
+
+      it "removes a specific membership type from the member side" do
+        user.groups.delete(group, as: 'manager')
+        expect(user.groups.as('manager')).to be_empty
+        expect(user.groups.as('employee')).to include(group)
+      end
+
+      it "removes a specific membership type from the group side" do
+        group.users.delete(user, as: :manager)
+        expect(user.groups.as('manager')).to be_empty
+        expect(user.groups.as('employee')).to include(group)
+      end
+    end
+
     it "finds members by membership type" do
       group.add user, as: 'manager'
       expect(User.as(:manager)).to include(user)
@@ -348,7 +398,7 @@ describe Groupify::ActiveRecord do
 
     it "finds members by group with membership type" do
       group.add user, as: 'employee'
-      
+
       expect(User.in_group(group, as: 'employee').first).to eql(user)
       expect(User.in_group(group).as('employee').first).to eql(user)
     end
@@ -458,6 +508,12 @@ describe Groupify::ActiveRecord do
 
       expect(user.shares_any_named_group?(project, as: 'manager')).to be_true
       expect(User.shares_any_named_group(project, as: 'manager').to_a).to include(user)
+    end
+
+    it "removes named groups with a certain membership type" do
+      user.named_groups.delete(:team1, as: :employee)
+      expect(user.named_groups.as(:employee)).to include(:team2)
+      expect(user.named_groups.as(:employee)).to_not include(:team1)
     end
   end
 end

@@ -137,23 +137,49 @@ module Groupify
           member_klass
         end
 
+        module MemberAssociationExtensions
+          def as(membership_type)
+            where(group_memberships: {membership_type: membership_type})
+          end
+
+          def delete(*args)
+            opts = args.extract_options!
+            members = args
+
+            if opts[:as]
+              proxy_association.owner.group_memberships.
+                  where(member_id: members.map(&:id), member_type: proxy_association.reflection.options[:source_type]).
+                  as(opts[:as]).
+                  delete_all
+            else
+              super(*members)
+            end
+          end
+
+          def destroy(*args)
+            opts = args.extract_options!
+            members = args
+
+            if opts[:as]
+              proxy_association.owner.group_memberships.
+                  where(member_id: members.map(&:id), member_type: proxy_association.reflection.options[:source_type]).
+                  as(opts[:as]).
+                  destroy_all
+            else
+              super(*members)
+            end
+          end
+        end
+
         def associate_member_class(member_klass)
           association_name = member_klass.name.to_s.pluralize.underscore.to_sym
           source_type = member_klass.base_class
 
-          has_many association_name, through: :group_memberships, source: :member, source_type: source_type do
-            def as(membership_type)
-              where(group_memberships: {membership_type: membership_type})
-            end
-          end
+          has_many association_name, through: :group_memberships, source: :member, source_type: source_type, extend: MemberAssociationExtensions
           override_member_accessor(association_name)
 
           if member_klass == default_member_class
-            has_many :members, through: :group_memberships, source: :member, source_type: source_type do
-              def as(membership_type)
-                where(group_memberships: {membership_type: membership_type})
-              end
-            end
+            has_many :members, through: :group_memberships, source: :member, source_type: source_type, extend: MemberAssociationExtensions
             override_member_accessor(:members)
           end
         end
@@ -237,17 +263,39 @@ module Groupify
           def as(membership_type)
             where(group_memberships: {membership_type: membership_type})
           end
+
+          def delete(*args)
+            opts = args.extract_options!
+            groups = args.flatten
+
+            if opts[:as]
+              proxy_association.owner.group_memberships.where(group_id: groups.map(&:id)).as(opts[:as]).delete_all
+            else
+              super(*groups)
+            end
+          end
+
+          def destroy(*args)
+            opts = args.extract_options!
+            groups = args.flatten
+
+            if opts[:as]
+              proxy_association.owner.group_memberships.where(group_id: groups.map(&:id)).as(opts[:as]).destroy_all
+            else
+              super(*groups)
+            end
+          end
         end
 
-      def groups(*args)
-        opts = args.extract_options!
-        groups = super
-        if opts[:as]
-          groups.as(opts[:as])
-        else
-          groups
+        def groups(*args)
+          opts = args.extract_options!
+          groups = super
+          if opts[:as]
+            groups.as(opts[:as])
+          else
+            groups
+          end
         end
-      end
       end
       
       def in_group?(group, opts={})
@@ -290,7 +338,7 @@ module Groupify
       module ClassMethods
         def group_class_name; @group_class_name ||= 'Group'; end
         def group_class_name=(klass);  @group_class_name = klass; end
-        
+
         def as(membership_type)
           joins(:group_memberships).where(group_memberships: {membership_type: membership_type})
         end
@@ -405,6 +453,7 @@ module Groupify
       alias_method :concat, :merge
 
       def include?(named_group, opts={})
+        named_group = named_group.to_sym
         if opts[:as]
           as(opts[:as]).include?(named_group)
         else
@@ -412,9 +461,49 @@ module Groupify
         end
       end
 
+      def delete(*args)
+        opts = args.extract_options!
+        named_groups = args.flatten.compact
+
+        remove(named_groups, :delete_all, opts)
+      end
+
+      def destroy(*args)
+        opts = args.extract_options!
+        named_groups = args.flatten.compact
+
+        remove(named_groups, :destroy_all, opts)
+      end
+
+      def clear
+        @named_group_memberships.delete_all
+        super
+      end
+
+      alias_method :delete_all, :clear
+      alias_method :destroy_all, :clear
+
       # Criteria to filter by membership type
       def as(membership_type)
         @named_group_memberships.as(membership_type).pluck(:group_name).map(&:to_sym)
+      end
+
+      protected
+
+      def remove(named_groups, method, opts)
+        if named_groups.present?
+          scope = @named_group_memberships.where(group_name: named_groups)
+          if opts[:as]
+            scope = scope.where(membership_type: opts[:as])
+          end
+          scope
+
+          scope.send(method)
+
+          named_groups.each do |named_group|
+            @hash.delete(named_group)
+          end
+        end
       end
     end
 
@@ -507,7 +596,7 @@ module Groupify
 
           scope
         end
-        
+
         def in_all_named_groups(*args)
           opts = args.extract_options!
           named_groups = args.flatten
@@ -541,7 +630,7 @@ module Groupify
             scope = joins(:group_memberships).
                 group("group_memberships.member_id").
                 having("COUNT(DISTINCT group_memberships.group_name) = #{named_groups.count}").
-            uniq
+                uniq
 
             if opts[:as]
               scope = scope.as(opts[:as])
