@@ -1,5 +1,5 @@
-require 'spec_helper'
 require 'active_record'
+require 'active_support/deprecation'
 
 puts "ActiveRecord version #{ActiveSupport::VERSION::STRING}"
 

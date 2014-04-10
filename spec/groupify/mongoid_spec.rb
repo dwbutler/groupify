@@ -1,5 +1,3 @@
-require 'spec_helper'
-
 RSpec.configure do |config|
   config.order = "random"
   
@@ -15,6 +13,9 @@ RSpec.configure do |config|
     DatabaseCleaner[:mongoid].clean
   end
 end
+
+require 'active_support'
+require 'active_support/deprecation'
 
 require 'mongoid'
 puts "Mongoid version #{Mongoid::VERSION}"
