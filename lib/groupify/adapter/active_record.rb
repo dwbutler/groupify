@@ -238,7 +238,6 @@ module Groupify
             where(group_memberships: {membership_type: membership_type})
           end
         end
-      end
 
       def groups(*args)
         opts = args.extract_options!
@@ -248,6 +247,7 @@ module Groupify
         else
           groups
         end
+      end
       end
       
       def in_group?(group, opts={})
@@ -291,12 +291,16 @@ module Groupify
         def group_class_name; @group_class_name ||= 'Group'; end
         def group_class_name=(klass);  @group_class_name = klass; end
         
+        def as(membership_type)
+          joins(:group_memberships).where(group_memberships: {membership_type: membership_type})
+        end
+        
         def in_group(group, opts={})
           return none unless group.present?
 
           scope = joins(:group_memberships).where(:group_memberships => {:group_id => group.id}).uniq
           if opts[:as]
-            scope = scope.where(:group_memberships => {:membership_type => opts[:as]})
+            scope = scope.as(opts[:as])
           end
           scope
         end
@@ -308,7 +312,7 @@ module Groupify
           
           scope = joins(:group_memberships).where(:group_memberships => {:group_id => groups.flatten.map(&:id)}).uniq
           if opts[:as]
-            scope = scope.where(:group_memberships => {:membership_type => opts[:as]})
+            scope = scope.as(opts[:as])
           end
           scope
         end
@@ -327,7 +331,7 @@ module Groupify
             uniq
 
             if opts[:as]
-              scope = scope.where(:group_memberships => {:membership_type => opts[:as]})
+              scope = scope.as(opts[:as])
             end
 
             scope
@@ -349,7 +353,7 @@ module Groupify
                 uniq
 
             if opts[:as]
-              scope = scope.where(:group_memberships => {:membership_type => opts[:as]})
+              scope = scope.as(opts[:as])
             end
 
             scope
@@ -478,11 +482,15 @@ module Groupify
       end
       
       module ClassMethods
+        def as(membership_type)
+          joins(:group_memberships).where(group_memberships: {membership_type: membership_type})
+        end
+
         def in_named_group(named_group, opts={})
           return none unless named_group.present?
           scope = joins(:group_memberships).where(group_memberships: {group_name: named_group}).uniq
           if opts[:as]
-            scope.where(group_memberships: {membership_type: opts[:as]})
+            scope = scope.as(opts[:as])
           else
             scope
           end
@@ -494,10 +502,10 @@ module Groupify
           return none unless named_groups.present?
           scope = joins(:group_memberships).where(group_memberships: {group_name: named_groups.flatten}).uniq
           if opts[:as]
-            scope.where(group_memberships: {membership_type: opts[:as]})
-          else
-            scope
+            scope = scope.as(opts[:as])
           end
+
+          scope
         end
         
         def in_all_named_groups(*args)
@@ -514,10 +522,10 @@ module Groupify
             uniq
 
             if opts[:as]
-              scope.where(group_memberships: {membership_type: opts[:as]})
-            else
-              scope
+              scope = scope.as(opts[:as])
             end
+
+            scope
           else
             none
           end
@@ -536,10 +544,10 @@ module Groupify
             uniq
 
             if opts[:as]
-              scope.where(group_memberships: {membership_type: opts[:as]})
-            else
-              scope
+              scope = scope.as(opts[:as])
             end
+
+            scope
           else
             none
           end

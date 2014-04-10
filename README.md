@@ -192,12 +192,19 @@ Group.with_member(user, as: 'manager')
 
 # Find all members that have a certain membership type in a group
 User.in_group(group, as: :manager)
+User.in_group(group).as(:employee)
+
+# Find all members of a certain membership type regardless of group
+User.as(:manager)    # Find users that are managers, we don't care what group
+
+# Check if a member belongs to any/all groups with a certain membership type
+user.in_all_groups?(group1, group2).as('manager')
 
 # Find all members that share the same group with the same membership type
-Widget.shares_any_group(user, as: "Moon Launch Project")
+Widget.shares_any_group(user).as("Moon Launch Project")
 
 # Check is one member belongs to the same group as another member with a certain membership type
-user.shares_any_group?(widget, as: 'employee')
+user.shares_any_group?(widget).as('employee')
 ```
 
 ### But wait, there's more!

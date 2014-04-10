@@ -109,8 +109,8 @@ end
 #ActiveRecord::Base.logger = Logger.new(STDOUT)
 
 describe Groupify::ActiveRecord do
-  let(:user) { User.create! }
-  let(:group) { Group.create! }
+  let!(:user) { User.create! }
+  let!(:group) { Group.create! }
   let(:widget) { Widget.create! }
 
   it "members and groups are empty when initialized" do
@@ -341,10 +341,16 @@ describe Groupify::ActiveRecord do
       expect(group.users(as: :manager)).to include(user, manager)
     end
 
+    it "finds members by membership type" do
+      group.add user, as: 'manager'
+      expect(User.as(:manager)).to include(user)
+    end
+
     it "finds members by group with membership type" do
       group.add user, as: 'employee'
       
       expect(User.in_group(group, as: 'employee').first).to eql(user)
+      expect(User.in_group(group).as('employee').first).to eql(user)
     end
 
     it "finds the group a member belongs to with a membership type" do
