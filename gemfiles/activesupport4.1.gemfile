@@ -1,0 +1,28 @@
+source 'https://rubygems.org'
+
+group :development do
+  gem 'pry'
+end
+
+gem 'activerecord', "~> 4.1"
+
+# TODO: Enable once Mongoid 4 is released
+#gem "mongoid", ">= 4.0"
+
+#gem "mongoid", :github => "mongoid/mongoid"
+gem "mongoid", "4.0.0.beta1"
+gem 'mongoid-rspec'
+
+gem 'database_cleaner'
+gem "rspec"
+gem "rake"
+
+platform :ruby do
+  gem 'sqlite3'
+end
+
+platform :jruby do
+  gem "jdbc-sqlite3"
+  # See https://github.com/jruby/activerecord-jdbc-adapter/issues/253
+  gem "activerecord-jdbcsqlite3-adapter", :github => 'jruby/activerecord-jdbc-adapter', :branch => 'v1.3.0.beta2'
+end

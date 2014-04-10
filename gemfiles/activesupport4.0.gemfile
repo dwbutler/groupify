@@ -1,6 +1,10 @@
 source 'https://rubygems.org'
 
-gem 'activerecord', "~> 4"
+group :development do
+  gem 'pry'
+end
+
+gem 'activerecord', "~> 4.0"
 
 # TODO: Enable once Mongoid 4 is released
 #gem "mongoid", ">= 4.0"

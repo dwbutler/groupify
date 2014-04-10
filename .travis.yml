@@ -11,7 +11,8 @@ rvm:
   - rbx
 gemfile:
   - gemfiles/activesupport3.gemfile
-  - gemfiles/activesupport4.gemfile
+  - gemfiles/activesupport4.0.gemfile
+  - gemfiles/activesupport4.1.gemfile
 matrix:
   allow_failures:
     - rvm: rbx
