@@ -1,5 +1,4 @@
 require 'active_record'
-require 'active_support/deprecation'
 
 puts "ActiveRecord version #{ActiveSupport::VERSION::STRING}"
 
@@ -62,7 +61,6 @@ ActiveRecord::Schema.define(:version => 1) do
   end
 end
 
-require 'groupify'
 require 'groupify/adapter/active_record'
 
 class User < ActiveRecord::Base  

@@ -1,8 +1,10 @@
 require 'bundler/setup'
 
-Bundler.require(:default, :test, :development)
+require 'active_support'
+require 'active_support/deprecation'
+require 'active_support/dependencies/autoload'
 
-#require 'pry'
+Bundler.require(:default, :development)
 
 JRUBY = defined?(JRUBY_VERSION)
 

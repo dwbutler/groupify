@@ -14,10 +14,6 @@ RSpec.configure do |config|
   end
 end
 
-require 'active_support'
-require 'active_support/deprecation'
-require 'active_support/dependencies/autoload'
-
 require 'mongoid'
 puts "Mongoid version #{Mongoid::VERSION}"
 
@@ -31,7 +27,6 @@ Mongoid::Config.sessions = {
 }
 #Moped.logger = Logger.new(STDOUT)
 
-require 'groupify'
 require 'groupify/adapter/mongoid'
 
 class MongoidUser
