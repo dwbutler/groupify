@@ -55,9 +55,9 @@ module Groupify
         @member_klasses ||= Set.new
       end
 
-      def members
-        self.class.default_member_class.any_in(:group_ids => [self.id])
-      end
+      # def members
+      #   self.class.default_member_class.any_in(:group_ids => [self.id])
+      # end
 
       def member_classes
         self.class.member_classes
@@ -80,7 +80,7 @@ module Groupify
         end
         
         def default_member_class
-          @default_member_class ||= register(User)
+          @default_member_class ||= User rescue false
         end
 
         def default_member_class=(klass)
@@ -124,7 +124,18 @@ module Groupify
 
         def register(member_klass)
           (@member_klasses ||= Set.new) << member_klass
+          associate_member_class(member_klass)
           member_klass
+        end
+
+        def associate_member_class(member_klass)
+          association_name = member_klass.name.to_s.pluralize.underscore.to_sym
+
+          has_many association_name, class_name: member_klass.to_s, foreign_key: 'group_ids'
+
+          if member_klass == default_member_class
+            has_many :members, class_name: member_klass.to_s, foreign_key: 'group_ids'
+          end
         end
       end
     end

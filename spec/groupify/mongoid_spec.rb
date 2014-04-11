@@ -149,7 +149,7 @@ describe Groupify::Mongoid do
     end
 
     it "removes members from a group" do
-      pending "need to create true relation to members on group"
+      pending
       group.add user
       group.add widget
 
