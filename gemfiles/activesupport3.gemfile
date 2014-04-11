@@ -6,7 +6,6 @@ end
 
 gem 'activerecord', "~> 3.2"
 gem "mongoid", ">= 3.0", "< 4"
-gem 'mongoid-rspec', '>= 1.5.1'
 
 gem 'database_cleaner'
 gem "rspec"

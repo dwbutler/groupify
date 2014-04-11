@@ -16,15 +16,19 @@ end
 
 require 'active_support'
 require 'active_support/deprecation'
+require 'active_support/dependencies/autoload'
 
 require 'mongoid'
 puts "Mongoid version #{Mongoid::VERSION}"
 
-require 'mongoid-rspec'
-include Mongoid::Matchers
-
 # Load mongoid config
-Mongoid.load!('./spec/groupify/mongoid.yml', :test)
+#Mongoid.load!('./spec/groupify/mongoid.yml', :test)
+Mongoid::Config.sessions = {
+  default: {
+    database: 'groupify',
+    hosts: [ "localhost:27017" ]
+  }
+}
 #Moped.logger = Logger.new(STDOUT)
 
 require 'groupify'
@@ -71,22 +75,6 @@ class MongoidProject < MongoidGroup
   has_members :mongoid_managers
   alias_method :issues, :mongoid_issues
   alias_method :managers, :mongoid_managers
-end
-
-describe MongoidGroup do
-  it { should respond_to :members}
-  it { should respond_to :add }
-end
-
-describe MongoidUser do
-  it { should respond_to :groups}
-  it { should respond_to :in_group?}
-  it { should respond_to :in_any_group?}
-  it { should respond_to :in_all_groups?}
-  it { should respond_to :shares_any_group?}
-  
-  # Mongoid specific
-  it { should have_and_belong_to_many(:groups).of_type(MongoidGroup) }
 end
 
 describe Groupify::Mongoid do
