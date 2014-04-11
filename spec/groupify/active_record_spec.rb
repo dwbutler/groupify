@@ -167,7 +167,7 @@ describe Groupify::ActiveRecord do
         group.add user
         group.add widget
 
-        group.users.destroy(user)
+        group.users.delete(user)
         widget.groups.destroy(group)
 
         expect(group.widgets).to_not include(widget)

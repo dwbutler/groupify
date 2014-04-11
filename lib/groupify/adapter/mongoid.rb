@@ -96,11 +96,6 @@ module Groupify
         def has_members(name)
           klass = name.to_s.classify.constantize
           register(klass)
-
-          # Define specific members accessor, i.e. group.users
-          define_method name.to_s.pluralize.underscore do
-            klass.any_in(:group_ids => [self.id])
-          end
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
@@ -131,10 +126,18 @@ module Groupify
         def associate_member_class(member_klass)
           association_name = member_klass.name.to_s.pluralize.underscore.to_sym
 
-          has_many association_name, class_name: member_klass.to_s, foreign_key: 'group_ids'
+          has_many association_name, class_name: member_klass.to_s, dependent: :nullify, foreign_key: 'group_ids' do
+            def destroy(*args)
+              delete(*args)
+            end
+          end
 
           if member_klass == default_member_class
-            has_many :members, class_name: member_klass.to_s, foreign_key: 'group_ids'
+            has_many :members, class_name: member_klass.to_s, foreign_key: 'group_ids' do
+              def destroy(*args)
+                delete(*args)
+              end
+            end
           end
         end
       end
@@ -154,7 +157,11 @@ module Groupify
       extend ActiveSupport::Concern
       
       included do
-        has_and_belongs_to_many :groups, autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name
+        has_and_belongs_to_many :groups, autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name do
+          def destroy(*args)
+            delete(*args)
+          end
+        end
       end
       
       def in_group?(group)

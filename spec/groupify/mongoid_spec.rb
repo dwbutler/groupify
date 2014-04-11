@@ -132,11 +132,10 @@ describe Groupify::Mongoid do
     end
 
     it "removes members from a group" do
-      pending
       group.add user
       group.add widget
 
-      group.users.destroy(user)
+      group.users.delete(user)
       widget.groups.destroy(group)
 
       expect(group.widgets).to_not include(widget)
