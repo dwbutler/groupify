@@ -143,7 +143,7 @@ module Groupify
       extend ActiveSupport::Concern
       
       included do
-        has_and_belongs_to_many :groups, :autosave => true, :inverse_of => nil, :class_name => @group_class_name
+        has_and_belongs_to_many :groups, autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name
       end
       
       def in_group?(group)
@@ -195,6 +195,37 @@ module Groupify
         
       end
     end
+
+    module NamedGroupCollection
+      def <<(named_group)
+        named_group = named_group.to_sym
+        super(named_group)
+        uniq!
+        self
+      end
+      def merge(*named_groups)
+        named_groups.flatten.each do |named_group|
+          add(named_group)
+        end
+      end
+
+      def delete(*named_groups)
+        named_groups.flatten.each do |named_group|
+          super(named_group)
+        end
+      end
+
+      def self.extended(base)
+        base.class_eval do
+          alias_method :delete_all, :clear
+          alias_method :destroy_all, :clear
+          alias_method :push, :<<
+          alias_method :add, :<<
+          alias_method :concat, :merge
+          alias_method :destroy, :delete
+        end
+      end
+    end
     
     # Usage:
     #    class User
@@ -210,12 +241,10 @@ module Groupify
       extend ActiveSupport::Concern
       
       included do
-        field :named_groups, :type => Array, :default => []
-        
-        before_save :uniq_named_groups
-        protected
-        def uniq_named_groups
-          named_groups.uniq!
+        field :named_groups, type: Array, default: -> { [] }
+
+        after_initialize do
+          named_groups.extend NamedGroupCollection
         end
       end
       
