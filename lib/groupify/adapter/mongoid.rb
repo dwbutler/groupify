@@ -128,21 +128,23 @@ module Groupify
           member_klass
         end
 
+        module MemberAssociationExtensions
+          def as(membership_type)
+            where(:"group_memberships.group_id" => base.id, :"group_memberships.as" => membership_type.to_s)
+          end
+
+          def destroy(*args)
+            delete(*args)
+          end
+        end
+
         def associate_member_class(member_klass)
           association_name = member_klass.name.to_s.pluralize.underscore.to_sym
 
-          has_many association_name, class_name: member_klass.to_s, dependent: :nullify, foreign_key: 'group_ids' do
-            def destroy(*args)
-              delete(*args)
-            end
-          end
+          has_many association_name, class_name: member_klass.to_s, dependent: :nullify, foreign_key: 'group_ids', extend: MemberAssociationExtensions
 
           if member_klass == default_member_class
-            has_many :members, class_name: member_klass.to_s, foreign_key: 'group_ids' do
-              def destroy(*args)
-                delete(*args)
-              end
-            end
+            has_many :members, class_name: member_klass.to_s, dependent: :nullify, foreign_key: 'group_ids', extend: MemberAssociationExtensions
           end
         end
       end
@@ -228,6 +230,10 @@ module Groupify
       module ClassMethods
         def group_class_name; @group_class_name ||= 'Group'; end
         def group_class_name=(klass);  @group_class_name = klass; end
+
+        def as(membership_type)
+          where(:"group_memberships.as" => membership_type)
+        end
         
         def in_group(group)
           group.present? ? self.in(group_ids: group.id) : none

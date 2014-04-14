@@ -263,6 +263,33 @@ describe Groupify::Mongoid do
       expect(group.members).to include(user)
       expect(group.users).to include(user)
     end
+
+    it 'adds members to a group with specific membership types' do
+      group.add(user, as: 'manager')
+      group.add(widget)
+
+      expect(user.groups).to include(group)
+      expect(group.members).to include(user)
+      expect(group.members.as(:manager)).to include(user)
+      expect(group.users).to include(user)
+
+      expect(user.groups(:as => :manager)).to include(group)
+      expect(group.members).to include(user)
+      expect(group.users).to include(user)
+    end
+
+    it "adds multiple members to a group with a specific membership type" do
+      manager = MongoidUser.create!
+      group.add(user, manager, as: :manager)
+
+      expect(group.users.as(:manager)).to include(user, manager)
+      expect(group.users(as: :manager)).to include(user, manager)
+    end
+
+    it "finds members by membership type" do
+      group.add user, as: 'manager'
+      expect(MongoidUser.as(:manager)).to include(user)
+    end
   end
 
   context 'when using named groups' do

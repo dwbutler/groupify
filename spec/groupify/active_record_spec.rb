@@ -305,6 +305,11 @@ describe Groupify::ActiveRecord do
         expect(group.users(as: :manager)).to include(user, manager)
       end
 
+      it "finds members by membership type" do
+        group.add user, as: 'manager'
+        expect(User.as(:manager)).to include(user)
+      end
+
       context "when removing" do
         before(:each) do
           group.add user, as: 'employee'
@@ -331,11 +336,6 @@ describe Groupify::ActiveRecord do
           expect(user.groups.as('manager')).to be_empty
           expect(user.groups.as('employee')).to include(group)
         end
-      end
-
-      it "finds members by membership type" do
-        group.add user, as: 'manager'
-        expect(User.as(:manager)).to include(user)
       end
 
       it "finds members by group with membership type" do
