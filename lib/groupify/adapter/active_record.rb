@@ -69,14 +69,14 @@ module Groupify
       end
       
       def add(*args)
-        opts = args.last.is_a?(Hash) ? args.pop : {}
+        opts = args.extract_options!
         membership_type = opts[:as]
-        members = args
+        members = args.flatten
         return unless members.present?
 
         clear_association_cache
         
-        members.flatten.each do |member|
+        members.each do |member|
           member.group_memberships.create!(group: self, membership_type: membership_type)
         end
       end

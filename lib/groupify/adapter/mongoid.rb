@@ -63,9 +63,14 @@ module Groupify
         self.class.member_classes
       end
       
-      def add(*members)
-        members.flatten.each do |member|
-          member.groups << self
+      def add(*args)
+        opts = args.extract_options!
+        membership_type = opts[:as]
+        members = args.flatten
+        return unless members.present?
+
+        members.each do |member|
+          member.group_memberships.create!(group: self, membership_type: membership_type)
         end
       end
 
@@ -158,8 +163,41 @@ module Groupify
       
       included do
         has_and_belongs_to_many :groups, autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name do
+          def as(membership_type)
+            all_in(id: base.group_memberships.as(membership_type).map(&:group_id))
+          end
+
           def destroy(*args)
             delete(*args)
+          end
+        end
+
+        class GroupMembership
+          include ::Mongoid::Document
+
+          embedded_in :member, polymorphic: true
+
+          field :gn, as: :group_name, type: Symbol
+          field :as, as: :membership_type, type: String
+        end
+
+        GroupMembership.send :belongs_to, :group, class_name: @group_class_name, inverse_of: nil
+
+        embeds_many :group_memberships, class_name: GroupMembership.to_s, as: :member, after_add: :after_add_group_membership do
+          def as(membership_type)
+            where(membership_type: membership_type.to_s)
+          end
+        end
+
+        protected
+
+        def after_add_group_membership(*group_memberships)
+          group_memberships.each do |group_membership|
+            if group_membership.group
+              self.groups << group_membership.group
+            elsif group_membership.group_name
+              self.named_groups << group_membership.group_name
+            end
           end
         end
       end

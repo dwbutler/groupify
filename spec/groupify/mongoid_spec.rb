@@ -249,7 +249,22 @@ describe Groupify::Mongoid do
       expect(user.in_only_groups?(group, group2, group3, group4)).to be_false
     end
   end
-  
+
+  context "when using membership types with groups" do
+    it 'adds groups to a member with a specific membership type' do
+      user.group_memberships.create!(group: group, as: :admin)
+      
+      expect(user.groups).to include(group)
+      expect(group.members).to include(user)
+      expect(group.users).to include(user)
+
+      expect(user.groups(:as => :admin)).to include(group)
+      expect(user.groups.as(:admin)).to include(group)
+      expect(group.members).to include(user)
+      expect(group.users).to include(user)
+    end
+  end
+
   context 'when using named groups' do
     before(:each) do
       user.named_groups.concat :admin, :user, :poster
