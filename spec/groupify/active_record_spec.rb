@@ -310,6 +310,68 @@ describe Groupify::ActiveRecord do
         expect(User.as(:manager)).to include(user)
       end
 
+      it "finds members by group with membership type" do
+        group.add user, as: 'employee'
+
+        expect(User.in_group(group).as('employee').first).to eql(user)
+      end
+
+      it "finds the group a member belongs to with a membership type" do
+        group.add user, as: Manager
+        user.groups.create!
+        
+        expect(Group.with_member(user).as(Manager)).to eq([group])
+      end
+
+      it "checks if members belong to any groups with a certain membership type" do
+        group2 = Group.create!
+        user.group_memberships.create!([{group: group, as: 'employee'}, {group: group2}])
+
+        expect(User.in_any_group(group, group2).as('employee').first).to eql(user)
+      end
+
+      it "checks if members belong to all groups with a certain membership type" do
+        group2 = Group.create!
+        group3 = Group.create!
+        user.group_memberships.create!([{group: group, as: 'employee'}, {group: group2, as: 'employee'}, {group: group3, as: 'contractor'}])
+        
+        expect(User.in_all_groups(group, group2).as('employee').first).to eql(user)
+        expect(User.in_all_groups([group, group2]).as('employee').first).to eql(user)
+        expect(User.in_all_groups(group, group3).as('employee')).to be_empty
+
+        expect(user.in_all_groups?(group, group2, group3)).to be_true
+        expect(user.in_all_groups?(group, group2, as: :employee)).to be_true
+        expect(user.in_all_groups?(group, group3, as: 'employee')).to be_false
+      end
+
+      it "checks if members belong to only groups with a certain membership type" do
+        group2 = Group.create!
+        group3 = Group.create!
+        group4 = Group.create!
+        user.group_memberships.create!([{group: group, as: 'employee'}, {group: group2, as: 'employee'}, {group: group3, as: 'contractor'}, {group: group4, as: 'employee'}])
+
+        expect(User.in_only_groups(group, group2, group4).as('employee').first).to eql(user)
+        expect(User.in_only_groups([group, group2]).as('employee')).to be_empty
+        expect(User.in_only_groups(group, group2, group3, group4).as('employee')).to be_empty
+
+        expect(user.in_only_groups?(group, group2, group3, group4))
+        expect(user.in_only_groups?(group, group2, group4, as: 'employee')).to be_true
+        expect(user.in_only_groups?(group, group2, as: 'employee')).to be_false
+        expect(user.in_only_groups?(group, group2, group3, group4, as: 'employee')).to be_false
+      end
+
+      it "members can check if groups are shared with the same membership type" do
+        user2 = User.create!
+        group.add(user, user2, widget, as: "Sub Group #1")
+        
+        expect(user.shares_any_group?(widget, as: "Sub Group #1")).to be_true
+        expect(Widget.shares_any_group(user).as("Sub Group #1").to_a).to include(widget)
+        expect(User.shares_any_group(widget).as("Sub Group #1").to_a).to include(user, user2)
+
+        expect(user.shares_any_group?(user2, as: "Sub Group #1")).to be_true
+        expect(User.shares_any_group(user).as("Sub Group #1").to_a).to include(user2)
+      end
+
       context "when removing" do
         before(:each) do
           group.add user, as: 'employee'
@@ -336,68 +398,6 @@ describe Groupify::ActiveRecord do
           expect(user.groups.as('manager')).to be_empty
           expect(user.groups.as('employee')).to include(group)
         end
-      end
-
-      it "finds members by group with membership type" do
-        group.add user, as: 'employee'
-
-        expect(User.in_group(group, as: 'employee').first).to eql(user)
-        expect(User.in_group(group).as('employee').first).to eql(user)
-      end
-
-      it "finds the group a member belongs to with a membership type" do
-        group.add user, as: Manager
-        
-        expect(Group.with_member(user, as: Manager).first).to eq(group)
-      end
-
-      it "checks if members belong to any groups with a certain membership type" do
-        group2 = Group.create!
-        user.group_memberships.create!([{group: group, as: 'employee'}, {group: group2}])
-
-        expect(User.in_any_group(group, group2, as: 'employee').first).to eql(user)
-      end
-
-      it "checks if members belong to all groups with a certain membership type" do
-        group2 = Group.create!
-        group3 = Group.create!
-        user.group_memberships.create!([{group: group, as: 'employee'}, {group: group2, as: 'employee'}, {group: group3, as: 'contractor'}])
-        
-        expect(User.in_all_groups(group, group2, as: 'employee').first).to eql(user)
-        expect(User.in_all_groups([group, group2], as: 'employee').first).to eql(user)
-        expect(User.in_all_groups(group, group3, as: 'employee')).to be_empty
-
-        expect(user.in_all_groups?(group, group2, group3)).to be_true
-        expect(user.in_all_groups?(group, group2, as: :employee)).to be_true
-        expect(user.in_all_groups?(group, group3, as: 'employee')).to be_false
-      end
-
-      it "checks if members belong to only groups with a certain membership type" do
-        group2 = Group.create!
-        group3 = Group.create!
-        group4 = Group.create!
-        user.group_memberships.create!([{group: group, as: 'employee'}, {group: group2, as: 'employee'}, {group: group3, as: 'contractor'}, {group: group4, as: 'employee'}])
-
-        expect(User.in_only_groups(group, group2, group4, as: 'employee').first).to eql(user)
-        expect(User.in_only_groups([group, group2], as: 'employee')).to be_empty
-        expect(User.in_only_groups(group, group2, group3, group4, as: 'employee')).to be_empty
-
-        expect(user.in_only_groups?(group, group2, group3, group4))
-        expect(user.in_only_groups?(group, group2, group4, as: 'employee')).to be_true
-        expect(user.in_only_groups?(group, group2, as: 'employee')).to be_false
-        expect(user.in_only_groups?(group, group2, group3, group4, as: 'employee')).to be_false
-      end
-
-      it "members can check if groups are shared with the same membership type" do
-        user2 = User.create!
-        group.add(user, user2, widget, as: "Sub Group #1")
-        
-        expect(user.shares_any_group?(widget, as: "Sub Group #1")).to be_true
-        expect(Widget.shares_any_group(user, as: "Sub Group #1").to_a).to include(widget)
-        expect(User.shares_any_group(widget, as: "Sub Group #1").to_a).to include(user, user2)
-
-        expect(user.shares_any_group?(user2, as: "Sub Group #1")).to be_true
-        expect(User.shares_any_group(user, as: "Sub Group #1").to_a).to include(user2)
       end
     end
   end

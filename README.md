@@ -196,16 +196,15 @@ user.named_groups.add user, as: 'manager'
 
 # Query for the groups that a user belongs to with a certain role
 user.groups.as(:manager)
-user.named_groups(as: 'manager')
-Group.with_member(user, as: 'manager')
+user.named_groups.as('manager')
+Group.with_member(user).as('manager')
 
 # Remove a member's membership type from a group
 group.users.delete(user, as: 'manager')         # Deletes this group's 'manager' group membership for this user
 user.groups.destroy(group, as: 'employee')      # Destroys this user's 'employee' group membrership for this group
 
 # Find all members that have a certain membership type in a group
-User.in_group(group, as: :manager)
-User.in_group(group).as(:employee)
+User.in_group(group).as(:manager)
 
 # Find all members of a certain membership type regardless of group
 User.as(:manager)    # Find users that are managers, we don't care what group
@@ -302,7 +301,7 @@ class PostPolicy < Struct.new(:user, :post)
     def resolve
       if user.admin?
         # An admin can see all the posts in the group(s) they are admin for
-        scope.shares_any_group(user, as: :admin)
+        scope.shares_any_group(user).as(:admin)
       else
         # Normal users can only see published posts in the same group(s).
         scope.shares_any_group(user).where(published: true)

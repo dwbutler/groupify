@@ -87,9 +87,9 @@ module Groupify
       end
       
       module ClassMethods
-        def with_member(member, opts={})
+        def with_member(member)
           #joins(:group_memberships).where(:group_memberships => {:member_id => member.id, :member_type => member.class.to_s})
-          member.groups(opts)
+          member.groups
         end
         
         def default_member_class
@@ -261,6 +261,7 @@ module Groupify
 
         has_many :groups, :through => :group_memberships, :class_name => @group_class_name do
           def as(membership_type)
+            return self unless membership_type
             where(group_memberships: {membership_type: membership_type})
           end
 
@@ -286,20 +287,11 @@ module Groupify
             end
           end
         end
-
-        def groups(*args)
-          opts = args.extract_options!
-          groups = super
-          if opts[:as]
-            groups.as(opts[:as])
-          else
-            groups
-          end
-        end
       end
       
       def in_group?(group, opts={})
-        criteria = {:group_id => group.id}
+        criteria = {group_id: group.id}
+
         if opts[:as]
           criteria.merge!(membership_type: opts[:as])
         end
@@ -319,16 +311,16 @@ module Groupify
       
       def in_all_groups?(*args)
         opts = args.extract_options!
-        groups = args
+        groups = args.flatten
 
-        groups.flatten.to_set.subset? self.groups(opts).to_set
+        groups.to_set.subset? self.groups.as(opts[:as]).to_set
       end
 
       def in_only_groups?(*args)
         opts = args.extract_options!
-        groups = args
+        groups = args.flatten
 
-        groups.flatten.to_set == self.groups(opts).to_set
+        groups.to_set == self.groups.as(opts[:as]).to_set
       end
       
       def shares_any_group?(other, opts={})
@@ -340,78 +332,45 @@ module Groupify
         def group_class_name=(klass);  @group_class_name = klass; end
 
         def as(membership_type)
-          joins(:group_memberships).where(group_memberships: {membership_type: membership_type})
+          joins(:group_memberships).where(group_memberships: { membership_type: membership_type })
         end
         
-        def in_group(group, opts={})
+        def in_group(group)
           return none unless group.present?
 
-          scope = joins(:group_memberships).where(:group_memberships => {:group_id => group.id}).uniq
-          if opts[:as]
-            scope = scope.as(opts[:as])
-          end
-          scope
+          joins(:group_memberships).where(group_memberships: { group_id: group.id }).uniq
         end
         
-        def in_any_group(*args)
-          opts = args.extract_options!
-          groups = args
+        def in_any_group(*groups)
+          groups = groups.flatten
           return none unless groups.present?
           
-          scope = joins(:group_memberships).where(:group_memberships => {:group_id => groups.flatten.map(&:id)}).uniq
-          if opts[:as]
-            scope = scope.as(opts[:as])
-          end
-          scope
+          joins(:group_memberships).where(group_memberships: { group_id: groups.map(&:id) }).uniq
         end
         
-        def in_all_groups(*args)
-          opts = args.extract_options!
-          groups = args
+        def in_all_groups(*groups)
+          groups = groups.flatten
+          return none unless groups.present?
 
-          if groups.present?
-            groups = groups.flatten
-
-            scope = joins(:group_memberships).
-            group(:"group_memberships.member_id").
-            where(:group_memberships => {:group_id => groups.map(&:id)}).
-            having("COUNT(group_memberships.group_id) = #{groups.count}").
-            uniq
-
-            if opts[:as]
-              scope = scope.as(opts[:as])
-            end
-
-            scope
-          else
-            none
-          end
+          joins(:group_memberships).
+          group(:"group_memberships.member_id").
+          where(:group_memberships => {:group_id => groups.map(&:id)}).
+          having("COUNT(group_memberships.group_id) = #{groups.count}").
+          uniq
         end
 
-        def in_only_groups(*args)
-          opts = args.extract_options!
-          groups = args
+        def in_only_groups(*groups)
+          groups = groups.flatten
+          return none unless groups.present?
 
-          if groups.present?
-            groups = groups.flatten
-
-            scope = joins(:group_memberships).
-                group(:"group_memberships.member_id").
-                having("COUNT(DISTINCT group_memberships.group_id) = #{groups.count}").
-                uniq
-
-            if opts[:as]
-              scope = scope.as(opts[:as])
-            end
-
-            scope
-          else
-            none
-          end
+          joins(:group_memberships).
+          group(:"group_memberships.member_id").
+          having("COUNT(DISTINCT group_memberships.group_id) = #{groups.count}").
+          uniq
         end
         
-        def shares_any_group(other, opts={})
-          in_any_group(other.groups, opts)
+        def shares_any_group(other)
+          in_any_group(other.groups)
         end
         
       end
