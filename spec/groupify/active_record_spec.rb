@@ -104,7 +104,9 @@ describe User do
   it { should respond_to :shares_any_group?}
 end
 
-#ActiveRecord::Base.logger = Logger.new(STDOUT)
+if DEBUG
+  ActiveRecord::Base.logger = Logger.new(STDOUT)
+end
 
 describe Groupify::ActiveRecord do
   let!(:user) { User.create! }

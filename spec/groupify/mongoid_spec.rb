@@ -25,7 +25,10 @@ Mongoid::Config.sessions = {
     hosts: [ "localhost:27017" ]
   }
 }
-Moped.logger = Logger.new(STDOUT)
+
+if DEBUG
+  Moped.logger = Logger.new(STDOUT)
+end
 
 require 'groupify/adapter/mongoid'
 
