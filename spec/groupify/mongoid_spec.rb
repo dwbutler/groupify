@@ -25,7 +25,7 @@ Mongoid::Config.sessions = {
     hosts: [ "localhost:27017" ]
   }
 }
-#Moped.logger = Logger.new(STDOUT)
+Moped.logger = Logger.new(STDOUT)
 
 require 'groupify/adapter/mongoid'
 
@@ -252,7 +252,7 @@ describe Groupify::Mongoid do
 
   context "when using membership types with groups" do
     it 'adds groups to a member with a specific membership type' do
-      user.group_memberships.create!(group: group, as: :admin)
+      group.add(user, as: :admin)
       
       expect(user.groups).to include(group)
       expect(group.members).to include(user)
@@ -289,6 +289,79 @@ describe Groupify::Mongoid do
     it "finds members by membership type" do
       group.add user, as: 'manager'
       expect(MongoidUser.as(:manager)).to include(user)
+    end
+
+    it "finds members by group with membership type" do
+      group.add user, as: 'employee'
+      manager = MongoidUser.create!
+      group.add(user, manager, as: :manager)
+
+      employees = MongoidUser.in_group(group).as('employee')
+      expect(employees).to include(user)
+      expect(employees).to_not include(manager)
+    end
+
+    it "finds the group a member belongs to with a membership type" do
+      group.add user, as: MongoidManager
+      user.groups.create!
+
+      expect(MongoidGroup.with_member(user).as(MongoidManager).to_a).to eq([group])
+    end
+
+    it "checks if members belong to any groups with a certain membership type" do
+      group2 = MongoidGroup.create!
+      group.add(user, as: 'employee')
+      group2.add(user)
+
+      expect(MongoidUser.in_any_group(group, group2).as('employee').first).to eql(user)
+    end
+
+    it "checks if members belong to all groups with a certain membership type" do
+      group2 = MongoidGroup.create!
+      group3 = MongoidGroup.create!
+      group.add(user, as: 'employee')
+      group2.add(user, as: 'employee')
+      group3.add(user, as: 'contractor')
+
+      expect(MongoidUser.in_all_groups(group, group2).as('employee').first).to eql(user)
+      expect(MongoidUser.in_all_groups([group, group2]).as('employee').first).to eql(user)
+      expect(MongoidUser.in_all_groups(group, group3).as('employee')).to be_empty
+
+      expect(user.in_all_groups?(group, group2, group3)).to be_true
+      expect(user.in_all_groups?(group, group2, as: :employee)).to be_true
+      expect(user.in_all_groups?(group, group3, as: 'employee')).to be_false
+    end
+
+    it "checks if members belong to only groups with a certain membership type" do
+      group2 = MongoidGroup.create!
+      group3 = MongoidGroup.create!
+      group4 = MongoidGroup.create!
+
+      group.add(user, as: 'employee')
+      group2.add(user, as: 'employee')
+      group3.add(user, as: 'contractor')
+      group4.add(user, as: 'employee')
+
+      expect(MongoidUser.in_only_groups(group, group2, group4).as('employee').first).to eql(user)
+      expect(MongoidUser.in_only_groups([group, group2]).as('employee')).to be_empty
+      expect(MongoidUser.in_only_groups(group, group2, group3, group4).as('employee')).to be_empty
+
+      expect(user.in_only_groups?(group, group2, group3, group4))
+      expect(user.in_only_groups?(group, group2, group4, as: 'employee')).to be_true
+      expect(user.in_only_groups?(group, group2, as: 'employee')).to be_false
+      expect(user.in_only_groups?(group, group2, group3, group4, as: 'employee')).to be_false
+    end
+
+    it "members can check if groups are shared with the same membership type" do
+      user2 = MongoidUser.create!
+      group.add(user, user2, widget, as: "Sub Group #1")
+
+      expect(user.shares_any_group?(widget, as: "Sub Group #1")).to be_true
+      expect(MongoidWidget.shares_any_group(user).as("Sub Group #1").to_a).to include(widget)
+      expect(MongoidUser.shares_any_group(widget).as("Sub Group #1").to_a).to include(user, user2)
+
+      expect(user.shares_any_group?(user2, as: "Sub Group #1")).to be_true
+      expect(MongoidUser.shares_any_group(user).as("Sub Group #1").to_a).to include(user2)
     end
   end
 

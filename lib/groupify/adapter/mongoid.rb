@@ -70,7 +70,9 @@ module Groupify
         return unless members.present?
 
         members.each do |member|
-          member.group_memberships.create!(group: self, membership_type: membership_type)
+          member.groups << self
+          member.group_memberships.build(group: self, membership_type: membership_type)
+          member.save!
         end
       end
 
@@ -81,7 +83,7 @@ module Groupify
       
       module ClassMethods
         def with_member(member)
-          criteria.for_ids(member.group_ids)
+          member.groups
         end
         
         def default_member_class
@@ -130,7 +132,8 @@ module Groupify
 
         module MemberAssociationExtensions
           def as(membership_type)
-            where(:"group_memberships.group_id" => base.id, :"group_memberships.as" => membership_type.to_s)
+            return self unless membership_type
+            where(:group_memberships.elem_match => { as: membership_type.to_s, group_ids: [base.id] })
           end
 
           def destroy(*args)
@@ -166,7 +169,8 @@ module Groupify
       included do
         has_and_belongs_to_many :groups, autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name do
           def as(membership_type)
-            all_in(id: base.group_memberships.as(membership_type).map(&:group_id))
+            return self unless membership_type
+            self.and(:id.in => base.group_memberships.as(membership_type).map(&:group_ids).flatten)
           end
 
           def destroy(*args)
@@ -179,27 +183,50 @@ module Groupify
 
           embedded_in :member, polymorphic: true
 
-          field :gn, as: :group_name, type: Symbol
+          field :named_groups, type: Array, default: -> { [] }
+
+          after_initialize do
+            named_groups.extend NamedGroupCollection
+          end
+
           field :as, as: :membership_type, type: String
-        end
 
-        GroupMembership.send :belongs_to, :group, class_name: @group_class_name, inverse_of: nil
+          def group=(group)
+            groups << group
+          end
 
-        embeds_many :group_memberships, class_name: GroupMembership.to_s, as: :member, after_add: :after_add_group_membership do
-          def as(membership_type)
-            where(membership_type: membership_type.to_s)
+          def group_name=(group_name)
+            group_names << group_name
           end
         end
 
-        protected
+        GroupMembership.send :has_and_belongs_to_many, :groups, class_name: @group_class_name, inverse_of: nil
 
-        def after_add_group_membership(*group_memberships)
-          group_memberships.each do |group_membership|
-            if group_membership.group
-              self.groups << group_membership.group
-            elsif group_membership.group_name
-              self.named_groups << group_membership.group_name
+        embeds_many :group_memberships, class_name: GroupMembership.to_s, as: :member do
+          def as(membership_type)
+            where(membership_type: membership_type.to_s)
+          end
+
+          def append(group_membership)
+            if group_membership.membership_type.present?
+              existing_group_membership = self.as(group_membership.membership_type).first
+
+              if existing_group_membership
+                existing_group_membership.groups << group_membership.groups
+                existing_group_membership.named_groups.merge group_membership.named_groups
+                group_membership = existing_group_membership
+              else
+                super(group_membership)
+              end
+            else
+              super(group_membership)
             end
+
+            # if group_membership.groups.present?
+            #   base.groups.concat group_membership.groups
+            # elsif group_membership.named_groups.present?
+            #   base.named_groups.merge(group_membership.named_groups) if base.respond_to?(:named_groups)
+            # end
           end
         end
       end
@@ -214,17 +241,23 @@ module Groupify
         end
         return false
       end
-      
-      def in_all_groups?(*groups)
-        groups.flatten.to_set.subset? self.groups.to_set
+
+      def in_all_groups?(*args)
+        opts = args.extract_options!
+        groups = args
+
+        groups.flatten.to_set.subset? self.groups.as(opts[:as]).to_set
       end
 
-      def in_only_groups?(*groups)
-        groups.flatten.to_set == self.groups.to_set
+      def in_only_groups?(*args)
+        opts = args.extract_options!
+        groups = args.flatten
+
+        groups.to_set == self.groups.as(opts[:as]).to_set
       end
-      
-      def shares_any_group?(other)
-        in_any_group?(other.groups.to_a)
+
+      def shares_any_group?(other, opts={})
+        in_any_group?(other.groups, opts)
       end
       
       module ClassMethods
@@ -232,7 +265,25 @@ module Groupify
         def group_class_name=(klass);  @group_class_name = klass; end
 
         def as(membership_type)
-          where(:"group_memberships.as" => membership_type)
+          # If filtering by groups, merge into the group membership criteria
+          if criteria.selector.key? "group_ids"
+            where(:group_memberships.elem_match => { as: membership_type, group_ids: criteria.selector["group_ids"] }).tap do |criteria|
+              criteria.selector.delete("group_ids")
+            end
+          else
+          # case group_ids_selector
+          # when Hash
+          #   if group_ids_selector["$in"]
+          #     where(:group_memberships.elem_match => { as: membership_type, :group_ids.in => group_ids_selector["$in"] })
+          #   elsif group_ids_selector["$all"]
+          #     where(:group_memberships.elem_match => { as: membership_type, group_ids: group_ids_selector["$all"] })
+          #   end
+          # when Array
+          #   where(:group_memberships.elem_match => { as: membership_type, group_ids: group_ids_selector })
+          # else
+            #where(:group_memberships.elem_match => { as: membership_type })
+            where(:"group_memberships.as" => membership_type)
+          end
         end
         
         def in_group(group)
@@ -265,6 +316,7 @@ module Groupify
         uniq!
         self
       end
+
       def merge(*named_groups)
         named_groups.flatten.each do |named_group|
           add(named_group)

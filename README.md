@@ -188,9 +188,6 @@ within a larger group (say, an organization).
 # Add user to group as a specific membership type
 group.add(user, as: 'manager')
 
-# Equivalent
-user.group_memberships.create!(group: group, as: 'manager')
-
 # Works with named groups too
 user.named_groups.add user, as: 'manager'
 
