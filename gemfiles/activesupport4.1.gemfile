@@ -4,7 +4,7 @@ group :development do
   gem 'pry'
 end
 
-gem 'activerecord', "~> 4.1"
+gem 'activerecord', "~> 4.1.0"
 
 # TODO: Enable once Mongoid 4 is released
 #gem "mongoid", ">= 4.0"

@@ -71,8 +71,9 @@ module Groupify
 
         members.each do |member|
           member.groups << self
-          member.group_memberships.build(group: self, membership_type: membership_type)
-          member.save!
+          membership = member.group_memberships.find_or_initialize_by(membership_type: membership_type)
+          membership.groups << self
+          membership.save!
         end
       end
 
@@ -214,7 +215,6 @@ module Groupify
               if existing_group_membership
                 existing_group_membership.groups << group_membership.groups
                 existing_group_membership.named_groups.merge group_membership.named_groups
-                group_membership = existing_group_membership
               else
                 super(group_membership)
               end
