@@ -140,6 +140,25 @@ module Groupify
           def destroy(*args)
             delete(*args)
           end
+
+          def delete(*args)
+            opts = args.extract_options!
+            members = args
+
+            if opts[:as]
+              members.each do |member|
+                member.group_memberships.as(opts[:as]).first.groups.delete(base)
+              end
+            else
+              members.each do |member|
+                member.group_memberships.in(groups: base).each do |membership|
+                  membership.groups.delete(base)
+                end
+              end
+
+              super(*members)
+            end
+          end
         end
 
         def associate_member_class(member_klass)
@@ -171,11 +190,31 @@ module Groupify
         has_and_belongs_to_many :groups, autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name do
           def as(membership_type)
             return self unless membership_type
-            self.and(:id.in => base.group_memberships.as(membership_type).map(&:group_ids).flatten)
+            group_ids = base.group_memberships.as(membership_type).first.group_ids
+
+            if group_ids.present?
+              self.and(:id.in => group_ids)
+            else
+              self.and(:id => nil)
+            end
           end
 
           def destroy(*args)
             delete(*args)
+          end
+
+          def delete(*args)
+            opts = args.extract_options!
+            groups = args.flatten
+
+
+            if opts[:as]
+              base.group_memberships.as(opts[:as]).each do |membership|
+                membership.groups.delete(*groups)
+              end
+            else
+              super(*groups)
+            end
           end
         end
 
@@ -206,27 +245,6 @@ module Groupify
         embeds_many :group_memberships, class_name: GroupMembership.to_s, as: :member do
           def as(membership_type)
             where(membership_type: membership_type.to_s)
-          end
-
-          def append(group_membership)
-            if group_membership.membership_type.present?
-              existing_group_membership = self.as(group_membership.membership_type).first
-
-              if existing_group_membership
-                existing_group_membership.groups << group_membership.groups
-                existing_group_membership.named_groups.merge group_membership.named_groups
-              else
-                super(group_membership)
-              end
-            else
-              super(group_membership)
-            end
-
-            # if group_membership.groups.present?
-            #   base.groups.concat group_membership.groups
-            # elsif group_membership.named_groups.present?
-            #   base.named_groups.merge(group_membership.named_groups) if base.respond_to?(:named_groups)
-            # end
           end
         end
       end

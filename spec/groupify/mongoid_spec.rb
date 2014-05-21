@@ -134,34 +134,36 @@ describe Groupify::Mongoid do
       expect(MongoidGroup.with_member(user).first).to eq(group)
     end
 
-    it "removes members from a group" do
-      group.add user
-      group.add widget
+    context 'when removing' do
+      it "removes members from a group" do
+        group.add user
+        group.add widget
 
-      group.users.delete(user)
-      widget.groups.destroy(group)
+        group.users.delete(user)
+        widget.groups.destroy(group)
 
-      expect(group.widgets).to_not include(widget)
-      expect(user.groups).to_not include(group)
-    end
+        expect(group.widgets).to_not include(widget)
+        expect(user.groups).to_not include(group)
+      end
 
-    it "removes the membership relation when a member is destroyed" do
-      group.add user
-      user.destroy
-      expect(group).not_to be_destroyed
-      expect(group.users).not_to include(user)
-    end
+      it "removes the membership relation when a member is destroyed" do
+        group.add user
+        user.destroy
+        expect(group).not_to be_destroyed
+        expect(group.users).not_to include(user)
+      end
 
-    it "removes the membership relations when a group is destroyed" do
-      group.add user
-      group.add task
-      group.destroy
+      it "removes the membership relations when a group is destroyed" do
+        group.add user
+        group.add task
+        group.destroy
 
-      expect(user).not_to be_destroyed
-      expect(user.reload.groups).to be_empty
+        expect(user).not_to be_destroyed
+        expect(user.reload.groups).to be_empty
 
-      expect(task).not_to be_destroyed
-      expect(task.reload.groups).to be_empty
+        expect(task).not_to be_destroyed
+        expect(task.reload.groups).to be_empty
+      end
     end
 
     it "members can check if groups are shared" do
@@ -365,6 +367,34 @@ describe Groupify::Mongoid do
 
       expect(user.shares_any_group?(user2, as: "Sub Group #1")).to be_true
       expect(MongoidUser.shares_any_group(user).as("Sub Group #1").to_a).to include(user2)
+    end
+
+    context "when removing" do
+      before(:each) do
+        group.add user, as: 'employee'
+        group.add user, as: 'manager'
+      end
+
+      it "removes all membership types when removing a member from a group" do
+        group.add user
+
+        group.users.destroy(user)
+
+        expect(user.groups).to_not include(group)
+        expect(group.users).to_not include(user)
+      end
+
+      it "removes a specific membership type from the member side" do
+        user.groups.delete(group, as: 'manager')
+        expect(user.groups.as('manager')).to be_empty
+        expect(user.groups.as('employee')).to include(group)
+      end
+
+      it "removes a specific membership type from the group side" do
+        group.users.delete(user, as: :manager)
+        expect(user.groups.as('manager')).to be_empty
+        expect(user.groups.as('employee')).to include(group)
+      end
     end
   end
 
