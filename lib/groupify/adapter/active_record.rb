@@ -484,14 +484,8 @@ module Groupify
         end
       end
 
-      def named_groups(opts={})
+      def named_groups
         @named_groups ||= NamedGroupCollection.new(self)
-
-        if opts[:as]
-          @named_groups.as(opts[:as])
-        else
-          @named_groups
-        end
       end
 
       def named_groups=(groups)
@@ -516,13 +510,13 @@ module Groupify
       def in_all_named_groups?(*args)
         opts = args.extract_options!
         named_groups = args.flatten.to_set
-        named_groups.subset? self.named_groups(opts).to_set
+        named_groups.subset? self.named_groups.as(opts[:as]).to_set
       end
 
       def in_only_named_groups?(*args)
         opts = args.extract_options!
         named_groups = args.flatten.to_set
-        named_groups == self.named_groups(opts).to_set
+        named_groups == self.named_groups.as(opts[:as]).to_set
       end
       
       def shares_any_named_group?(other, opts={})

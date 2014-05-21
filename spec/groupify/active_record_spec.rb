@@ -473,7 +473,6 @@ describe Groupify::ActiveRecord do
       it "queries named groups, filtering by membership type" do
         expect(user.named_groups).to include(:team1, :team2, :team3)
         expect(user.named_groups.as('manager')).to eq([:team3])
-        expect(user.named_groups(as: 'manager')).to eq([:team3])
       end
 
       it "enforces uniqueness of named groups" do
@@ -489,7 +488,7 @@ describe Groupify::ActiveRecord do
         expect(user.group_memberships.where(group_name: :team1).count).to eq(1)
         expect(user.group_memberships.where(group_name: :team1, membership_type: 'employee').count).to eq(1)
         expect(user.named_groups.count{|g| g == :team1}).to eq(1)
-        expect(user.named_groups(as: 'employee').count{|g| g == :team1}).to eq(1)
+        expect(user.named_groups.as('employee').count{|g| g == :team1}).to eq(1)
       end
 
       it "checks if a member belongs to one named group with a certain membership type" do
