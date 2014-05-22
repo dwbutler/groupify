@@ -494,15 +494,15 @@ module Groupify
         end
       end
       
-      def in_named_group?(group, opts={})
-        named_groups.include?(group, opts)
+      def in_named_group?(named_group, opts={})
+        named_groups.include?(named_group, opts)
       end
       
       def in_any_named_group?(*args)
         opts = args.extract_options!
-        groups = args.flatten
-        groups.each do |group|
-          return true if in_named_group?(group, opts)
+        named_groups = args.flatten
+        named_groups.each do |named_group|
+          return true if in_named_group?(named_group, opts)
         end
         return false
       end
