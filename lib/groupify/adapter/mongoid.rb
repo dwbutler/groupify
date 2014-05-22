@@ -370,7 +370,11 @@ module Groupify
         if @member && opts[:as]
           membership = @member.group_memberships.as(opts[:as]).first
           if membership
-            membership.pull_all(:named_groups, named_groups)
+            if ::Mongoid::VERSION > "4"
+              membership.pull_all(named_groups: named_groups)
+            else
+              membership.pull_all(:named_groups, named_groups)
+            end
           end
         else
           named_groups.each do |named_group|

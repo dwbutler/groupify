@@ -69,6 +69,8 @@ class MongoidGroup
 end
 
 class MongoidProject < MongoidGroup
+  acts_as_named_group_member
+
   has_members :mongoid_issues
   has_members :mongoid_managers
   alias_method :issues, :mongoid_issues
