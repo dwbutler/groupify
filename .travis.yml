@@ -1,6 +1,4 @@
 language: ruby
-bundler_args: --without development
-cache: bundler
 services: mongodb
 rvm:
   - 1.9.3
