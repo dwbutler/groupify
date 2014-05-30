@@ -249,13 +249,16 @@ module Groupify
         end
       end
       
-      def in_group?(group)
-        self.groups.include?(group)
+      def in_group?(group, opts={})
+        groups.as(opts[:as]).include?(group)
       end
       
-      def in_any_group?(*groups)
+      def in_any_group?(*args)
+        opts = args.extract_options!
+        groups = args
+
         groups.flatten.each do |group|
-          return true if in_group?(group)
+          return true if in_group?(group, opts)
         end
         return false
       end
