@@ -1,3 +1,5 @@
+require 'bundler/setup'
+
 require 'simplecov'
 require 'coveralls'
 
@@ -6,8 +8,6 @@ SimpleCov.formatter = SimpleCov::Formatter::MultiFormatter[
     Coveralls::SimpleCov::Formatter
 ]
 SimpleCov.start
-
-require 'bundler/setup'
 
 require 'active_support'
 require 'active_support/deprecation'
