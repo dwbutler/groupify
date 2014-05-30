@@ -198,7 +198,8 @@ Group.with_member(user).as('manager')
 
 # Remove a member's membership type from a group
 group.users.delete(user, as: 'manager')         # Deletes this group's 'manager' group membership for this user
-user.groups.destroy(group, as: 'employee')      # Destroys this user's 'employee' group membrership for this group
+user.groups.destroy(group, as: 'employee')      # Destroys this user's 'employee' group membership for this group
+user.groups.destroy(group)                      # Destroys any membership types this user had in this group
 
 # Find all members that have a certain membership type in a group
 User.in_group(group).as(:manager)
@@ -207,13 +208,33 @@ User.in_group(group).as(:manager)
 User.as(:manager)    # Find users that are managers, we don't care what group
 
 # Check if a member belongs to any/all groups with a certain membership type
-user.in_all_groups?(group1, group2).as('manager')
+user.in_all_groups?(group1, group2, as: 'manager')
 
 # Find all members that share the same group with the same membership type
 Widget.shares_any_group(user).as("Moon Launch Project")
 
 # Check is one member belongs to the same group as another member with a certain membership type
-user.shares_any_group?(widget).as('employee')
+user.shares_any_group?(widget, as: 'employee')
+```
+
+Note that adding a member to a group with a specific membership type will automatically
+add them to that group without a specific membership type. This way you can still query
+`groups` and find the member in that group. If you then remove that specific membership
+type, they still remain in the group without a specific membership type.
+
+Removing a member from a group will bulk remove any specific membership types as well.
+
+```
+group.add(manager, as: 'manager')
+manager.groups.include?(group)              # => true
+
+manager.groups.delete(group, as: 'manager')
+manager.groups.include?(group)              # => true
+
+group.add(employee, as: 'employee')
+employee.groups.delete(group)
+employee.in_group?(group)                   # => false
+employee.in_group?(group, as: 'employee')   # => false
 ```
 
 ### But wait, there's more!
