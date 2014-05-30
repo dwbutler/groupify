@@ -275,7 +275,7 @@ module Groupify
       end
 
       def shares_any_group?(other, opts={})
-        in_any_group?(other.groups, opts)
+        in_any_group?(other.groups.to_a, opts)
       end
       
       module ClassMethods
