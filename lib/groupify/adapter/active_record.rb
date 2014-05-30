@@ -77,7 +77,10 @@ module Groupify
         clear_association_cache
         
         members.each do |member|
-          member.group_memberships.create!(group: self, membership_type: membership_type)
+          member.group_memberships.where(group_id: self.id).first_or_create!
+          if membership_type
+            member.group_memberships.where(group_id: self, membership_type: membership_type).first_or_create!
+          end
         end
       end
 
@@ -386,15 +389,26 @@ module Groupify
 
       def add(named_group, opts={})
         named_group = named_group.to_sym
+        membership_type = opts[:as]
+
         unless include?(named_group)
-          attributes = opts.merge(group_name: named_group)
           if @member.new_record?
-            @member.group_memberships.build(attributes)
+            @member.group_memberships.build(group_name: named_group, membership_type: nil)
+            if membership_type
+              @member.group_memberships.build(group_name: named_group, membership_type: membership_type)
+            end
           else
-            @member.group_memberships.create!(attributes)
+            @member.transaction do
+              @member.group_memberships.where(group_name: named_group, membership_type: nil).first_or_create!
+              if membership_type
+                @member.group_memberships.where(group_name: named_group, membership_type: membership_type).first_or_create!
+              end
+            end
           end
+
           super(named_group)
         end
+
         named_group
       end
 

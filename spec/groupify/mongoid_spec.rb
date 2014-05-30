@@ -383,6 +383,8 @@ describe Groupify::Mongoid do
         group.users.destroy(user)
 
         expect(user.groups).to_not include(group)
+        expect(user.groups.as('manager')).to_not include(group)
+        expect(user.groups.as('employee')).to_not include(group)
         expect(group.users).to_not include(user)
       end
 
@@ -390,12 +392,20 @@ describe Groupify::Mongoid do
         user.groups.delete(group, as: 'manager')
         expect(user.groups.as('manager')).to be_empty
         expect(user.groups.as('employee')).to include(group)
+        expect(user.groups).to include(group)
       end
 
       it "removes a specific membership type from the group side" do
         group.users.delete(user, as: :manager)
         expect(user.groups.as('manager')).to be_empty
         expect(user.groups.as('employee')).to include(group)
+        expect(user.groups).to include(group)
+      end
+
+      it "retains the member in the group if all membership types have been removed" do
+        user.groups.delete(group, as: 'manager')
+        user.groups.delete(group, as: 'employee')
+        expect(user.groups).to include(group)
       end
     end
   end
@@ -455,7 +465,6 @@ describe Groupify::Mongoid do
     end
 
     it "checks if named groups are shared" do
-      user.named_groups << :admin
       user2 = MongoidUser.create!(:named_groups => [:admin])
       
       expect(user.shares_any_named_group?(user2)).to be_true

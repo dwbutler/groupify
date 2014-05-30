@@ -386,6 +386,8 @@ describe Groupify::ActiveRecord do
           group.users.destroy(user)
 
           expect(user.groups).to_not include(group)
+          expect(user.groups.as('manager')).to_not include(group)
+          expect(user.groups.as('employee')).to_not include(group)
           expect(group.users).to_not include(user)
         end
 
@@ -393,12 +395,20 @@ describe Groupify::ActiveRecord do
           user.groups.delete(group, as: 'manager')
           expect(user.groups.as('manager')).to be_empty
           expect(user.groups.as('employee')).to include(group)
+          expect(user.groups).to include(group)
         end
 
         it "removes a specific membership type from the group side" do
           group.users.delete(user, as: :manager)
           expect(user.groups.as('manager')).to be_empty
           expect(user.groups.as('employee')).to include(group)
+          expect(user.groups).to include(group)
+        end
+
+        it "retains the member in the group if all membership types have been removed" do
+          user.groups.delete(group, as: 'manager')
+          user.groups.delete(group, as: 'employee')
+          expect(user.groups).to include(group)
         end
       end
     end
@@ -457,7 +467,6 @@ describe Groupify::ActiveRecord do
     end
 
     it "checks if named groups are shared" do
-      user.named_groups << :admin
       user2 = User.create!(:named_groups => [:admin])
       
       expect(user.shares_any_named_group?(user2)).to be_true
@@ -478,14 +487,14 @@ describe Groupify::ActiveRecord do
       it "enforces uniqueness of named groups" do
         user.named_groups << :team1
         expect(user.named_groups.count{|g| g == :team1}).to eq(1)
-        expect(user.group_memberships.where(group_name: :team1).count).to eq(1)
+        expect(user.group_memberships.where(group_name: :team1, membership_type: nil).count).to eq(1)
         expect(user.group_memberships.where(group_name: :team1, membership_type: 'employee').count).to eq(1)
         expect(user.named_groups.as('employee').count{|g| g == :team1}).to eq(1)
       end
 
       it "enforces uniqueness of group name and membership type for group memberships" do
         user.named_groups.push :team1, as: 'employee'
-        expect(user.group_memberships.where(group_name: :team1).count).to eq(1)
+        expect(user.group_memberships.where(group_name: :team1, membership_type: nil).count).to eq(1)
         expect(user.group_memberships.where(group_name: :team1, membership_type: 'employee').count).to eq(1)
         expect(user.named_groups.count{|g| g == :team1}).to eq(1)
         expect(user.named_groups.as('employee').count{|g| g == :team1}).to eq(1)
