@@ -172,6 +172,39 @@ module Groupify
         end
       end
     end
+
+    module MemberScopedAs
+      extend ActiveSupport::Concern
+
+      module ClassMethods
+        def as(membership_type)
+          group_ids = criteria.selector["group_ids"]
+          named_groups = criteria.selector["named_groups"]
+          criteria = self.criteria
+
+          # If filtering by groups or named groups, merge into the group membership criteria
+          if group_ids || named_groups
+            elem_match = {as: membership_type}
+
+            if group_ids
+              elem_match.merge!(group_ids: group_ids)
+            end
+
+            if named_groups
+              elem_match.merge!(named_groups: named_groups)
+            end
+
+            criteria = where(:group_memberships.elem_match => elem_match)
+            criteria.selector.delete("group_ids")
+            criteria.selector.delete("named_groups")
+          else
+            criteria = where(:"group_memberships.as" => membership_type)
+          end
+
+          criteria
+        end
+      end
+    end
     
     # Usage:
     #    class User
@@ -185,6 +218,7 @@ module Groupify
     #
     module GroupMember
       extend ActiveSupport::Concern
+      include MemberScopedAs
       
       included do
         has_and_belongs_to_many :groups, autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name do
@@ -230,14 +264,6 @@ module Groupify
           end
 
           field :as, as: :membership_type, type: String
-
-          def group=(group)
-            groups << group
-          end
-
-          def group_name=(group_name)
-            group_names << group_name
-          end
         end
 
         GroupMembership.send :has_and_belongs_to_many, :groups, class_name: @group_class_name, inverse_of: nil
@@ -284,28 +310,6 @@ module Groupify
       module ClassMethods
         def group_class_name; @group_class_name ||= 'Group'; end
         def group_class_name=(klass);  @group_class_name = klass; end
-
-        def as(membership_type)
-          # If filtering by groups, merge into the group membership criteria
-          if criteria.selector.key? "group_ids"
-            where(:group_memberships.elem_match => { as: membership_type, group_ids: criteria.selector["group_ids"] }).tap do |criteria|
-              criteria.selector.delete("group_ids")
-            end
-          else
-          # case group_ids_selector
-          # when Hash
-          #   if group_ids_selector["$in"]
-          #     where(:group_memberships.elem_match => { as: membership_type, :group_ids.in => group_ids_selector["$in"] })
-          #   elsif group_ids_selector["$all"]
-          #     where(:group_memberships.elem_match => { as: membership_type, group_ids: group_ids_selector["$all"] })
-          #   end
-          # when Array
-          #   where(:group_memberships.elem_match => { as: membership_type, group_ids: group_ids_selector })
-          # else
-            #where(:group_memberships.elem_match => { as: membership_type })
-            where(:"group_memberships.as" => membership_type)
-          end
-        end
         
         def in_group(group)
           group.present? ? self.in(group_ids: group.id) : none
@@ -370,19 +374,32 @@ module Groupify
         opts = args.extract_options!
         named_groups = args.flatten
 
-        if @member && opts[:as]
-          membership = @member.group_memberships.as(opts[:as]).first
-          if membership
-            if ::Mongoid::VERSION > "4"
-              membership.pull_all(named_groups: named_groups)
-            else
-              membership.pull_all(:named_groups, named_groups)
+        if @member
+          if opts[:as]
+            membership = @member.group_memberships.as(opts[:as]).first
+            if membership
+              if ::Mongoid::VERSION > "4"
+                membership.pull_all(named_groups: named_groups)
+              else
+                membership.pull_all(:named_groups, named_groups)
+              end
+            end
+
+            return
+          else
+            memberships = @member.group_memberships.where(:named_groups.in => named_groups)
+            memberships.each do |membership|
+              if ::Mongoid::VERSION > "4"
+                membership.pull_all(named_groups: named_groups)
+              else
+                membership.pull_all(:named_groups, named_groups)
+              end
             end
           end
-        else
-          named_groups.each do |named_group|
-            super(named_group)
-          end
+        end
+
+        named_groups.each do |named_group|
+          super(named_group)
         end
       end
 
@@ -412,6 +429,7 @@ module Groupify
     #
     module NamedGroupMember
       extend ActiveSupport::Concern
+      include MemberScopedAs
       
       included do
         field :named_groups, type: Array, default: -> { [] }
@@ -459,32 +477,25 @@ module Groupify
           in_any_named_group(named_group, opts)
         end
         
-        def in_any_named_group(*args)
-          opts = args.extract_options!
-          named_groups = args.flatten
+        def in_any_named_group(*named_groups)
+          named_groups.flatten!
           return none unless named_groups.present?
 
-          if opts[:as]
-            elem_match(group_memberships: { as: opts[:as], :named_groups.in => named_groups.flatten })
-          else
-            self.in(named_groups: named_groups.flatten)
-          end
+          self.in(named_groups: named_groups.flatten)
         end
 
-        def in_all_named_groups(*args)
-          opts = args.extract_options!
-          named_groups = args.flatten
+        def in_all_named_groups(*named_groups)
+          named_groups.flatten!
           return none unless named_groups.present?
 
-          if opts[:as]
-            elem_match(group_memberships: { as: opts[:as], named_groups: named_groups.flatten })
-          else
-            where(:named_groups.all => named_groups.flatten)
-          end
+          where(:named_groups.all => named_groups.flatten)
         end
         
         def in_only_named_groups(*named_groups)
-          named_groups.present? ? where(:named_groups => named_groups.flatten) : none
+          named_groups.flatten!
+          return none unless named_groups.present?
+
+          where(named_groups: named_groups.flatten)
         end
         
         def shares_any_named_group(other, opts={})

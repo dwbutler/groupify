@@ -391,25 +391,23 @@ module Groupify
         named_group = named_group.to_sym
         membership_type = opts[:as]
 
-        unless include?(named_group)
-          if @member.new_record?
-            @member.group_memberships.build(group_name: named_group, membership_type: nil)
-            if membership_type
-              @member.group_memberships.build(group_name: named_group, membership_type: membership_type)
-            end
-          else
-            @member.transaction do
-              @member.group_memberships.where(group_name: named_group, membership_type: nil).first_or_create!
-              if membership_type
-                @member.group_memberships.where(group_name: named_group, membership_type: membership_type).first_or_create!
-              end
-            end
+        if @member.new_record?
+          @member.group_memberships.build(group_name: named_group, membership_type: nil)
+        else
+          @member.transaction do
+            @member.group_memberships.where(group_name: named_group, membership_type: nil).first_or_create!
           end
-
-          super(named_group)
         end
 
-        named_group
+        if membership_type
+          if @member.new_record?
+            @member.group_memberships.build(group_name: named_group, membership_type: membership_type)
+          else
+            @member.group_memberships.where(group_name: named_group, membership_type: membership_type).first_or_create!
+          end
+        end
+
+        super(named_group)
       end
 
       alias_method :push, :add
@@ -466,15 +464,17 @@ module Groupify
       def remove(named_groups, method, opts)
         if named_groups.present?
           scope = @named_group_memberships.where(group_name: named_groups)
+
           if opts[:as]
             scope = scope.where(membership_type: opts[:as])
           end
-          scope
 
           scope.send(method)
 
-          named_groups.each do |named_group|
-            @hash.delete(named_group)
+          unless opts[:as]
+            named_groups.each do |named_group|
+              @hash.delete(named_group)
+            end
           end
         end
       end
@@ -542,75 +542,42 @@ module Groupify
           joins(:group_memberships).where(group_memberships: {membership_type: membership_type})
         end
 
-        def in_named_group(named_group, opts={})
+        def in_named_group(named_group)
           return none unless named_group.present?
-          scope = joins(:group_memberships).where(group_memberships: {group_name: named_group}).uniq
-          if opts[:as]
-            scope = scope.as(opts[:as])
-          else
-            scope
-          end
+
+          joins(:group_memberships).where(group_memberships: {group_name: named_group}).uniq
         end
         
-        def in_any_named_group(*args)
-          opts = args.extract_options!
-          named_groups = args.flatten
+        def in_any_named_group(*named_groups)
+          named_groups.flatten!
           return none unless named_groups.present?
-          scope = joins(:group_memberships).where(group_memberships: {group_name: named_groups.flatten}).uniq
-          if opts[:as]
-            scope = scope.as(opts[:as])
-          end
 
-          scope
+          joins(:group_memberships).where(group_memberships: {group_name: named_groups.flatten}).uniq
         end
 
-        def in_all_named_groups(*args)
-          opts = args.extract_options!
-          named_groups = args.flatten
+        def in_all_named_groups(*named_groups)
+          named_groups.flatten!
+          return none unless named_groups.present?
 
-          if named_groups.present?
-            named_groups = named_groups.map(&:to_s)
-
-            scope = joins(:group_memberships).
-            group(:"group_memberships.member_id").
-            where(:group_memberships => {:group_name => named_groups}).
-            having("COUNT(DISTINCT group_memberships.group_name) = #{named_groups.count}").
-            uniq
-
-            if opts[:as]
-              scope = scope.as(opts[:as])
-            end
-
-            scope
-          else
-            none
-          end
+          joins(:group_memberships).
+          group(:"group_memberships.member_id").
+          where(:group_memberships => {:group_name => named_groups}).
+          having("COUNT(DISTINCT group_memberships.group_name) = #{named_groups.count}").
+          uniq
         end
 
-        def in_only_named_groups(*args)
-          opts = args.extract_options!
-          named_groups = args.flatten
+        def in_only_named_groups(*named_groups)
+          named_groups.flatten!
+          return none unless named_groups.present?
 
-          if named_groups.present?
-            named_groups = named_groups.map(&:to_s)
-
-            scope = joins(:group_memberships).
-                group("group_memberships.member_id").
-                having("COUNT(DISTINCT group_memberships.group_name) = #{named_groups.count}").
-                uniq
-
-            if opts[:as]
-              scope = scope.as(opts[:as])
-            end
-
-            scope
-          else
-            none
-          end
+          joins(:group_memberships).
+          group("group_memberships.member_id").
+          having("COUNT(DISTINCT group_memberships.group_name) = #{named_groups.count}").
+          uniq
         end
         
-        def shares_any_named_group(other, opts={})
-          in_any_named_group(other.named_groups.to_a, opts)
+        def shares_any_named_group(other)
+          in_any_named_group(other.named_groups.to_a)
         end
       end
     end

@@ -142,9 +142,26 @@ describe Groupify::Mongoid do
         group.add widget
 
         group.users.delete(user)
+        group.widgets.destroy(widget)
+
+        expect(group.widgets).to_not include(widget)
+        expect(group.users).to_not include(user)
+
+        expect(widget.groups).to_not include(group)
+        expect(user.groups).to_not include(group)
+      end
+
+      it "removes groups from a member" do
+        group.add widget
+        group.add user
+
+        user.groups.delete(group)
         widget.groups.destroy(group)
 
         expect(group.widgets).to_not include(widget)
+        expect(group.users).to_not include(user)
+
+        expect(widget.groups).to_not include(group)
         expect(user.groups).to_not include(group)
       end
 
@@ -168,12 +185,43 @@ describe Groupify::Mongoid do
       end
     end
 
-    it "members can check if groups are shared" do
-      user.groups << group
-      user2 = MongoidUser.create!(:groups => [group])
-      
-      expect(user.shares_any_group?(user2)).to be_true
-      expect(MongoidUser.shares_any_group(user).to_a).to include(user2)
+    context 'when checking group membership' do
+      it "members can check if they belong to any/all groups" do
+        user.groups << group
+        group2 = MongoidGroup.create!
+        user.groups << group2
+        group3 = MongoidGroup.create!
+
+        expect(user.groups).to include(group)
+        expect(user.groups).to include(group2)
+
+        expect(MongoidUser.in_group(group).first).to eql(user)
+        expect(MongoidUser.in_group(group2).first).to eql(user)
+        expect(user.in_group?(group)).to be_true
+
+        expect(MongoidUser.in_any_group(group).first).to eql(user)
+        expect(MongoidUser.in_any_group(group3)).to be_empty
+        expect(user.in_any_group?(group2, group3)).to be_true
+        expect(user.in_any_group?(group3)).to be_false
+
+        expect(MongoidUser.in_all_groups(group, group2).first).to eql(user)
+        expect(MongoidUser.in_all_groups([group, group2]).first).to eql(user)
+        expect(user.in_all_groups?(group, group2)).to be_true
+        expect(user.in_all_groups?(group, group3)).to be_false
+      end
+
+      it "members can check if groups are shared" do
+        user.groups << group
+        widget.groups << group
+        user2 = MongoidUser.create!(:groups => [group])
+
+        expect(user.shares_any_group?(widget)).to be_true
+        expect(MongoidWidget.shares_any_group(user).to_a).to include(widget)
+        expect(MongoidUser.shares_any_group(widget).to_a).to include(user, user2)
+
+        expect(user.shares_any_group?(user2)).to be_true
+        expect(MongoidUser.shares_any_group(user).to_a).to include(user2)
+      end
     end
 
     context 'when merging' do
@@ -389,7 +437,7 @@ describe Groupify::Mongoid do
       end
 
       it "removes a specific membership type from the member side" do
-        user.groups.delete(group, as: 'manager')
+        user.groups.destroy(group, as: 'manager')
         expect(user.groups.as('manager')).to be_empty
         expect(user.groups.as('employee')).to include(group)
         expect(user.groups).to include(group)
@@ -430,6 +478,9 @@ describe Groupify::Mongoid do
       user.named_groups.delete(:admin, :poster)
       expect(user.named_groups).to include(:user)
       expect(user.named_groups).to_not include(:admin, :poster)
+
+      user.named_groups.destroy(:user)
+      expect(user.named_groups).to be_empty
     end
 
     it "removes all named groups" do
@@ -444,7 +495,10 @@ describe Groupify::Mongoid do
 
     it "checks if a member belongs to any named group" do
       expect(user.in_any_named_group?(:admin, :user, :test)).to be_true
+      expect(user.in_any_named_group?(:foo, :bar)).to be_false
+
       expect(MongoidUser.in_any_named_group(:admin, :test).first).to eql(user)
+      expect(MongoidUser.in_any_named_group(:test)).to be_empty
     end
 
     it "checks if a member belongs to all named groups" do
@@ -475,6 +529,7 @@ describe Groupify::Mongoid do
       before(:each) do
         user.named_groups.concat :team1, :team2, as: 'employee'
         user.named_groups.push :team3, as: 'manager'
+        user.named_groups.push :team1, as: 'developer'
       end
 
       it "queries named groups, filtering by membership type" do
@@ -496,31 +551,52 @@ describe Groupify::Mongoid do
 
       it "checks if a member belongs to one named group with a certain membership type" do
         expect(user.in_named_group?(:team1, as: 'employee')).to be_true
-        expect(MongoidUser.in_named_group(:team1, as: 'employee').first).to eql(user)
+        expect(MongoidUser.in_named_group(:team1).as('employee').first).to eql(user)
       end
 
       it "checks if a member belongs to any named group with a certain membership type" do
         expect(user.in_any_named_group?(:team1, :team3, as: 'employee')).to be_true
-        expect(MongoidUser.in_any_named_group(:team2, :team3, as: 'manager').first).to eql(user)
+        expect(MongoidUser.in_any_named_group(:team2, :team3).as('manager').first).to eql(user)
       end
 
       it "checks if a member belongs to all named groups with a certain membership type" do
         expect(user.in_all_named_groups?(:team1, :team2, as: 'employee')).to be_true
         expect(user.in_all_named_groups?(:team1, :team3, as: 'employee')).to be_false
-        expect(MongoidUser.in_all_named_groups(:team1, :team2, as: 'employee').first).to eql(user)
+        expect(MongoidUser.in_all_named_groups(:team1, :team2).as('employee').first).to eql(user)
+      end
+
+      it "checks if a member belongs to only certain named groups with a certain membership type" do
+        expect(user.in_only_named_groups?(:team1, :team2, as: 'employee')).to be_true
+        expect(user.in_only_named_groups?(:team1, as: 'employee')).to be_false
+        expect(user.in_only_named_groups?(:team1, :team3, as: 'employee')).to be_false
+        expect(user.in_only_named_groups?(:foo, as: 'employee')).to be_false
+
+        expect(MongoidUser.in_only_named_groups(:team1, :team2).as('employee').first).to eql(user)
+        expect(MongoidUser.in_only_named_groups(:team1).as('employee')).to be_empty
+        expect(MongoidUser.in_only_named_groups(:foo).as('employee')).to be_empty
       end
 
       it "checks if a member shares any named groups with a certain membership type" do
         project = MongoidProject.create!(:named_groups => [:team3])
 
         expect(user.shares_any_named_group?(project, as: 'manager')).to be_true
-        expect(MongoidUser.shares_any_named_group(project, as: 'manager').to_a).to include(user)
+        expect(MongoidUser.shares_any_named_group(project).as('manager').to_a).to include(user)
       end
 
       it "removes named groups with a certain membership type" do
         user.named_groups.delete(:team1, as: :employee)
         expect(user.named_groups.as(:employee)).to include(:team2)
         expect(user.named_groups.as(:employee)).to_not include(:team1)
+        expect(user.named_groups.as(:developer)).to include(:team1)
+        expect(user.named_groups).to include(:team1)
+      end
+
+      it "removes all named group memberships if membership type is not specified" do
+        user.named_groups.destroy(:team1)
+        expect(user.named_groups).to_not include(:team1)
+        expect(user.named_groups.as(:employee)).to_not include(:team1)
+        expect(user.named_groups.as(:developer)).to_not include(:team1)
+        expect(user.named_groups.as(:employee)).to include(:team2)
       end
     end
   end
