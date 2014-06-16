@@ -10,7 +10,7 @@ appraise "rails-4.0" do
   #gem "mongoid", ">= 4.0"
 
   #gem "mongoid", github: "mongoid/mongoid", branch: "master"
-  gem "mongoid", "4.0.0.beta2"
+  gem "mongoid", "4.0.0.rc2"
 end
 
 appraise "rails-4.1" do
@@ -20,5 +20,5 @@ appraise "rails-4.1" do
   #gem "mongoid", ">= 4.0"
 
   #gem "mongoid", :github => "mongoid/mongoid"
-  gem "mongoid", "4.0.0.beta2"
+  gem "mongoid", "4.0.0.rc2"
 end
