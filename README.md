@@ -128,7 +128,7 @@ user.named_groups << :admin
 user.in_named_group?(:admin)        # => true
 ```
 
-# Remove from groups
+### Remove from groups
 
 ```ruby
 users.groups.destroy(group)          # Destroys this user's group membership for this group
@@ -172,7 +172,7 @@ user.in_only_named_groups?(:employee, :worker)  # Check if user belongs to only 
 destination_group.merge!(source_group)
 ```
 
-### Membership Types
+## Membership Types
 
 Membership types allow a member to belong to a group in a more specific way. For example,
 you can add a user to a group with membership type of "manager" to specify that this
@@ -237,7 +237,7 @@ employee.in_group?(group)                   # => false
 employee.in_group?(group, as: 'employee')   # => false
 ```
 
-### But wait, there's more!
+## But wait, there's more!
 
 Check the specs for a complete list of methods and scopes provided by Groupify.
 
@@ -252,7 +252,6 @@ class Ability
   include CanCan::Ability
 
   def initialize(user)
-    …
     # Implements group-based authorization
     # Users can only manage assignment which belong to the same group.
     can [:manage], Assignment, Assignment.shares_any_group(user) do |assignment|
@@ -262,7 +261,7 @@ class Ability
 end
 ```
 
-## With Authority
+### With Authority
 
 ```ruby
 # Whatever class represents a logged-in user in your app
@@ -306,7 +305,7 @@ user.can_update?(widget)  # => true
 user.can_delete?(widget)  # => false
 ```
 
-## With Pundit
+### With Pundit
 
 ```ruby
 class PostPolicy < Struct.new(:user, :post)
