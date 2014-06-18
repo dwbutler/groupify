@@ -102,6 +102,7 @@ describe Groupify::Mongoid do
     end
     
     it "adds a member to a group" do
+      expect(user.groups).to be_empty
       group.add user
       expect(user.groups).to include(group)
       expect(group.members).to include(user)

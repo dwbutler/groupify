@@ -81,6 +81,7 @@ module Groupify
           if membership_type
             member.group_memberships.where(group_id: self, membership_type: membership_type).first_or_create!
           end
+          member.clear_association_cache
         end
       end
 
