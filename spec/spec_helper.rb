@@ -1,11 +1,22 @@
-require 'rubygems'
 require 'bundler/setup'
 
-Bundler.require(:default, :test, :development)
+require 'simplecov'
+require 'coveralls'
 
-#require 'pry'
+SimpleCov.formatter = SimpleCov::Formatter::MultiFormatter[
+    SimpleCov::Formatter::HTMLFormatter,
+    Coveralls::SimpleCov::Formatter
+]
+SimpleCov.start
+
+require 'active_support'
+require 'active_support/deprecation'
+require 'active_support/dependencies/autoload'
+
+Bundler.require(:default, :development)
 
 JRUBY = defined?(JRUBY_VERSION)
+DEBUG = ENV['DEBUG']
 
 RSpec.configure do |config|
   config.order = "random"

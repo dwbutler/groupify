@@ -6,8 +6,11 @@ rvm:
   - 2.1.0
   - 2.1.1
   - jruby-19mode
-  #- rbx
+  - rbx-2
 gemfile:
-  - gemfiles/activesupport3.gemfile
-  - gemfiles/activesupport4.gemfile
-
+  - gemfiles/rails_3.2.gemfile
+  - gemfiles/rails_4.0.gemfile
+  - gemfiles/rails_4.1.gemfile
+matrix:
+  allow_failures:
+    - rvm: rbx-2
