@@ -34,7 +34,8 @@ Add a migration similar to the following:
 class CreateGroups < ActiveRecord::Migration
   def change
     create_table :groups do |t|
-      t.string     :type      # Only needed if using single table inheritence
+      t.string      :type      # Only needed if using single table inheritence
+      t.string      :name
     end
     
     create_table :group_memberships do |t|
