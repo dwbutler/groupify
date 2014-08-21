@@ -271,6 +271,19 @@ describe Groupify::ActiveRecord do
         expect(destination.managers).to include(manager)
       end
 
+      it "moves membership types" do
+        source = Group.create!
+        destination = Organization.create!
+
+        source.add(user)
+        source.add(manager, as: 'manager')
+
+        destination.merge!(source)
+        expect(source.destroyed?).to be true
+
+        expect(destination.users.as(:manager)).to include(manager)
+      end
+
       it "fails to merge if the destination group cannot contain the source group's members" do
         source = Organization.create!
         destination = Group.create!

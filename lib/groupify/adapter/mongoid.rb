@@ -111,13 +111,23 @@ module Groupify
           # Ensure that all the members of the source can be members of the destination
           invalid_member_classes = (source_group.member_classes - destination_group.member_classes)
           invalid_member_classes.each do |klass|
-            if klass.any_in(:group_ids => [source_group.id]).count > 0
+            if klass.in(group_ids: [source_group.id]).count > 0
               raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
             end
           end
 
           source_group.member_classes.each do |klass|
-            klass.any_in(:group_ids => [source_group.id]).update_all(:$set => {:"group_ids.$" => destination_group.id})
+            klass.in(group_ids: [source_group.id]).update_all(:$set => {:"group_ids.$" => destination_group.id})
+
+            if klass.relations['group_memberships']
+              if ::Mongoid::VERSION > "4"
+                klass.in(:"group_memberships.group_ids" => [source_group.id]).add_to_set(:"group_memberships.$.group_ids" => destination_group.id)
+                klass.in(:"group_memberships.group_ids" => [source_group.id]).pull(:"group_memberships.$.group_ids" => source_group.id)
+              else
+                klass.in(:"group_memberships.group_ids" => [source_group.id]).add_to_set(:"group_memberships.$.group_ids", destination_group.id)
+                klass.in(:"group_memberships.group_ids" => [source_group.id]).pull(:"group_memberships.$.group_ids", source_group.id)
+              end
+            end
           end
 
           source_group.delete

@@ -242,6 +242,19 @@ describe Groupify::Mongoid do
         expect(destination.tasks.to_a).to include(task)
       end
 
+      it "moves membership types" do
+        source = MongoidGroup.create!
+        destination = MongoidProject.create!
+
+        source.add(user)
+        source.add(manager, as: 'manager')
+
+        destination.merge!(source)
+        expect(source.destroyed?).to be true
+
+        expect(destination.users.as(:manager)).to include(manager)
+      end
+
       it "fails to merge if the destination group cannot contain the source group's members" do
         source = MongoidProject.create!
         destination = MongoidGroup.create!
