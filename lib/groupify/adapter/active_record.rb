@@ -79,7 +79,7 @@ module Groupify
         members.each do |member|
           member.group_memberships.where(group_id: self.id).first_or_create!
           if membership_type
-            member.group_memberships.where(group_id: self, membership_type: membership_type).first_or_create!
+            member.group_memberships.where(group_id: self.id, membership_type: membership_type).first_or_create!
           end
           member.clear_association_cache
         end
