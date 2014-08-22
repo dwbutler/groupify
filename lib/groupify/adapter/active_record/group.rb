@@ -133,11 +133,11 @@ module Groupify
           association_name = member_klass.name.to_s.pluralize.underscore.to_sym
           source_type = member_klass.base_class
 
-          has_many association_name, through: :group_memberships, source: :member, source_type: source_type, extend: MemberAssociationExtensions
+          has_many association_name, through: :group_memberships, uniq: true, source: :member, source_type: source_type, extend: MemberAssociationExtensions
           override_member_accessor(association_name)
 
           if member_klass == default_member_class
-            has_many :members, through: :group_memberships, source: :member, source_type: source_type, extend: MemberAssociationExtensions
+            has_many :members, through: :group_memberships, uniq: true, source: :member, source_type: source_type, extend: MemberAssociationExtensions
             override_member_accessor(:members)
           end
         end

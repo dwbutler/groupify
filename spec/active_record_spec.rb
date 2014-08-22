@@ -371,6 +371,13 @@ describe Groupify::ActiveRecord do
         expect(User.in_any_group(group, group2).as('employee').first).to eql(user)
       end
 
+      it "still returns a unique list of groups for the member" do
+        group.add user, as: 'manager'
+        expect(user.groups.size).to eq(1)
+        expect(group.users.size).to eq(1)
+        expect(group.members.size).to eq(1)
+      end
+
       it "checks if members belong to all groups with a certain membership type" do
         group2 = Group.create!
         group3 = Group.create!

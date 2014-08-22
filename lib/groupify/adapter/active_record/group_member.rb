@@ -14,10 +14,10 @@ module Groupify
 
       included do
         unless respond_to?(:group_memberships)
-          has_many :group_memberships, :as => :member, :autosave => true, :dependent => :destroy
+          has_many :group_memberships, as: :member, autosave: true, dependent: :destroy
         end
 
-        has_many :groups, :through => :group_memberships, :class_name => @group_class_name do
+        has_many :groups, through: :group_memberships, uniq: true, class_name: @group_class_name do
           def as(membership_type)
             return self unless membership_type
             where(group_memberships: {membership_type: membership_type})
