@@ -17,32 +17,38 @@ module Groupify
           has_many :group_memberships, as: :member, autosave: true, dependent: :destroy
         end
 
-        has_many :groups, through: :group_memberships, uniq: true, class_name: @group_class_name do
-          def as(membership_type)
-            return self unless membership_type
-            where(group_memberships: {membership_type: membership_type})
+        if ActiveSupport::VERSION::MAJOR > 3
+          has_many :groups, ->{ uniq }, through: :group_memberships, class_name: @group_class_name, extend: GroupAssociationExtensions
+        else
+          has_many :groups, uniq: true, through: :group_memberships, class_name: @group_class_name, extend: GroupAssociationExtensions
+        end
+      end
+
+      module GroupAssociationExtensions
+        def as(membership_type)
+          return self unless membership_type
+          where(group_memberships: {membership_type: membership_type})
+        end
+
+        def delete(*args)
+          opts = args.extract_options!
+          groups = args.flatten
+
+          if opts[:as]
+            proxy_association.owner.group_memberships.where(group_id: groups.map(&:id)).as(opts[:as]).delete_all
+          else
+            super(*groups)
           end
+        end
 
-          def delete(*args)
-            opts = args.extract_options!
-            groups = args.flatten
+        def destroy(*args)
+          opts = args.extract_options!
+          groups = args.flatten
 
-            if opts[:as]
-              proxy_association.owner.group_memberships.where(group_id: groups.map(&:id)).as(opts[:as]).delete_all
-            else
-              super(*groups)
-            end
-          end
-
-          def destroy(*args)
-            opts = args.extract_options!
-            groups = args.flatten
-
-            if opts[:as]
-              proxy_association.owner.group_memberships.where(group_id: groups.map(&:id)).as(opts[:as]).destroy_all
-            else
-              super(*groups)
-            end
+          if opts[:as]
+            proxy_association.owner.group_memberships.where(group_id: groups.map(&:id)).as(opts[:as]).destroy_all
+          else
+            super(*groups)
           end
         end
       end
