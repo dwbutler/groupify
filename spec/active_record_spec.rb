@@ -242,7 +242,8 @@ describe Groupify::ActiveRecord do
       it "members can check if groups are shared" do
         user.groups << group
         widget.groups << group
-        user2 = User.create!(:groups => [group])
+        user2 = User.create!
+        user2.groups << group
         
         expect(user.shares_any_group?(widget)).to be true
         expect(Widget.shares_any_group(user).to_a).to include(widget)
