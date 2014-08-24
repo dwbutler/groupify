@@ -7,7 +7,8 @@ model? Use named groups instead to add members to named groups such as
 `:admin` or `"Team Rocketpants"`.
 
 The following ORMs are supported:
-Mongoid 3.1 & 4.0, ActiveRecord 3.2 & 4.x
+ * ActiveRecord 3.2, 4.x
+ * Mongoid 3.1, 4.0, 
 
 The following Rubies are supported:
  * MRI Ruby 1.9.3, 2.0.x, 2.1.x
@@ -34,7 +35,7 @@ Add a migration similar to the following:
 class CreateGroups < ActiveRecord::Migration
   def change
     create_table :groups do |t|
-      t.string     :type      # Only needed if using single table inheritence
+      t.string     :type      # Only needed if using single table inheritance
     end
     
     create_table :group_memberships do |t|
@@ -56,7 +57,7 @@ In your group model:
 
 ```ruby
 class Group < ActiveRecord::Base  
-  acts_as_group :members => [:users, :assignments], :default_members => :users
+  groupify :group, members: [:users, :assignments], default_members: :users
 end
 ```
 
@@ -64,12 +65,12 @@ In your member models (i.e. `User`):
 
 ```ruby
 class User < ActiveRecord::Base
-  acts_as_group_member
-  acts_as_named_group_member
+  groupify :group_member
+  groupify :named_group_member
 end
 
 class Assignment < ActiveRecord::Base
-  acts_as_group_member
+  groupify :group_member
 end
 ```
 
@@ -77,7 +78,7 @@ You will also need to define a `GroupMembership` model to join groups to members
 
 ```ruby
 class GroupMembership < ActiveRecord::Base  
-  acts_as_group_membership
+  groupify :group_membership
 end
 ```
 
@@ -88,7 +89,7 @@ In your group model:
 class Group
   include Mongoid::Document
 
-  acts_as_group :members => [:users], :default_members => :users
+  groupify :group, members: [:users], default_members: :users
 end
 ```
 
@@ -98,8 +99,8 @@ In your member models (i.e. `User`):
 class User
   include Mongoid::Document
   
-  acts_as_group_member
-  acts_as_named_group_member
+  groupify :group_member
+  groupify :named_group_member
 end
 ```
 
@@ -267,12 +268,12 @@ end
 ```ruby
 # Whatever class represents a logged-in user in your app
 class User
-  acts_as_named_group_member
+  groupify :named_group_member
   include Authority::UserAbilities
 end
 
 class Widget
-  acts_as_named_group_member
+  groupify :named_group_member
   include Authority::Abilities
 end
 

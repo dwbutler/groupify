@@ -64,23 +64,23 @@ end
 require 'groupify/adapter/active_record'
 
 class User < ActiveRecord::Base  
-  acts_as_group_member
-  acts_as_named_group_member
+  groupify :group_member
+  groupify :named_group_member
 end
 
 class Manager < User
 end
 
 class Widget < ActiveRecord::Base
-  acts_as_group_member
+  groupify :group_member
 end
 
 class Project < ActiveRecord::Base
-  acts_as_named_group_member
+  groupify :named_group_member
 end
 
 class Group < ActiveRecord::Base  
-  acts_as_group :members => [:users, :widgets], :default_members => :users
+  groupify :group, members: [:users, :widgets], default_members: :users
 end
 
 class Organization < Group
@@ -88,7 +88,7 @@ class Organization < Group
 end
 
 class GroupMembership < ActiveRecord::Base  
-  acts_as_group_membership
+  groupify :group_membership
 end
 
 describe Group do

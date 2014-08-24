@@ -8,6 +8,10 @@ module Groupify
       end
 
       module ClassMethods
+        def groupify(type, opts = {})
+          send("acts_as_#{type}", opts)
+        end
+
         def acts_as_group(opts = {})
           include Groupify::Mongoid::Group
 

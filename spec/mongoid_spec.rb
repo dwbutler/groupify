@@ -35,8 +35,8 @@ require 'groupify/adapter/mongoid'
 class MongoidUser
   include Mongoid::Document
   
-  acts_as_group_member :class_name => 'MongoidGroup'
-  acts_as_named_group_member
+  groupify :group_member, class_name: 'MongoidGroup'
+  groupify :named_group_member
 end
 
 class MongoidManager < MongoidUser
@@ -44,32 +44,32 @@ end
 
 class MongoidWidget
   include Mongoid::Document
-  acts_as_group_member :class_name => 'MongoidGroup'
+  groupify :group_member, class_name: 'MongoidGroup'
 end
 
 class MongoidTask
   include Mongoid::Document
   
-  acts_as_group_member :class_name => 'MongoidGroup'
+  groupify :group_member, class_name: 'MongoidGroup'
 end
 
 class MongoidIssue
   include Mongoid::Document
 
-  acts_as_group_member :class_name => 'MongoidProject'
+  groupify :group_member, class_name: 'MongoidProject'
 end
 
 class MongoidGroup
   include Mongoid::Document
   
-  acts_as_group :members => [:mongoid_users, :mongoid_tasks, :mongoid_widgets], :default_members => :mongoid_users
+  groupify :group, members: [:mongoid_users, :mongoid_tasks, :mongoid_widgets], default_members: :mongoid_users
   alias_method :users, :mongoid_users
   alias_method :tasks, :mongoid_tasks
   alias_method :widgets, :mongoid_widgets
 end
 
 class MongoidProject < MongoidGroup
-  acts_as_named_group_member
+  groupify :named_group_member
 
   has_members :mongoid_issues
   has_members :mongoid_managers
