@@ -15,7 +15,7 @@ appraise "rails-4.1" do
 end
 
 appraise "rails-4.2" do
-  gem 'activerecord', "~> 4.2.0.beta1"
+  gem 'activerecord', "~> 4.2.0"
 
   gem "mongoid", "~> 4.0"
 end
