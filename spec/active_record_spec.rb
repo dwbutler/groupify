@@ -59,6 +59,10 @@ ActiveRecord::Schema.define(:version => 1) do
   create_table :organizations do |t|
     t.string     :name
   end
+
+  create_table :members do |t|
+    t.string :name
+  end
 end
 
 require 'groupify/adapter/active_record'
@@ -75,12 +79,18 @@ class Widget < ActiveRecord::Base
   groupify :group_member
 end
 
+module Namespaced
+  class Member < ActiveRecord::Base
+    groupify :group_member
+  end
+end
+
 class Project < ActiveRecord::Base
   groupify :named_group_member
 end
 
 class Group < ActiveRecord::Base  
-  groupify :group, members: [:users, :widgets], default_members: :users
+  groupify :group, members: [:users, :widgets, "namespaced/members"], default_members: :users
 end
 
 class Organization < Group
@@ -112,6 +122,7 @@ describe Groupify::ActiveRecord do
   let!(:user) { User.create! }
   let!(:group) { Group.create! }
   let(:widget) { Widget.create! }
+  let(:namespaced_member) { Namespaced::Member.create! }
 
   context 'when using groups' do
     it "members and groups are empty when initialized" do
@@ -134,6 +145,11 @@ describe Groupify::ActiveRecord do
       group.add user
       expect(user.groups).to include(group)
       expect(group.members).to include(user)
+    end
+
+    it "adds a namespaced member to a group" do
+      group.add(namespaced_member)
+      expect(group.namespaced_members).to include(namespaced_member)
     end
 
     it "adds multiple members to a group" do
