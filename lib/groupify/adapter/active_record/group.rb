@@ -138,7 +138,7 @@ module Groupify
         end
 
         def define_member_association(member_klass, association_name = nil)
-          association_name ||= member_klass.name.to_s.pluralize.underscore.to_sym
+          association_name ||= member_klass.model_name.plural.to_sym
           source_type = member_klass.base_class
 
           if ActiveSupport::VERSION::MAJOR > 3
