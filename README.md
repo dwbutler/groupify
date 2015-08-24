@@ -7,12 +7,18 @@ model? Use named groups instead to add members to named groups such as
 `:admin` or `"Team Rocketpants"`.
 
 The following ORMs are supported:
- * ActiveRecord 3.2, 4.x
- * Mongoid 3.1, 4.0, 
+ * ActiveRecord 3.2, 4.1.x, 4.2.x
+ * Mongoid 3.1, 4.0
 
 The following Rubies are supported:
- * MRI Ruby 1.9.3, 2.0.x, 2.1.x
+ * MRI Ruby 1.9.3, 2.0.x, 2.1.x, 2.2.x
  * JRuby (1.9 mode)
+
+The following databases are supported:
+ * MySQL
+ * PostgreSQL
+ * SQLite
+ * MongoDB
 
 ## Installation
 
