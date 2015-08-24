@@ -117,7 +117,7 @@ module Groupify
           return none unless groups.present?
 
           joins(:group_memberships).
-              group(:"group_memberships.member_id").
+              group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
               where(:group_memberships => {:group_id => groups.map(&:id)}).
               having("COUNT(group_memberships.group_id) = #{groups.count}").
               uniq
@@ -128,7 +128,7 @@ module Groupify
           return none unless groups.present?
 
           joins(:group_memberships).
-              group(:"group_memberships.member_id").
+              group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
               having("COUNT(DISTINCT group_memberships.group_id) = #{groups.count}").
               uniq
         end

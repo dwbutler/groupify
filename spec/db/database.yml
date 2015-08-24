@@ -1,0 +1,20 @@
+sqlite3:
+  adapter: <%= "jdbc" if defined? JRUBY_VERSION %>sqlite3
+  database: groupify.sqlite3.db
+sqlite3mem:
+  adapter: <%= "jdbc" if defined? JRUBY_VERSION %>sqlite3
+  database: ":memory:"
+postgresql:
+  adapter: postgresql
+  encoding: unicode
+  database: groupify_test
+  pool: 5
+  username: postgres
+  password: postgres
+  min_messages: warning
+mysql:
+  adapter: <%= defined?(JRUBY_VERSION) ? "jdbcmysql" : "mysql2" %>
+  host: localhost
+  username: root
+  password:
+  database: groupify_test
