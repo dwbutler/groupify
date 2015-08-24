@@ -1,15 +1,18 @@
 require 'active_record'
 
-puts "ActiveRecord version #{ActiveSupport::VERSION::STRING}"
+DATABASE = ENV.fetch('DATABASE', 'sqlite3mem')
 
-# Load database config
-if JRUBY
-  require 'jdbc/sqlite3'
-  require 'active_record'
-  require 'active_record/connection_adapters/jdbcsqlite3_adapter'
-else
-  require 'sqlite3'
-end
+puts "ActiveRecord Version: #{ActiveSupport::VERSION::STRING}, Database: #{DATABASE}"
+
+require 'yaml'
+require 'erb'
+ActiveRecord::Base.configurations = YAML::load(ERB.new(IO.read("#{File.dirname(__FILE__)}/db/database.yml")).result)
+ActiveRecord::Base.establish_connection(DATABASE.to_sym)
+ActiveRecord::Migration.verbose = false
+
+require 'combustion/database'
+Combustion::Database.create_database(ActiveRecord::Base.configurations[DATABASE])
+load(File.join(File.dirname(__FILE__), "db", "schema.rb"))
 
 RSpec.configure do |config|
   config.before(:suite) do
@@ -23,45 +26,11 @@ RSpec.configure do |config|
   config.after(:each) do
     DatabaseCleaner[:active_record].clean
   end
-end
 
-ActiveRecord::Base.establish_connection( :adapter => 'sqlite3', :database => ":memory:" )
-
-ActiveRecord::Migration.verbose = false
-ActiveRecord::Schema.define(:version => 1) do
-
-  create_table :groups do |t|
-    t.string     :name
-    t.string     :type
-  end
-  
-  create_table :group_memberships do |t|
-    t.string     :member_type
-    t.integer    :member_id
-    t.integer    :group_id
-    t.string     :group_name
-    t.string     :membership_type
-  end
-
-  create_table :users do |t|
-    t.string   :name
-    t.string   :type
-  end
-
-  create_table :widgets do |t|
-    t.string     :name
-  end
-
-  create_table :projects do |t|
-    t.string     :name
-  end
-
-  create_table :organizations do |t|
-    t.string     :name
-  end
-
-  create_table :members do |t|
-    t.string :name
+  config.after(:suite) do
+    unless ENV['DB'] =~ /sqlite/
+      Combustion::Database.drop_database(ActiveRecord::Base.configurations[DATABASE])
+    end
   end
 end
 

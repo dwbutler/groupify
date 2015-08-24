@@ -16,15 +16,14 @@ Gem::Specification.new do |gem|
   gem.version       = Groupify::VERSION
   gem.license       = 'MIT'
 
-  gem.add_development_dependency "mongoid", ">= 3.1"
-  gem.add_development_dependency "activerecord", ">= 3.2"
+  gem.required_ruby_version = ">= 1.9.3"
 
-  unless defined?(JRUBY_VERSION)
-    gem.add_development_dependency "sqlite3"
-  end
+  gem.add_development_dependency "mongoid", ">= 3.1"
+  gem.add_development_dependency "activerecord", ">= 3.2", "< 5"
 
   gem.add_development_dependency "rspec", ">= 3"
 
   gem.add_development_dependency "database_cleaner", "~> 1.3.0"
+  gem.add_development_dependency 'combustion'
   gem.add_development_dependency "appraisal"
 end

@@ -1,5 +1,10 @@
 language: ruby
 services: mongodb
+env:
+  - DATABASE=sqlite3
+  - DATABASE=sqlite3mem
+  - DATABASE=postgresql
+  - DATABASE=mysql
 rvm:
   - 1.9.3
   - 2.0.0
