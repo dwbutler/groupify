@@ -1,4 +1,3 @@
 --color
 --format progress
 --require spec_helper
---pattern "spec/**/*_spec.rb"
