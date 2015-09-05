@@ -14,7 +14,11 @@ module Groupify
 
       included do
         unless respond_to?(:group_memberships)
-          has_many :group_memberships, :as => :member, :autosave => true, :dependent => :destroy
+          has_many :group_memberships,
+                   as: :member,
+                   autosave: true,
+                   dependent: :destroy,
+                   class_name: Groupify.group_membership_class_name
         end
       end
 
@@ -82,7 +86,7 @@ module Groupify
           joins(:group_memberships).
               group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
               where(:group_memberships => {:group_name => named_groups}).
-              having("COUNT(DISTINCT group_memberships.group_name) = #{named_groups.count}").
+              having("COUNT(DISTINCT #{reflect_on_association(:group_memberships).klass.quoted_table_name}.#{connection.quote_column_name('group_name')}) = ?", named_groups.count).
               uniq
         end
 
@@ -92,7 +96,7 @@ module Groupify
 
           joins(:group_memberships).
               group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
-              having("COUNT(DISTINCT group_memberships.group_name) = #{named_groups.count}").
+              having("COUNT(DISTINCT #{reflect_on_association(:group_memberships).klass.quoted_table_name}.#{connection.quote_column_name('group_name')}) = ?", named_groups.count).
               uniq
         end
 

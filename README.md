@@ -34,27 +34,28 @@ Or install it yourself as:
 
     $ gem install groupify
 
+## Setup
+
 ### Active Record
 Add a migration similar to the following:
 
 ```ruby
-class CreateGroups < ActiveRecord::Migration
+class GroupifyMigration < ActiveRecord::Migration
   def change
     create_table :groups do |t|
-      t.string     :type      # Only needed if using single table inheritance
+      t.string     :type
     end
     
     create_table :group_memberships do |t|
-      t.string     :member_type     # Necessary to make polymorphic members work
-      t.integer    :member_id       # The id of the member that belongs to this group
-      t.integer    :group_id        # The group to which the member belongs
-      t.string     :group_name      # The named group to which a member belongs (if using)
-      t.string     :membership_type # The type of membership the member belongs with
+      t.references :member, polymorphic: true, index: true
+      t.references :group, polymorphic: true, index: true
+      
+      # The named group to which a member belongs (if using)
+      t.string     :group_name, index: true
+      
+      # The type of membership the member belongs with
+      t.string     :membership_type
     end
-
-    add_index :group_memberships, [:member_id, :member_type]
-    add_index :group_memberships, :group_id
-    add_index :group_memberships, :group_name
   end
 end
 ```
@@ -110,7 +111,29 @@ class User
 end
 ```
 
-## Basic Usage
+## Advanced Configuration
+
+The default model names for groups and group memberships are configurable. Add the following
+configuration in `config/initializers/groupify.rb` to change the model names for all classes:
+
+```ruby
+Groupify.configure do |config|
+  config.group_class_name = 'MyCustomGroup'
+  # ActiveRecord only
+  config.group_membership_class_name = 'MyCustomGroupMembership'
+end
+```
+
+The group name can also be set on a model-by-model basis for each group member by passing
+the `group_class_name` option:
+
+```ruby
+class Member < ActiveRecord::Base
+  groupify :group_member, group_class_name: 'MyOtherCustomGroup'
+end
+```
+
+## Usage Examples
 
 ### Create groups and add members
 

@@ -3,7 +3,7 @@ module Groupify
 
     # Usage:
     #    class Group < ActiveRecord::Base
-    #        acts_as_group, :members => [:users]
+    #        groupify :group, members: [:users]
     #        ...
     #    end
     #
@@ -15,7 +15,10 @@ module Groupify
       included do
         @default_member_class = nil
         @member_klasses ||= Set.new
-        has_many :group_memberships, :dependent => :destroy
+        has_many :group_memberships,
+                 dependent: :destroy,
+                 class_name: Groupify.group_membership_class_name
+
       end
 
       def member_classes
@@ -31,9 +34,9 @@ module Groupify
         clear_association_cache
 
         members.each do |member|
-          member.group_memberships.where(group_id: self.id).first_or_create!
+          member.group_memberships.where(group_id: id, group_type: self.class.model_name.to_s).first_or_create!
           if membership_type
-            member.group_memberships.where(group_id: self.id, membership_type: membership_type).first_or_create!
+            member.group_memberships.where(group_id: id, group_type: self.class.model_name.to_s, membership_type: membership_type).first_or_create!
           end
           member.clear_association_cache
         end
@@ -142,9 +145,19 @@ module Groupify
           source_type = member_klass.base_class
 
           if ActiveSupport::VERSION::MAJOR > 3
-            has_many association_name, ->{ uniq }, through: :group_memberships, source: :member, source_type: source_type, extend: MemberAssociationExtensions
+            has_many association_name,
+                     ->{ uniq },
+                     through: :group_memberships,
+                     source: :member,
+                     source_type: source_type,
+                     extend: MemberAssociationExtensions
           else
-            has_many association_name, uniq: true, through: :group_memberships, source: :member, source_type: source_type, extend: MemberAssociationExtensions
+            has_many association_name,
+                     uniq: true,
+                     through: :group_memberships,
+                     source: :member,
+                     source_type: source_type,
+                     extend: MemberAssociationExtensions
           end
 
           define_method(association_name) do |*args|

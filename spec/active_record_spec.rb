@@ -88,10 +88,62 @@ if DEBUG
 end
 
 describe Groupify::ActiveRecord do
-  let!(:user) { User.create! }
-  let!(:group) { Group.create! }
+  let(:user) { User.create! }
+  let(:group) { Group.create! }
   let(:widget) { Widget.create! }
   let(:namespaced_member) { Namespaced::Member.create! }
+
+  describe "configuration" do
+    context "globally configured group and group membership models" do
+      before do
+        Groupify.configure do |config|
+          config.group_class_name = 'CustomGroup'
+          config.group_membership_class_name = 'CustomGroupMembership'
+        end
+
+        class CustomGroupMembership < ActiveRecord::Base
+          groupify :group_membership
+        end
+
+        class CustomUser < ActiveRecord::Base
+          groupify :group_member
+        end
+
+        class CustomGroup < ActiveRecord::Base
+          groupify :group
+        end
+      end
+
+      after do
+        Groupify.configure do |config|
+          config.group_class_name = 'Group'
+          config.group_membership_class_name = 'GroupMembership'
+        end
+      end
+
+      it "uses the custom models to store groups and group memberships" do
+        custom_user = CustomUser.create!
+        custom_group = CustomGroup.create!
+        custom_user.groups << custom_group
+        expect(GroupMembership.count).to eq(0)
+        expect(CustomGroupMembership.count).to eq(1)
+      end
+    end
+
+    context "member with custom group model" do
+      before do
+        class ProjectMember < ActiveRecord::Base
+          groupify :group_member, group_class_name: 'Project'
+        end
+      end
+
+      it "overrides the default group name on a per-model basis" do
+        member = ProjectMember.create!
+        member.groups.create!
+        expect(member.groups.first).to be_a Project
+      end
+    end
+  end
 
   context 'when using groups' do
     it "members and groups are empty when initialized" do

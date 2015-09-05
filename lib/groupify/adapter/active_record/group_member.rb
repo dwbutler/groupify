@@ -3,7 +3,7 @@ module Groupify
 
     # Usage:
     #    class User < ActiveRecord::Base
-    #        acts_as_group_member
+    #        groupify :group_member
     #        ...
     #    end
     #
@@ -14,13 +14,26 @@ module Groupify
 
       included do
         unless respond_to?(:group_memberships)
-          has_many :group_memberships, as: :member, autosave: true, dependent: :destroy
+          has_many :group_memberships,
+                   as: :member,
+                   autosave: true,
+                   dependent: :destroy,
+                   class_name: Groupify.group_membership_class_name
         end
 
         if ActiveSupport::VERSION::MAJOR > 3
-          has_many :groups, ->{ uniq }, through: :group_memberships, class_name: @group_class_name, extend: GroupAssociationExtensions
+          has_many :groups, ->{ uniq },
+                   through: :group_memberships,
+                   as: :group,
+                   source_type: @group_class_name,
+                   extend: GroupAssociationExtensions
         else
-          has_many :groups, uniq: true, through: :group_memberships, class_name: @group_class_name, extend: GroupAssociationExtensions
+          has_many :groups,
+                   uniq: true,
+                   through: :group_memberships,
+                   as: :group,
+                   source_type: @group_class_name,
+                   extend: GroupAssociationExtensions
         end
       end
 
@@ -92,9 +105,6 @@ module Groupify
       end
 
       module ClassMethods
-        def group_class_name; @group_class_name ||= 'Group'; end
-        def group_class_name=(klass);  @group_class_name = klass; end
-
         def as(membership_type)
           joins(:group_memberships).where(group_memberships: { membership_type: membership_type })
         end
@@ -118,8 +128,8 @@ module Groupify
 
           joins(:group_memberships).
               group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
-              where(:group_memberships => {:group_id => groups.map(&:id)}).
-              having("COUNT(group_memberships.group_id) = #{groups.count}").
+              where(group_memberships: {group_id: groups.map(&:id)}).
+              having("COUNT(#{reflect_on_association(:group_memberships).klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
               uniq
         end
 
@@ -129,7 +139,7 @@ module Groupify
 
           joins(:group_memberships).
               group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
-              having("COUNT(DISTINCT group_memberships.group_id) = #{groups.count}").
+              having("COUNT(DISTINCT #{reflect_on_association(:group_memberships).klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
               uniq
         end
 

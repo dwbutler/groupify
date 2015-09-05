@@ -35,7 +35,7 @@ require 'groupify/adapter/mongoid'
 class MongoidUser
   include Mongoid::Document
   
-  groupify :group_member, class_name: 'MongoidGroup'
+  groupify :group_member, group_class_name: 'MongoidGroup'
   groupify :named_group_member
 end
 
@@ -44,19 +44,19 @@ end
 
 class MongoidWidget
   include Mongoid::Document
-  groupify :group_member, class_name: 'MongoidGroup'
+  groupify :group_member, group_class_name: 'MongoidGroup'
 end
 
 class MongoidTask
   include Mongoid::Document
   
-  groupify :group_member, class_name: 'MongoidGroup'
+  groupify :group_member, group_class_name: 'MongoidGroup'
 end
 
 class MongoidIssue
   include Mongoid::Document
 
-  groupify :group_member, class_name: 'MongoidProject'
+  groupify :group_member, group_class_name: 'MongoidProject'
 end
 
 class MongoidGroup
