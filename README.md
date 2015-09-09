@@ -104,7 +104,10 @@ class Member < ActiveRecord::Base
 end
 ```
 
-##### Group Members
+Note that each member model can only belong to a single type of group (or child classes
+of that group).
+
+##### Member Associations on Group
 
 Your group class can be configured to create associations for each expected member type.
 For example, let's say that your group class will have users and assignments as members.
@@ -118,6 +121,17 @@ end
 
 The `default_members` option sets the model type when accessing the `members` association.
 In the example above, `group.members` would return the users who are members of this group.
+
+If you are using single table inheritance, child classes inherit the member associations
+of the parent. If your child class needs to add more members, use the `has_members` method.
+
+Example:
+
+```ruby
+class Organization < Group
+  has_members [:offices, :equipment]
+end
+```
 
 Mongoid works the same way by creating Mongoid relations. 
 
