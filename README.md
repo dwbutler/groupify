@@ -6,6 +6,8 @@ relationship between a Group model and any member model. Don't need a Group
 model? Use named groups instead to add members to named groups such as
 `:admin` or `"Team Rocketpants"`.
 
+## Compatibility
+
 The following ORMs are supported:
  * ActiveRecord 3.2, 4.1.x, 4.2.x
  * Mongoid 3.1, 4.0
@@ -34,9 +36,9 @@ Or install it yourself as:
 
     $ gem install groupify
 
-## Setup
+### Setup
 
-### Active Record
+#### Active Record
 
 Execute:
 
@@ -61,7 +63,7 @@ class Assignment < ActiveRecord::Base
 end
 ```
 
-### Mongoid
+#### Mongoid
 
 Execute:
 
@@ -78,9 +80,9 @@ class User
 end
 ```
 
-## Advanced Configuration
+#### Advanced Configuration
 
-### Groupify Model Names
+##### Groupify Model Names
 
 The default model names for groups and group memberships are configurable. Add the following
 configuration in `config/initializers/groupify.rb` to change the model names for all classes:
@@ -102,7 +104,7 @@ class Member < ActiveRecord::Base
 end
 ```
 
-### Group Members
+##### Group Members
 
 Your group class can be configured to create associations for each expected member type.
 For example, let's say that your group class will have users and assignments as members.
@@ -119,7 +121,7 @@ In the example above, `group.members` would return the users who are members of 
 
 Mongoid works the same way by creating Mongoid relations. 
 
-## Usage Examples
+## Usage
 
 ### Create groups and add members
 
@@ -253,10 +255,6 @@ employee.groups.delete(group)
 employee.in_group?(group)                   # => false
 employee.in_group?(group, as: 'employee')   # => false
 ```
-
-## But wait, there's more!
-
-Check the specs for a complete list of methods and scopes provided by Groupify.
 
 ## Using for Authorization
 Groupify was originally created to help implement user authorization, although it can be used
