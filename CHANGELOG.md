@@ -1,5 +1,14 @@
 # Change Log
 
+## [v0.7.0](https://github.com/dwbutler/groupify/tree/v0.7.0) (2015-09-09)
+[Full Changelog](https://github.com/dwbutler/groupify/compare/v0.6.3...v0.7.0)
+
+**Implemented enhancements:**
+
+- Options for acts\_as\_group like class name for group\_membership [\#19](https://github.com/dwbutler/groupify/issues/19)
+- Migration Generator [\#1](https://github.com/dwbutler/groupify/issues/1)
+- Make group and group membership class names configurable [\#32](https://github.com/dwbutler/groupify/pull/32) ([dwbutler](https://github.com/dwbutler))
+
 ## [v0.6.3](https://github.com/dwbutler/groupify/tree/v0.6.3) (2015-08-24)
 [Full Changelog](https://github.com/dwbutler/groupify/compare/v0.6.2...v0.6.3)
 
