@@ -1,5 +1,5 @@
 # Groupify
-[![Build Status](https://secure.travis-ci.org/dwbutler/groupify.png)](http://travis-ci.org/dwbutler/groupify) [![Coverage Status](https://coveralls.io/repos/dwbutler/groupify/badge.svg?branch=master&service=github)](https://coveralls.io/github/dwbutler/groupify?branch=master) [![Code Climate](https://codeclimate.com/github/dwbutler/groupify.png)](https://codeclimate.com/github/dwbutler/groupify) [![Inline docs](http://inch-ci.org/github/dwbutler/groupify.svg?branch=master)](http://inch-ci.org/github/dwbutler/groupify)
+[![Build Status](https://travis-ci.org/dwbutler/groupify.svg)](https://travis-ci.org/dwbutler/groupify) [![Coverage Status](https://coveralls.io/repos/dwbutler/groupify/badge.svg?branch=master&service=github)](https://coveralls.io/github/dwbutler/groupify?branch=master) [![Code Climate](https://codeclimate.com/github/dwbutler/groupify/badges/gpa.svg)](https://codeclimate.com/github/dwbutler/groupify) [![Inline docs](http://inch-ci.org/github/dwbutler/groupify.svg?branch=master)](http://inch-ci.org/github/dwbutler/groupify)
 
 Adds group and membership functionality to Rails models. Defines a polymorphic
 relationship between a Group model and any member model. Don't need a Group
@@ -40,7 +40,7 @@ Or install it yourself as:
 
 Execute:
 
-    $ rails g groupify:active_record:install
+    $ rails generate groupify:active_record:install
 
 This will generate an initializer, `Group` model, `GroupMembership` model, and migrations.
 
@@ -65,7 +65,7 @@ end
 
 Execute:
 
-    $ rails g groupify:mongoid:install
+    $ rails generate groupify:mongoid:install
 
 Set up your member models:
 
@@ -348,12 +348,12 @@ end
 ## Upgrading
 
 ### 0.7+ - Polymorphic Groups (ActiveRecord only)
-Groupify < 0.6x required a single `Group` model used for all group memberships.
+Groupify < 0.7 required a single `Group` model used for all group memberships.
 Groupify 0.7+ supports using multiple models as groups by implementing polymorphic associations.
 Upgrading requires adding a new `group_type` column to the `group_memberships` table and
 populating that column with the class name of the group. Create the migration by executing:
 
-    $ rails g groupify:active_record:upgrade
+    $ rails generate groupify:active_record:upgrade
 
 And then run the migration:
 
