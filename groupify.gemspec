@@ -24,6 +24,8 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "rspec", ">= 3"
 
   gem.add_development_dependency "database_cleaner", "~> 1.3.0"
-  gem.add_development_dependency 'combustion'
+  gem.add_development_dependency "combustion"
   gem.add_development_dependency "appraisal"
+
+  gem.add_development_dependency "github_changelog_generator"
 end
