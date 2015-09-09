@@ -1,10 +1,12 @@
 # Groupify
-[![Build Status](https://secure.travis-ci.org/dwbutler/groupify.png)](http://travis-ci.org/dwbutler/groupify) [![Coverage Status](https://coveralls.io/repos/dwbutler/groupify/badge.svg?branch=master&service=github)](https://coveralls.io/github/dwbutler/groupify?branch=master) [![Code Climate](https://codeclimate.com/github/dwbutler/groupify.png)](https://codeclimate.com/github/dwbutler/groupify) [![Inline docs](http://inch-ci.org/github/dwbutler/groupify.svg?branch=master)](http://inch-ci.org/github/dwbutler/groupify)
+[![Build Status](https://travis-ci.org/dwbutler/groupify.svg?branch=master)](https://travis-ci.org/dwbutler/groupify) [![Coverage Status](https://coveralls.io/repos/dwbutler/groupify/badge.svg?branch=master&service=github)](https://coveralls.io/github/dwbutler/groupify?branch=master) [![Code Climate](https://codeclimate.com/github/dwbutler/groupify/badges/gpa.svg)](https://codeclimate.com/github/dwbutler/groupify) [![Inline docs](http://inch-ci.org/github/dwbutler/groupify.svg?branch=master)](http://inch-ci.org/github/dwbutler/groupify)
 
 Adds group and membership functionality to Rails models. Defines a polymorphic
 relationship between a Group model and any member model. Don't need a Group
 model? Use named groups instead to add members to named groups such as
 `:admin` or `"Team Rocketpants"`.
+
+## Compatibility
 
 The following ORMs are supported:
  * ActiveRecord 3.2, 4.1.x, 4.2.x
@@ -34,40 +36,21 @@ Or install it yourself as:
 
     $ gem install groupify
 
-### Active Record
-Add a migration similar to the following:
+### Setup
 
-```ruby
-class CreateGroups < ActiveRecord::Migration
-  def change
-    create_table :groups do |t|
-      t.string     :type      # Only needed if using single table inheritance
-    end
-    
-    create_table :group_memberships do |t|
-      t.string     :member_type     # Necessary to make polymorphic members work
-      t.integer    :member_id       # The id of the member that belongs to this group
-      t.integer    :group_id        # The group to which the member belongs
-      t.string     :group_name      # The named group to which a member belongs (if using)
-      t.string     :membership_type # The type of membership the member belongs with
-    end
+#### Active Record
 
-    add_index :group_memberships, [:member_id, :member_type]
-    add_index :group_memberships, :group_id
-    add_index :group_memberships, :group_name
-  end
-end
-```
+Execute:
 
-In your group model:
+    $ rails generate groupify:active_record:install
 
-```ruby
-class Group < ActiveRecord::Base  
-  groupify :group, members: [:users, :assignments], default_members: :users
-end
-```
+This will generate an initializer, `Group` model, `GroupMembership` model, and migrations.
 
-In your member models (i.e. `User`):
+Modify the models and migrations as needed, then run the migration:
+
+    $ rake db:migrate
+
+Set up your member models:
 
 ```ruby
 class User < ActiveRecord::Base
@@ -80,26 +63,13 @@ class Assignment < ActiveRecord::Base
 end
 ```
 
-You will also need to define a `GroupMembership` model to join groups to members:
+#### Mongoid
 
-```ruby
-class GroupMembership < ActiveRecord::Base  
-  groupify :group_membership
-end
-```
+Execute:
 
-### Mongoid
-In your group model:
+    $ rails generate groupify:mongoid:install
 
-```ruby
-class Group
-  include Mongoid::Document
-
-  groupify :group, members: [:users], default_members: :users
-end
-```
-
-In your member models (i.e. `User`):
+Set up your member models:
 
 ```ruby
 class User
@@ -110,7 +80,62 @@ class User
 end
 ```
 
-## Basic Usage
+#### Advanced Configuration
+
+##### Groupify Model Names
+
+The default model names for groups and group memberships are configurable. Add the following
+configuration in `config/initializers/groupify.rb` to change the model names for all classes:
+
+```ruby
+Groupify.configure do |config|
+  config.group_class_name = 'MyCustomGroup'
+  # ActiveRecord only
+  config.group_membership_class_name = 'MyCustomGroupMembership'
+end
+```
+
+The group name can also be set on a model-by-model basis for each group member by passing
+the `group_class_name` option:
+
+```ruby
+class Member < ActiveRecord::Base
+  groupify :group_member, group_class_name: 'MyOtherCustomGroup'
+end
+```
+
+Note that each member model can only belong to a single type of group (or child classes
+of that group).
+
+##### Member Associations on Group
+
+Your group class can be configured to create associations for each expected member type.
+For example, let's say that your group class will have users and assignments as members.
+The following configuration adds `users` and `assignments` associations on the group model:
+
+```ruby
+class Group < ActiveRecord::Base
+  groupify :group, members: [:users, :assignments], default_members: :users
+end
+```
+
+The `default_members` option sets the model type when accessing the `members` association.
+In the example above, `group.members` would return the users who are members of this group.
+
+If you are using single table inheritance, child classes inherit the member associations
+of the parent. If your child class needs to add more members, use the `has_members` method.
+
+Example:
+
+```ruby
+class Organization < Group
+  has_members [:offices, :equipment]
+end
+```
+
+Mongoid works the same way by creating Mongoid relations. 
+
+## Usage
 
 ### Create groups and add members
 
@@ -245,10 +270,6 @@ employee.in_group?(group)                   # => false
 employee.in_group?(group, as: 'employee')   # => false
 ```
 
-## But wait, there's more!
-
-Check the specs for a complete list of methods and scopes provided by Groupify.
-
 ## Using for Authorization
 Groupify was originally created to help implement user authorization, although it can be used
 generically for much more than that. Here are some examples of how to do it.
@@ -335,6 +356,23 @@ class PostPolicy < Struct.new(:user, :post)
   end
 end
 ```
+
+## Upgrading
+
+### 0.7+ - Polymorphic Groups (ActiveRecord only)
+Groupify < 0.7 required a single `Group` model used for all group memberships.
+Groupify 0.7+ supports using multiple models as groups by implementing polymorphic associations.
+Upgrading requires adding a new `group_type` column to the `group_memberships` table and
+populating that column with the class name of the group. Create the migration by executing:
+
+    $ rails generate groupify:active_record:upgrade
+
+And then run the migration:
+
+    $ rake db:migrate
+
+Please note that this migration may block writes in MySQL if your `group_memberships`
+table is large.
 
 ## Contributing
 

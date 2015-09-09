@@ -103,9 +103,6 @@ module Groupify
       end
 
       module ClassMethods
-        def group_class_name; @group_class_name ||= 'Group'; end
-        def group_class_name=(klass);  @group_class_name = klass; end
-
         def in_group(group)
           group.present? ? self.in(group_ids: group.id) : none
         end

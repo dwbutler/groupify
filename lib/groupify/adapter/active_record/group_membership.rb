@@ -5,7 +5,7 @@ module Groupify
     #
     # Usage:
     #    class GroupMembership < ActiveRecord::Base
-    #        acts_as_group_membership
+    #        groupify :group_membership
     #        ...
     #    end
     #
@@ -15,8 +15,8 @@ module Groupify
       included do
         attr_accessible(:member, :group, :group_name, :membership_type, :as) if ActiveSupport::VERSION::MAJOR < 4
 
-        belongs_to :member, :polymorphic => true
-        belongs_to :group
+        belongs_to :member, polymorphic: true
+        belongs_to :group, polymorphic: true
       end
 
       def membership_type=(membership_type)

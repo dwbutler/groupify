@@ -27,7 +27,7 @@ module Groupify
         end
 
         def acts_as_group_member(opts = {})
-          @group_class_name = opts[:class_name] || 'Group'
+          @group_class_name = opts[:group_class_name] || Groupify.group_class_name
           include Groupify::Mongoid::GroupMember
         end
 

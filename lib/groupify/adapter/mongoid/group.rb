@@ -5,7 +5,7 @@ module Groupify
     #    class Group
     #      include Mongoid::Document
     #
-    #      acts_as_group, :members => [:users]
+    #      groupify :group, members: [:users]
     #      ...
     #    end
     #
@@ -136,7 +136,7 @@ module Groupify
         end
 
         def associate_member_class(member_klass)
-	  association_name ||= member_klass.model_name.plural.to_sym
+          association_name ||= member_klass.model_name.plural.to_sym
 
           has_many association_name, class_name: member_klass.to_s, dependent: :nullify, foreign_key: 'group_ids', extend: MemberAssociationExtensions
 
