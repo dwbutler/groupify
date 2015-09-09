@@ -70,6 +70,10 @@ class GroupMembership < ActiveRecord::Base
   groupify :group_membership
 end
 
+class Classroom < ActiveRecord::Base
+  groupify :group
+end
+
 describe Group do
   it { should respond_to :members}
   it { should respond_to :add }
@@ -153,37 +157,51 @@ describe Groupify::ActiveRecord do
       expect(Group.new.members).to be_empty
       expect(group.members).to be_empty
     end
-    
-    it "adds a group to a member" do
-      user.groups << group
-      expect(user.groups).to include(group)
-      expect(group.members).to include(user)
-      expect(group.users).to include(user)
-    end
-    
-    it "adds a member to a group" do
-      expect(user.groups).to be_empty
-      group.add user
-      expect(user.groups).to include(group)
-      expect(group.members).to include(user)
+
+    context "when adding" do
+      it "adds a group to a member" do
+        user.groups << group
+        expect(user.groups).to include(group)
+        expect(group.members).to include(user)
+        expect(group.users).to include(user)
+      end
+
+      it "adds a member to a group" do
+        expect(user.groups).to be_empty
+        group.add user
+        expect(user.groups).to include(group)
+        expect(group.members).to include(user)
+      end
+
+      it "only adds a member to a group once" do
+        group.add user
+        group.add user
+        expect(user.group_memberships.count).to eq(1)
+      end
+
+      it "adds a namespaced member to a group" do
+        group.add(namespaced_member)
+        expect(group.namespaced_members).to include(namespaced_member)
+      end
+
+      it "adds multiple members to a group" do
+        group.add(user, widget)
+        expect(group.users).to include(user)
+        expect(group.widgets).to include(widget)
+
+        users = [User.create!, User.create!]
+        group.add(users)
+        expect(group.users).to include(*users)
+      end
+
+      it "only allows members to be added to their configured group type" do
+        classroom = Classroom.create!
+        expect { classroom.add(user) }.to raise_error(ActiveRecord::AssociationTypeMismatch)
+        expect { user.groups << classroom }.to raise_error(ActiveRecord::AssociationTypeMismatch)
+      end
     end
 
-    it "adds a namespaced member to a group" do
-      group.add(namespaced_member)
-      expect(group.namespaced_members).to include(namespaced_member)
-    end
-
-    it "adds multiple members to a group" do
-      group.add(user, widget)
-      expect(group.users).to include(user)
-      expect(group.widgets).to include(widget)
-
-      users = [User.create!, User.create!]
-      group.add(users)
-      expect(group.users).to include(*users)
-    end
-
-    it 'lists which member classes can belong to this group' do
+    it "lists which member classes can belong to this group" do
       expect(group.class.member_classes).to include(User, Widget)
       expect(group.member_classes).to include(User, Widget)
       
@@ -642,6 +660,4 @@ describe Groupify::ActiveRecord do
       end
     end
   end
-
-   
 end

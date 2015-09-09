@@ -32,6 +32,10 @@ ActiveRecord::Schema.define(version: 0) do
     t.string :name
   end
 
+  create_table :classrooms do |t|
+    t.string :name
+  end
+
   create_table :custom_group_memberships do |t|
     t.references :member, polymorphic: true, index: true
     t.references :group, polymorphic: true, index: true

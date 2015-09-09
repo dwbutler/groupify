@@ -34,7 +34,7 @@ module Groupify
         clear_association_cache
 
         members.each do |member|
-          member.group_memberships.where(group_id: id, group_type: self.class.model_name.to_s).first_or_create!
+          member.groups << self unless member.groups.include?(self)
           if membership_type
             member.group_memberships.where(group_id: id, group_type: self.class.model_name.to_s, membership_type: membership_type).first_or_create!
           end
