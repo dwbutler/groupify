@@ -11,8 +11,10 @@ class GroupifyMigration < ActiveRecord::Migration
       # The named group to which a member belongs (if using)
       t.string     :group_name, index: true
 
-      # The type of membership the member belongs with
+      # The membership type the member belongs with
       t.string     :membership_type
+
+      t.timestamps
     end
   end
 end
