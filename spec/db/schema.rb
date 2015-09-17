@@ -1,11 +1,11 @@
 ActiveRecord::Schema.define(version: 0) do
   create_table :groups do |t|
-    t.string     :name
     t.string     :type
+    t.string     :name
   end
 
   create_table :group_memberships do |t|
-    t.references :member, polymorphic: true, index: true
+    t.references :member, polymorphic: true, index: true, null: false
     t.references :group, polymorphic: true, index: true
     t.string     :group_name, index: true
     t.string     :membership_type
