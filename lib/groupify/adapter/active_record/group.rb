@@ -17,6 +17,7 @@ module Groupify
         @member_klasses ||= Set.new
         has_many :group_memberships,
                  dependent: :destroy,
+                 as: :group,
                  class_name: Groupify.group_membership_class_name
 
       end
