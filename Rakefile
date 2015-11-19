@@ -12,7 +12,7 @@ end
 require 'github_changelog_generator/task'
 desc "Regenerate changelog"
 GitHubChangelogGenerator::RakeTask.new :changelog do |config|
-  config.future_release = '0.7.0'
+  config.future_release = '0.7.1'
 end
 
 task :default => :spec

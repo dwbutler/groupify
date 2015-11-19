@@ -1,5 +1,16 @@
 # Change Log
 
+## [0.7.1](https://github.com/dwbutler/groupify/tree/0.7.1) (2015-11-19)
+[Full Changelog](https://github.com/dwbutler/groupify/compare/v0.7.0...0.7.1)
+
+**Fixed bugs:**
+
+- Save using member resource id [\#33](https://github.com/dwbutler/groupify/issues/33)
+
+**Merged pull requests:**
+
+- Fixes the `member\_ids=` auto generated method on groups [\#34](https://github.com/dwbutler/groupify/pull/34) ([dwbutler](https://github.com/dwbutler))
+
 ## [v0.7.0](https://github.com/dwbutler/groupify/tree/v0.7.0) (2015-09-09)
 [Full Changelog](https://github.com/dwbutler/groupify/compare/v0.6.3...v0.7.0)
 
