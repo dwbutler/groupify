@@ -17,17 +17,20 @@ end
 require 'mongoid'
 puts "Mongoid version #{Mongoid::VERSION}"
 
-# Load mongoid config
-#Mongoid.load!('./spec/groupify/mongoid.yml', :test)
-Mongoid::Config.sessions = {
+client_configuration = {
   default: {
     database: 'groupify',
     hosts: [ "localhost:27017" ]
   }
 }
 
-if DEBUG
-  Moped.logger = Logger.new(STDOUT)
+# Load mongoid config
+if Mongoid::VERSION < "5"
+  Mongoid::Config.sessions = client_configuration
+  Moped.logger = Logger.new(STDOUT) if DEBUG
+else
+  Mongoid::Config.log_level = :debug if DEBUG
+  Mongoid::Config.load_configuration(clients: client_configuration)
 end
 
 require 'groupify/adapter/mongoid'
