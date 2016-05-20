@@ -32,14 +32,14 @@ module Groupify
         members = args.flatten
         return unless members.present?
 
-        clear_association_cache
+        self.send(:clear_association_cache)
 
         members.each do |member|
           member.groups << self unless member.groups.include?(self)
           if membership_type
             member.group_memberships.where(group_id: id, group_type: self.class.model_name.to_s, membership_type: membership_type).first_or_create!
           end
-          member.clear_association_cache
+          member.send(:clear_association_cache)
         end
       end
 
