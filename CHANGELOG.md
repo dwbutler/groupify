@@ -1,7 +1,14 @@
 # Change Log
 
-## [0.7.1](https://github.com/dwbutler/groupify/tree/0.7.1) (2015-11-19)
-[Full Changelog](https://github.com/dwbutler/groupify/compare/v0.7.0...0.7.1)
+## [v0.7.2](https://github.com/dwbutler/groupify/tree/v0.7.2) (2016-05-21)
+[Full Changelog](https://github.com/dwbutler/groupify/compare/v0.7.1...v0.7.2)
+
+**Merged pull requests:**
+
+-  Some fixes to prep for rails5 [\#44](https://github.com/dwbutler/groupify/pull/44) ([wadestuart](https://github.com/wadestuart))
+
+## [v0.7.1](https://github.com/dwbutler/groupify/tree/v0.7.1) (2015-11-19)
+[Full Changelog](https://github.com/dwbutler/groupify/compare/v0.7.0...v0.7.1)
 
 **Fixed bugs:**
 
