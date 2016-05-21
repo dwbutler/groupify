@@ -9,12 +9,12 @@ model? Use named groups instead to add members to named groups such as
 ## Compatibility
 
 The following ORMs are supported:
- * ActiveRecord 3.2, 4.1.x, 4.2.x
- * Mongoid 3.1, 4.0
+ * ActiveRecord 3.2, 4.1, 4.2, 5.0
+ * Mongoid 3.1, 4.0+, 5.0+, 6
 
 The following Rubies are supported:
- * MRI Ruby 1.9.3, 2.0.x, 2.1.x, 2.2.x
- * JRuby (1.9 mode)
+ * MRI Ruby 1.9.3, 2.0, 2.1, 2.2, 2.3
+ * JRuby 1.7, 9000
 
 The following databases are supported:
  * MySQL
