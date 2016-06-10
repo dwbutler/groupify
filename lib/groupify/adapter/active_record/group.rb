@@ -15,7 +15,7 @@ module Groupify
       included do
         @default_member_class = nil
         @member_klasses ||= Set.new
-        has_many :group_memberships,
+        has_many :group_memberships_as_group,
                  dependent: :destroy,
                  as: :group,
                  class_name: Groupify.group_membership_class_name
@@ -37,7 +37,7 @@ module Groupify
         members.each do |member|
           member.groups << self unless member.groups.include?(self)
           if membership_type
-            member.group_memberships.where(group_id: id, group_type: self.class.model_name.to_s, membership_type: membership_type).first_or_create!
+            member.group_memberships_as_member.where(group_id: id, group_type: self.class.model_name.to_s, membership_type: membership_type).first_or_create!
           end
           member.__send__(:clear_association_cache)
         end
@@ -78,13 +78,13 @@ module Groupify
           # Ensure that all the members of the source can be members of the destination
           invalid_member_classes = (source_group.member_classes - destination_group.member_classes)
           invalid_member_classes.each do |klass|
-            if klass.joins(:group_memberships).where(:group_memberships => {:group_id => source_group.id}).count > 0
+            if klass.joins(:group_memberships_as_member).where(:group_memberships => {:group_id => source_group.id}).count > 0
               raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
             end
           end
 
           source_group.transaction do
-            source_group.group_memberships.update_all(:group_id => destination_group.id)
+            source_group.group_memberships_as_group.update_all(:group_id => destination_group.id)
             source_group.destroy
           end
         end
@@ -109,7 +109,7 @@ module Groupify
             members = args
 
             if opts[:as]
-              proxy_association.owner.group_memberships.
+              proxy_association.owner.group_memberships_as_group.
                   where(member_id: members.map(&:id), member_type: proxy_association.reflection.options[:source_type]).
                   as(opts[:as]).
                   delete_all
@@ -123,7 +123,7 @@ module Groupify
             members = args
 
             if opts[:as]
-              proxy_association.owner.group_memberships.
+              proxy_association.owner.group_memberships_as_group.
                   where(member_id: members.map(&:id), member_type: proxy_association.reflection.options[:source_type]).
                   as(opts[:as]).
                   destroy_all
@@ -148,14 +148,14 @@ module Groupify
           if ActiveSupport::VERSION::MAJOR > 3
             has_many association_name,
                      ->{ uniq },
-                     through: :group_memberships,
+                     through: :group_memberships_as_group,
                      source: :member,
                      source_type: source_type,
                      extend: MemberAssociationExtensions
           else
             has_many association_name,
                      uniq: true,
-                     through: :group_memberships,
+                     through: :group_memberships_as_group,
                      source: :member,
                      source_type: source_type,
                      extend: MemberAssociationExtensions

@@ -36,7 +36,7 @@ end
 
 require 'groupify/adapter/active_record'
 
-class User < ActiveRecord::Base  
+class User < ActiveRecord::Base
   groupify :group_member
   groupify :named_group_member
 end
@@ -58,15 +58,17 @@ class Project < ActiveRecord::Base
   groupify :named_group_member
 end
 
-class Group < ActiveRecord::Base  
+class Group < ActiveRecord::Base
   groupify :group, members: [:users, :widgets, "namespaced/members"], default_members: :users
 end
 
 class Organization < Group
+  groupify :group_member
+
   has_members :managers
 end
 
-class GroupMembership < ActiveRecord::Base  
+class GroupMembership < ActiveRecord::Base
   groupify :group_membership
 end
 
@@ -176,7 +178,7 @@ describe Groupify::ActiveRecord do
       it "only adds a member to a group once" do
         group.add user
         group.add user
-        expect(user.group_memberships.count).to eq(1)
+        expect(user.group_memberships_as_member.count).to eq(1)
       end
 
       it "adds a namespaced member to a group" do
@@ -204,19 +206,19 @@ describe Groupify::ActiveRecord do
     it "lists which member classes can belong to this group" do
       expect(group.class.member_classes).to include(User, Widget)
       expect(group.member_classes).to include(User, Widget)
-      
+
       expect(Organization.member_classes).to include(User, Widget, Manager)
     end
-    
+
     it "finds members by group" do
       group.add user
-      
+
       expect(User.in_group(group).first).to eql(user)
     end
 
     it "finds the group a member belongs to" do
       group.add user
-      
+
       expect(Group.with_member(user).first).to eq(group)
     end
 
@@ -275,14 +277,14 @@ describe Groupify::ActiveRecord do
         group2 = Group.create!
         user.groups << group2
         group3 = Group.create!
-        
+
         expect(user.groups).to include(group)
         expect(user.groups).to include(group2)
-        
+
         expect(User.in_group(group).first).to eql(user)
         expect(User.in_group(group2).first).to eql(user)
         expect(user.in_group?(group)).to be true
-        
+
         expect(User.in_any_group(group).first).to eql(user)
         expect(User.in_any_group(group3)).to be_empty
         expect(user.in_any_group?(group2, group3)).to be true
@@ -299,7 +301,7 @@ describe Groupify::ActiveRecord do
         widget.groups << group
         user2 = User.create!
         user2.groups << group
-        
+
         expect(user.shares_any_group?(widget)).to be true
         expect(Widget.shares_any_group(user).to_a).to include(widget)
         expect(User.shares_any_group(widget).to_a).to include(user, user2)
@@ -322,7 +324,7 @@ describe Groupify::ActiveRecord do
 
         destination.merge!(source)
         expect(source.destroyed?).to be true
-        
+
         expect(destination.users).to include(user, manager)
         expect(destination.managers).to include(manager)
       end
@@ -368,8 +370,8 @@ describe Groupify::ActiveRecord do
 
     context "when using membership types with groups" do
       it 'adds groups to a member with a specific membership type' do
-        user.group_memberships.create!(group: group, as: :admin)
-        
+        user.group_memberships_as_member.create!(group: group, as: :admin)
+
         expect(user.groups).to include(group)
         expect(group.members).to include(user)
         expect(group.users).to include(user)
@@ -416,13 +418,13 @@ describe Groupify::ActiveRecord do
       it "finds the group a member belongs to with a membership type" do
         group.add user, as: Manager
         user.groups.create!
-        
+
         expect(Group.with_member(user).as(Manager)).to eq([group])
       end
 
       it "checks if members belong to any groups with a certain membership type" do
         group2 = Group.create!
-        user.group_memberships.create!([{group: group, as: 'employee'}, {group: group2}])
+        user.group_memberships_as_member.create!([{group: group, as: 'employee'}, {group: group2}])
 
         expect(User.in_any_group(group, group2).as('employee').first).to eql(user)
       end
@@ -437,8 +439,8 @@ describe Groupify::ActiveRecord do
       it "checks if members belong to all groups with a certain membership type" do
         group2 = Group.create!
         group3 = Group.create!
-        user.group_memberships.create!([{group: group, as: 'employee'}, {group: group2, as: 'employee'}, {group: group3, as: 'contractor'}])
-        
+        user.group_memberships_as_member.create!([{group: group, as: 'employee'}, {group: group2, as: 'employee'}, {group: group3, as: 'contractor'}])
+
         expect(User.in_all_groups(group, group2).as('employee').first).to eql(user)
         expect(User.in_all_groups([group, group2]).as('employee').first).to eql(user)
         expect(User.in_all_groups(group, group3).as('employee')).to be_empty
@@ -452,7 +454,7 @@ describe Groupify::ActiveRecord do
         group2 = Group.create!
         group3 = Group.create!
         group4 = Group.create!
-        user.group_memberships.create!([{group: group, as: 'employee'}, {group: group2, as: 'employee'}, {group: group3, as: 'contractor'}, {group: group4, as: 'employee'}])
+        user.group_memberships_as_member.create!([{group: group, as: 'employee'}, {group: group2, as: 'employee'}, {group: group3, as: 'contractor'}, {group: group4, as: 'employee'}])
 
         expect(User.in_only_groups(group, group2, group4).as('employee').first).to eql(user)
         expect(User.in_only_groups([group, group2]).as('employee')).to be_empty
@@ -467,7 +469,7 @@ describe Groupify::ActiveRecord do
       it "members can check if groups are shared with the same membership type" do
         user2 = User.create!
         group.add(user, user2, widget, as: "Sub Group #1")
-        
+
         expect(user.shares_any_group?(widget, as: "Sub Group #1")).to be true
         expect(Widget.shares_any_group(user).as("Sub Group #1").to_a).to include(widget)
         expect(User.shares_any_group(widget).as("Sub Group #1").to_a).to include(user, user2)
@@ -515,7 +517,7 @@ describe Groupify::ActiveRecord do
       end
     end
   end
-  
+
   context 'when using named groups' do
     before(:each) do
       user.named_groups.concat :admin, :user, :poster
@@ -543,7 +545,7 @@ describe Groupify::ActiveRecord do
       user.named_groups.destroy_all
       expect(user.named_groups).to be_empty
     end
-     
+
     it "checks if a member belongs to one named group" do
       expect(user.in_named_group?(:admin)).to be true
       expect(User.in_named_group(:admin).first).to eql(user)
@@ -576,7 +578,7 @@ describe Groupify::ActiveRecord do
 
     it "checks if named groups are shared" do
       user2 = User.create!(:named_groups => [:admin])
-      
+
       expect(user.shares_any_named_group?(user2)).to be true
       expect(User.shares_any_named_group(user).to_a).to include(user2)
     end
@@ -596,15 +598,15 @@ describe Groupify::ActiveRecord do
       it "enforces uniqueness of named groups" do
         user.named_groups << :team1
         expect(user.named_groups.count{|g| g == :team1}).to eq(1)
-        expect(user.group_memberships.where(group_name: :team1, membership_type: nil).count).to eq(1)
-        expect(user.group_memberships.where(group_name: :team1, membership_type: 'employee').count).to eq(1)
+        expect(user.group_memberships_as_member.where(group_name: :team1, membership_type: nil).count).to eq(1)
+        expect(user.group_memberships_as_member.where(group_name: :team1, membership_type: 'employee').count).to eq(1)
         expect(user.named_groups.as('employee').count{|g| g == :team1}).to eq(1)
       end
 
       it "enforces uniqueness of group name and membership type for group memberships" do
         user.named_groups.push :team1, as: 'employee'
-        expect(user.group_memberships.where(group_name: :team1, membership_type: nil).count).to eq(1)
-        expect(user.group_memberships.where(group_name: :team1, membership_type: 'employee').count).to eq(1)
+        expect(user.group_memberships_as_member.where(group_name: :team1, membership_type: nil).count).to eq(1)
+        expect(user.group_memberships_as_member.where(group_name: :team1, membership_type: 'employee').count).to eq(1)
         expect(user.named_groups.count{|g| g == :team1}).to eq(1)
         expect(user.named_groups.as('employee').count{|g| g == :team1}).to eq(1)
       end
