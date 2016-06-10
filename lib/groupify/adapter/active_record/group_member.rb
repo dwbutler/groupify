@@ -13,8 +13,8 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
-        unless respond_to?(:group_memberships)
-          has_many :group_memberships,
+        unless respond_to?(:group_memberships_as_member)
+          has_many :group_memberships_as_member,
                    as: :member,
                    autosave: true,
                    dependent: :destroy,
@@ -23,14 +23,14 @@ module Groupify
 
         if ActiveSupport::VERSION::MAJOR > 3
           has_many :groups, ->{ uniq },
-                   through: :group_memberships,
+                   through: :group_memberships_as_member,
                    as: :group,
                    source_type: @group_class_name,
                    extend: GroupAssociationExtensions
         else
           has_many :groups,
                    uniq: true,
-                   through: :group_memberships,
+                   through: :group_memberships_as_member,
                    as: :group,
                    source_type: @group_class_name,
                    extend: GroupAssociationExtensions
@@ -48,7 +48,7 @@ module Groupify
           groups = args.flatten
 
           if opts[:as]
-            proxy_association.owner.group_memberships.where(group_id: groups.map(&:id)).as(opts[:as]).delete_all
+            proxy_association.owner.group_memberships_as_member.where(group_id: groups.map(&:id)).as(opts[:as]).delete_all
           else
             super(*groups)
           end
@@ -59,7 +59,7 @@ module Groupify
           groups = args.flatten
 
           if opts[:as]
-            proxy_association.owner.group_memberships.where(group_id: groups.map(&:id)).as(opts[:as]).destroy_all
+            proxy_association.owner.group_memberships_as_member.where(group_id: groups.map(&:id)).as(opts[:as]).destroy_all
           else
             super(*groups)
           end
@@ -73,7 +73,7 @@ module Groupify
           criteria.merge!(membership_type: opts[:as])
         end
 
-        group_memberships.exists?(criteria)
+        group_memberships_as_member.exists?(criteria)
       end
 
       def in_any_group?(*args)
@@ -106,30 +106,30 @@ module Groupify
 
       module ClassMethods
         def as(membership_type)
-          joins(:group_memberships).where(group_memberships: { membership_type: membership_type })
+          joins(:group_memberships_as_member).where(group_memberships: { membership_type: membership_type })
         end
 
         def in_group(group)
           return none unless group.present?
 
-          joins(:group_memberships).where(group_memberships: { group_id: group.id }).uniq
+          joins(:group_memberships_as_member).where(group_memberships: { group_id: group.id }).uniq
         end
 
         def in_any_group(*groups)
           groups = groups.flatten
           return none unless groups.present?
 
-          joins(:group_memberships).where(group_memberships: { group_id: groups.map(&:id) }).uniq
+          joins(:group_memberships_as_member).where(group_memberships: { group_id: groups.map(&:id) }).uniq
         end
 
         def in_all_groups(*groups)
           groups = groups.flatten
           return none unless groups.present?
 
-          joins(:group_memberships).
+          joins(:group_memberships_as_member).
               group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
               where(group_memberships: {group_id: groups.map(&:id)}).
-              having("COUNT(#{reflect_on_association(:group_memberships).klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
+              having("COUNT(#{reflect_on_association(:group_memberships_as_member).klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
               uniq
         end
 
@@ -137,9 +137,9 @@ module Groupify
           groups = groups.flatten
           return none unless groups.present?
 
-          joins(:group_memberships).
+          joins(:group_memberships_as_member).
               group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
-              having("COUNT(DISTINCT #{reflect_on_association(:group_memberships).klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
+              having("COUNT(DISTINCT #{reflect_on_association(:group_memberships_as_member).klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
               uniq
         end
 

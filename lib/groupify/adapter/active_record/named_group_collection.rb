@@ -4,7 +4,7 @@ module Groupify
     class NamedGroupCollection < Set
       def initialize(member)
         @member = member
-        @named_group_memberships = member.group_memberships.named
+        @named_group_memberships = member.group_memberships_as_member.named
         @group_names = @named_group_memberships.pluck(:group_name).map(&:to_sym)
         super(@group_names)
       end
@@ -14,18 +14,18 @@ module Groupify
         membership_type = opts[:as]
 
         if @member.new_record?
-          @member.group_memberships.build(group_name: named_group, membership_type: nil)
+          @member.group_memberships_as_member.build(group_name: named_group, membership_type: nil)
         else
           @member.transaction do
-            @member.group_memberships.where(group_name: named_group, membership_type: nil).first_or_create!
+            @member.group_memberships_as_member.where(group_name: named_group, membership_type: nil).first_or_create!
           end
         end
 
         if membership_type
           if @member.new_record?
-            @member.group_memberships.build(group_name: named_group, membership_type: membership_type)
+            @member.group_memberships_as_member.build(group_name: named_group, membership_type: membership_type)
           else
-            @member.group_memberships.where(group_name: named_group, membership_type: membership_type).first_or_create!
+            @member.group_memberships_as_member.where(group_name: named_group, membership_type: membership_type).first_or_create!
           end
         end
 
