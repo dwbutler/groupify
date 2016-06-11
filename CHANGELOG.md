@@ -1,5 +1,14 @@
 # Change Log
 
+## [v0.8.0](https://github.com/dwbutler/groupify/tree/v0.8.0) (2016-06-10)
+[Full Changelog](https://github.com/dwbutler/groupify/compare/v0.7.2...v0.8.0)
+
+**Fixed bugs:**
+
+- Setting a group as a group member breaks has\_members associations on that group [\#45](https://github.com/dwbutler/groupify/issues/45)
+- Error on add user a team on Rails 5 Beta [\#39](https://github.com/dwbutler/groupify/issues/39)
+- Split group memberships [\#46](https://github.com/dwbutler/groupify/pull/46) ([juhazi](https://github.com/juhazi))
+
 ## [v0.7.2](https://github.com/dwbutler/groupify/tree/v0.7.2) (2016-05-21)
 [Full Changelog](https://github.com/dwbutler/groupify/compare/v0.7.1...v0.7.2)
 

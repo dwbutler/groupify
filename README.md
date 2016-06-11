@@ -129,11 +129,11 @@ Example:
 
 ```ruby
 class Organization < Group
-  has_members [:offices, :equipment]
+  has_members :offices, :equipment
 end
 ```
 
-Mongoid works the same way by creating Mongoid relations. 
+Mongoid works the same way by creating Mongoid relations.
 
 ## Usage
 
@@ -359,6 +359,15 @@ end
 
 ## Upgrading
 
+### 0.8+ - Name Change for `group_memberships` Associations (ActiveRecord only)
+
+Groupify 0.8+ changed the ActiveRecord adapter to support configuring the same
+model as both a group and a group member. To accomplish this, the internal `group_memberships`
+association was renamed to be different for groups and members. If you were
+using it, please be aware that you will need to change your code. This
+association is considered to be an internal implementation details and not part
+of the public API, so please don't rely on it if you can avoid it.
+
 ### 0.7+ - Polymorphic Groups (ActiveRecord only)
 Groupify < 0.7 required a single `Group` model used for all group memberships.
 Groupify 0.7+ supports using multiple models as groups by implementing polymorphic associations.
@@ -381,3 +390,7 @@ table is large.
 3. Commit your changes (`git commit -am 'Added some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+
+## Contributors
+
+See a list of contributors [here](https://github.com/dwbutler/groupify/graphs/contributors).
