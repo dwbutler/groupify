@@ -65,7 +65,9 @@ end
 class MongoidGroup
   include Mongoid::Document
   
-  groupify :group, members: [:mongoid_users, :mongoid_tasks, :mongoid_widgets], default_members: :mongoid_users
+  groupify :group, members: [:mongoid_users, :mongoid_tasks, :mongoid_widgets, :mongoid_groups], default_members: :mongoid_users
+  groupify :group_member, group_class_name: "MongoidGroup"
+
   alias_method :users, :mongoid_users
   alias_method :tasks, :mongoid_tasks
   alias_method :widgets, :mongoid_widgets
@@ -97,28 +99,37 @@ describe Groupify::Mongoid do
       expect(group.members).to be_empty
     end
     
-    it "adds a group to a member" do
-      user.groups << group
-      expect(user.groups).to include(group)
-      expect(group.members).to include(user)
-      expect(group.users).to include(user)
-    end
-    
-    it "adds a member to a group" do
-      expect(user.groups).to be_empty
-      group.add user
-      expect(user.groups).to include(group)
-      expect(group.members).to include(user)
-    end
+    context "when adding" do
+      it "adds a group to a member" do
+        user.groups << group
+        expect(user.groups).to include(group)
+        expect(group.members).to include(user)
+        expect(group.users).to include(user)
+      end
+      
+      it "adds a member to a group" do
+        expect(user.groups).to be_empty
+        group.add user
+        expect(user.groups).to include(group)
+        expect(group.members).to include(user)
+      end
 
-    it "adds multiple members to a group" do
-      group.add(user, task)
-      expect(group.users).to include(user)
-      expect(group.tasks).to include(task)
+      it "adds multiple members to a group" do
+        group.add(user, task)
+        expect(group.users).to include(user)
+        expect(group.tasks).to include(task)
 
-      users = [MongoidUser.create!, MongoidUser.create!]
-      group.add(users)
-      expect(group.users).to include(*users)
+        users = [MongoidUser.create!, MongoidUser.create!]
+        group.add(users)
+        expect(group.users).to include(*users)
+      end
+
+      it "allows a group to also act as a member" do
+        parent_group = MongoidGroup.create!
+        child_group = MongoidGroup.create!
+        parent_group.add(child_group)
+        expect(parent_group.mongoid_groups).to include(child_group)
+      end
     end
 
     it 'lists which member classes can belong to this group' do

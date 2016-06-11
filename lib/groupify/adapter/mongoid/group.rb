@@ -65,9 +65,11 @@ module Groupify
         end
 
         # Define which classes are members of this group
-        def has_members(name)
-          klass = name.to_s.classify.constantize
-          register(klass)
+        def has_members(*names)
+          Array.wrap(names.flatten).each do |name|
+            klass = name.to_s.classify.constantize
+            register(klass)
+          end
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.

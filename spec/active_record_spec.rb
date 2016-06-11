@@ -65,7 +65,7 @@ end
 class Organization < Group
   groupify :group_member
 
-  has_members :managers
+  has_members :managers, :organizations
 end
 
 class GroupMembership < ActiveRecord::Base
@@ -200,6 +200,13 @@ describe Groupify::ActiveRecord do
         classroom = Classroom.create!
         expect { classroom.add(user) }.to raise_error(ActiveRecord::AssociationTypeMismatch)
         expect { user.groups << classroom }.to raise_error(ActiveRecord::AssociationTypeMismatch)
+      end
+
+      it "allows a group to also act as a member" do
+        parent_org = Organization.create!
+        child_org = Organization.create!
+        parent_org.add(child_org)
+        expect(parent_org.organizations).to include(child_org)
       end
     end
 

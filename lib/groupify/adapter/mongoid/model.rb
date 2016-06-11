@@ -20,9 +20,7 @@ module Groupify
           end
 
           if (member_klasses = opts.delete :members)
-            member_klasses.each do |member_klass|
-              has_members(member_klass)
-            end
+            has_members(member_klasses)
           end
         end
 
