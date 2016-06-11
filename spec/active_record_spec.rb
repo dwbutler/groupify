@@ -36,6 +36,9 @@ end
 
 require 'groupify/adapter/active_record'
 
+class Group < ActiveRecord::Base
+end
+
 class User < ActiveRecord::Base
   groupify :group_member
   groupify :named_group_member
@@ -44,8 +47,12 @@ end
 class Manager < User
 end
 
+class Student < User
+  belongs_to_group :classroom
+end
+
 class Widget < ActiveRecord::Base
-  groupify :group_member
+  groupify :group_member, groups: [:projects, :organizations]
 end
 
 module Namespaced
@@ -54,12 +61,12 @@ module Namespaced
   end
 end
 
-class Project < ActiveRecord::Base
-  groupify :named_group_member
-end
-
 class Group < ActiveRecord::Base
   groupify :group, members: [:users, :widgets, "namespaced/members"], default_members: :users
+end
+
+class Project < ActiveRecord::Base
+  groupify :named_group_member
 end
 
 class Organization < Group
@@ -111,12 +118,12 @@ describe Groupify::ActiveRecord do
           groupify :group_membership
         end
 
-        class CustomUser < ActiveRecord::Base
-          groupify :group_member
-        end
-
         class CustomGroup < ActiveRecord::Base
           groupify :group
+        end
+
+        class CustomUser < ActiveRecord::Base
+          groupify :group_member
         end
       end
 
@@ -194,12 +201,6 @@ describe Groupify::ActiveRecord do
         users = [User.create!, User.create!]
         group.add(users)
         expect(group.users).to include(*users)
-      end
-
-      it "only allows members to be added to their configured group type" do
-        classroom = Classroom.create!
-        expect { classroom.add(user) }.to raise_error(ActiveRecord::AssociationTypeMismatch)
-        expect { user.groups << classroom }.to raise_error(ActiveRecord::AssociationTypeMismatch)
       end
 
       it "allows a group to also act as a member" do

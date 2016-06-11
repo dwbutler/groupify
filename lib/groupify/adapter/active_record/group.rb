@@ -35,10 +35,18 @@ module Groupify
         __send__(:clear_association_cache)
 
         members.each do |member|
-          member.groups << self unless member.groups.include?(self)
+          member.group_memberships_as_member.find_or_create_by(
+            group_id: id,
+            group_type: self.class.base_class.model_name.to_s
+          )
+
           if membership_type
-            member.group_memberships_as_member.where(group_id: id, group_type: self.class.model_name.to_s, membership_type: membership_type).first_or_create!
+            member.group_memberships_as_member.find_or_create_by(
+              group_id: id,
+              group_type: self.class.base_class.model_name.to_s,
+              membership_type: membership_type)
           end
+
           member.__send__(:clear_association_cache)
         end
       end

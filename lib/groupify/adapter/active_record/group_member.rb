@@ -21,20 +21,6 @@ module Groupify
                    class_name: Groupify.group_membership_class_name
         end
 
-        if ActiveSupport::VERSION::MAJOR > 3
-          has_many :groups, ->{ uniq },
-                   through: :group_memberships_as_member,
-                   as: :group,
-                   source_type: @group_class_name,
-                   extend: GroupAssociationExtensions
-        else
-          has_many :groups,
-                   uniq: true,
-                   through: :group_memberships_as_member,
-                   as: :group,
-                   source_type: @group_class_name,
-                   extend: GroupAssociationExtensions
-        end
       end
 
       module GroupAssociationExtensions
@@ -147,6 +133,71 @@ module Groupify
           in_any_group(other.groups)
         end
 
+        def belongs_to_groups(*names)
+          Array.wrap(names.flatten).each do |name|
+            belongs_to_group(name)
+          end
+        end
+
+        def belongs_to_group(args)
+          if args.respond_to?(:to_s)
+            class_name = args
+            association_name = nil
+          elsif args.respond_to?(:[])
+            opts = args.extract_options!
+            class_name = opts[:class_name]
+            association_name = opts[:association_name]
+          end
+
+          klass = class_name.to_s.classify.constantize
+          register_group_class(klass)
+          associate_group_class(klass, association_name)
+        end
+
+        def register_group_class(group_class)
+          group_classes << group_class
+        end
+
+        def group_classes
+          @group_classes ||= Set.new
+        end
+
+        def default_group_class
+          @default_group_class ||= (Group rescue false)
+        end
+
+        def default_group_class=(klass)
+          @default_group_class = klass
+        end
+
+        def associate_group_class(group_klass, association_name = nil)
+          define_group_association(group_klass, association_name)
+
+          if group_klass == default_group_class
+            define_group_association(group_klass, :groups)
+          end
+        end
+
+        def define_group_association(group_klass, association_name = nil)
+          association_name ||= group_klass.model_name.plural.to_sym
+          source_type = group_klass.base_class
+
+          if ActiveSupport::VERSION::MAJOR > 3
+            has_many association_name,
+                     ->{ uniq },
+                     through: :group_memberships_as_member,
+                     as: :group,
+                     source_type: source_type,
+                     extend: GroupAssociationExtensions
+          else
+            has_many association_name,
+                     uniq: true,
+                     through: :group_memberships_as_member,
+                     as: :group,
+                     source_type: source_type,
+                     extend: GroupAssociationExtensions
+          end
+        end
       end
     end
   end

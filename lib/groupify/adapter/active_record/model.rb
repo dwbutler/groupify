@@ -31,8 +31,16 @@ module Groupify
         end
 
         def acts_as_group_member(opts = {})
-          @group_class_name = opts[:group_class_name] || Groupify.group_class_name
           include Groupify::ActiveRecord::GroupMember
+
+          if default_group_class_name = opts[:group_class_name] || opts[:default_group_class_name] || Groupify.group_class_name
+            self.default_group_class = default_group_class_name.to_s.classify.constantize
+            belongs_to_group(default_group_class_name)
+          end
+
+          if group_class_names = opts.delete(:groups)
+            belongs_to_groups(group_class_names)
+          end
         end
 
         def acts_as_named_group_member(opts = {})
