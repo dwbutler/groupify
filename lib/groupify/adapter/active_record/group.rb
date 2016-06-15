@@ -145,23 +145,7 @@ module Groupify
 
         def define_member_association(member_klass, association_name = nil)
           association_name ||= member_klass.model_name.plural.to_sym
-          source_type = member_klass.base_class
-
-          if ActiveSupport::VERSION::MAJOR > 3
-            has_many association_name,
-                     ->{ uniq },
-                     through: :group_memberships_as_group,
-                     source: :member,
-                     source_type: source_type,
-                     extend: MemberAssociationExtensions
-          else
-            has_many association_name,
-                     uniq: true,
-                     through: :group_memberships_as_group,
-                     source: :member,
-                     source_type: source_type,
-                     extend: MemberAssociationExtensions
-          end
+          has_many association_name, *association_options(member_klass)
 
           define_method(association_name) do |*args|
             opts = args.extract_options!
@@ -171,6 +155,37 @@ module Groupify
             else
               super()
             end
+          end
+        end
+
+        def association_options(member_klass)
+          source_type = member_klass.base_class
+          using_sti = (member_klass.base_class != member_klass)
+
+          if ActiveSupport::VERSION::MAJOR > 3
+            filter = using_sti ? -> { uniq.where(type: member_klass.name.to_s) } : -> { uniq }
+
+            [
+              filter,
+              {
+                through: :group_memberships_as_group,
+                source: :member,
+                source_type: source_type,
+                extend: MemberAssociationExtensions
+              }
+            ]
+          else
+            options = {
+              uniq: true,
+              through: :group_memberships_as_group,
+              source: :member,
+              source_type: source_type,
+              extend: MemberAssociationExtensions
+            }
+            if using_sti
+              options.merge(conditions: { type: member_klass.name.to_s })
+            end
+            [options]
           end
         end
       end

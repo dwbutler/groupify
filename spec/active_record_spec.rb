@@ -186,6 +186,15 @@ describe Groupify::ActiveRecord do
         expect(group.namespaced_members).to include(namespaced_member)
       end
 
+      it "adds a model using STI to a group" do
+        manager = Manager.create!
+        user = User.create!
+        organization = Organization.create!
+        organization.add(manager, user)
+        expect(organization.users).to match_array [user, manager]
+        expect(organization.managers).to match_array [manager]
+      end
+
       it "adds multiple members to a group" do
         group.add(user, widget)
         expect(group.users).to include(user)
