@@ -162,28 +162,24 @@ module Groupify
           source_type = member_klass.base_class
           using_sti = (member_klass.base_class != member_klass)
 
+          base_options = {
+            through: :group_memberships_as_group,
+            source: :member,
+            source_type: source_type,
+            extend: MemberAssociationExtensions
+          }
+
           if ActiveSupport::VERSION::MAJOR > 3
-            filter = using_sti ? -> { uniq.where(type: member_klass.name.to_s) } : -> { uniq }
+            filter = using_sti ? -> { uniq.where("#{member_klass.table_name}.type = ?", member_klass.name.to_s) } : -> { uniq }
 
             [
               filter,
-              {
-                through: :group_memberships_as_group,
-                source: :member,
-                source_type: source_type,
-                extend: MemberAssociationExtensions
-              }
+              base_options
             ]
           else
-            options = {
-              uniq: true,
-              through: :group_memberships_as_group,
-              source: :member,
-              source_type: source_type,
-              extend: MemberAssociationExtensions
-            }
+            options = base_options.merge(uniq: true)
             if using_sti
-              options.merge(conditions: { type: member_klass.name.to_s })
+              options.merge!(conditions: ["#{member_klass.table_name}.type = ?", member_klass.name.to_s])
             end
             [options]
           end
