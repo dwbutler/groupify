@@ -1,10 +1,14 @@
-sqlite3:
+test:
+<%
+case ENV.fetch('DATABASE', 'sqlite3mem')
+when 'sqlite3'
+%>
   adapter: <%= "jdbc" if defined? JRUBY_VERSION %>sqlite3
-  database: groupify.sqlite3.db
-sqlite3mem:
+  database: db/combustion_test.sqlite
+<% when 'sqlite3mem' %>
   adapter: <%= "jdbc" if defined? JRUBY_VERSION %>sqlite3
   database: ":memory:"
-postgresql:
+<% when 'postgresql' %>
   adapter: postgresql
   encoding: unicode
   database: groupify_test
@@ -12,9 +16,10 @@ postgresql:
   username: postgres
   password: postgres
   min_messages: warning
-mysql:
+<% when 'mysql' %>
   adapter: <%= defined?(JRUBY_VERSION) ? "jdbcmysql" : "mysql2" %>
   host: localhost
   username: root
   password:
   database: groupify_test
+<% end %>

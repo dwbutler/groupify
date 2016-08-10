@@ -1,18 +1,10 @@
 require 'active_record'
 
-DATABASE = ENV.fetch('DATABASE', 'sqlite3mem')
-
-puts "ActiveRecord Version: #{ActiveSupport::VERSION::STRING}, Database: #{DATABASE}"
-
-require 'yaml'
-require 'erb'
-ActiveRecord::Base.configurations = YAML::load(ERB.new(IO.read("#{File.dirname(__FILE__)}/db/database.yml")).result)
-ActiveRecord::Base.establish_connection(DATABASE.to_sym)
 ActiveRecord::Migration.verbose = false
+ActiveRecord::Base.logger = Logger.new(STDOUT) if DEBUG
 
-require 'combustion/database'
-Combustion::Database.create_database(ActiveRecord::Base.configurations[DATABASE])
-load(File.join(File.dirname(__FILE__), "db", "schema.rb"))
+Combustion.initialize! :active_record
+puts "ActiveRecord Version: #{ActiveSupport::VERSION::STRING}, Adapter: #{ActiveRecord::Base.connection.adapter_name}"
 
 RSpec.configure do |config|
   config.before(:suite) do
@@ -25,12 +17,6 @@ RSpec.configure do |config|
 
   config.after(:each) do
     DatabaseCleaner[:active_record].clean
-  end
-
-  config.after(:suite) do
-    unless ENV['DB'] =~ /sqlite/
-      Combustion::Database.drop_database(ActiveRecord::Base.configurations[DATABASE])
-    end
   end
 end
 
@@ -87,10 +73,6 @@ describe User do
   it { should respond_to :in_any_group?}
   it { should respond_to :in_all_groups?}
   it { should respond_to :shares_any_group?}
-end
-
-if DEBUG
-  ActiveRecord::Base.logger = Logger.new(STDOUT)
 end
 
 describe Groupify::ActiveRecord do

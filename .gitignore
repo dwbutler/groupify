@@ -18,3 +18,5 @@ tmp
 /**/*.lock
 .idea/
 .ruby-version
+*.sqlite
+*.log
