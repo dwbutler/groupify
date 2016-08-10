@@ -25,5 +25,5 @@ appraise "rails-5.0" do
 
   gem 'combustion', '0.5.4'
 
-  gem 'mongoid', '6.0.0.beta'
+  gem 'mongoid', '6.0.0.rc0'
 end
