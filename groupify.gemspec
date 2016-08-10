@@ -20,7 +20,7 @@ Gem::Specification.new do |gem|
 
   if RUBY_VERSION < '2'
     gem.add_development_dependency 'json', '~> 1.8'
-    gem.add_development_dependency 'tins', '1.6.0'
+    gem.add_development_dependency 'tins', '1.6.0', require: false
   end
 
   gem.add_development_dependency "mongoid", ">= 3.1"
