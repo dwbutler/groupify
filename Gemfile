@@ -24,8 +24,3 @@ platforms :ruby do
   gem "mysql2", "~> 0.3.11"
   gem "pg"
 end
-
-if RUBY_VERSION < '2'
-  gem 'json', '~> 1.8'
-  gem 'tins', '1.6.0', require: false
-end

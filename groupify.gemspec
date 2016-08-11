@@ -18,6 +18,11 @@ Gem::Specification.new do |gem|
 
   gem.required_ruby_version = ">= 1.9.3"
 
+  if RUBY_VERSION < '2'
+    gem 'json', '~> 1.8'
+    gem 'tins', '1.6.0', require: false
+  end
+
   gem.add_development_dependency "mongoid", ">= 3.1"
   gem.add_development_dependency "activerecord", ">= 3.2", "< 5.1"
 
