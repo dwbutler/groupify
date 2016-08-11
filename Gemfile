@@ -25,7 +25,7 @@ platforms :ruby do
   gem "pg"
 end
 
-platforms :ruby_19 do
+if RUBY_VERSION < '2'
   gem 'json', '~> 1.8'
   gem 'tins', '1.6.0', require: false
 end
