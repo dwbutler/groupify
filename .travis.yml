@@ -1,5 +1,8 @@
 language: ruby
 services: mongodb
+before_script:
+  - sh -c "if [ '$DATABASE' = 'postgresql' ]; then psql -c 'create database groupify_test;' -U postgres; fi"
+  - sh -c "if [ '$DATABASE' = 'mysql' ]; then mysql -e 'create database groupify_test;'; fi"
 env:
   - DATABASE=sqlite3
   - DATABASE=sqlite3mem
