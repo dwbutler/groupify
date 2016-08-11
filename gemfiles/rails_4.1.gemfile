@@ -27,4 +27,9 @@ platforms :ruby do
   gem "pg"
 end
 
+platforms :ruby_19 do
+  gem "json", "~> 1.8"
+  gem "tins", "1.6.0", :require => false
+end
+
 gemspec :path => "../"
