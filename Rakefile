@@ -9,10 +9,13 @@ RSpec::Core::RakeTask.new do |t|
   t.verbose = false
 end
 
-require 'github_changelog_generator/task'
-desc "Regenerate changelog"
-GitHubChangelogGenerator::RakeTask.new :changelog do |config|
-  config.future_release = 'v0.8.0'
+begin
+  require 'github_changelog_generator/task'
+  desc "Regenerate changelog"
+  GitHubChangelogGenerator::RakeTask.new :changelog do |config|
+    config.future_release = 'v0.8.0'
+  end
+rescue LoadError
 end
 
 task :default => :spec
