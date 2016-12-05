@@ -29,7 +29,13 @@ if Mongoid::VERSION < "5"
   Mongoid::Config.sessions = client_configuration
   Moped.logger = Logger.new(STDOUT) if DEBUG
 else
-  Mongoid::Config.log_level = :debug if DEBUG
+  if DEBUG
+    Mongoid::Config.log_level = :debug
+    Mongoid.logger.level = ::Logger::DEBUG
+  else
+    Mongoid::Config.log_level = :warn
+    Mongoid.logger.level = ::Logger::WARN
+  end
   Mongoid::Config.load_configuration(clients: client_configuration)
 end
 
