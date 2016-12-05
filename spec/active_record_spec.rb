@@ -1,4 +1,5 @@
 require 'active_record'
+require 'combustion'
 
 ActiveRecord::Migration.verbose = false
 ActiveRecord::Base.logger = Logger.new(STDOUT) if DEBUG

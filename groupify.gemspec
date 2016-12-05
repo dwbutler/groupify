@@ -20,10 +20,4 @@ Gem::Specification.new do |gem|
 
   gem.add_development_dependency "mongoid", ">= 3.1"
   gem.add_development_dependency "activerecord", ">= 3.2", "< 5.1"
-
-  gem.add_development_dependency "rspec", ">= 3"
-
-  gem.add_development_dependency "database_cleaner", "~> 1.5.3"
-  gem.add_development_dependency "combustion", "0.5.5"
-  gem.add_development_dependency "appraisal"
 end

@@ -6,8 +6,13 @@ group :development do
 end
 
 group :test do
+  gem "rspec", ">= 3"
+
+  gem "database_cleaner", "~> 1.5.3"
+  gem "combustion", "0.5.5"
+  gem "appraisal"
   gem 'coveralls', require: false
-  gem "codeclimate-test-reporter", group: :test, require: nil
+  gem "codeclimate-test-reporter", require: nil
 end
 
 # Specify your gem's dependencies in groupify.gemspec
