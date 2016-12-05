@@ -3,6 +3,8 @@ services: mongodb
 before_script:
   - sh -c "if [ '$DATABASE' = 'postgresql' ]; then psql -c 'create database groupify_test;' -U postgres; fi"
   - sh -c "if [ '$DATABASE' = 'mysql' ]; then mysql -e 'create database groupify_test;'; fi"
+after_success:
+  bundle exec codeclimate-test-reporter
 env:
   - DATABASE=sqlite3
   - DATABASE=sqlite3mem
@@ -12,7 +14,7 @@ rvm:
   - 2.0.0
   - 2.1.9
   - 2.2.5
-  - 2.3.1
+  - 2.3.3
   - jruby-9.0.5.0
   - rbx-2
 gemfile:
@@ -29,7 +31,7 @@ matrix:
       gemfile: gemfiles/rails_5.0.gemfile
     - rvm: 2.2.5
       gemfile: gemfiles/rails_3.2.gemfile
-    - rvm: 2.3.1
+    - rvm: 2.3.3
       gemfile: gemfiles/rails_3.2.gemfile
   allow_failures:
     - rvm: rbx-2
