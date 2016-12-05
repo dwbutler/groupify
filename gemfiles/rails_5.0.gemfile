@@ -8,6 +8,7 @@ gem "mongoid", "6.0.0"
 
 group :development do
   gem "pry"
+  gem "github_changelog_generator"
 end
 
 group :test do

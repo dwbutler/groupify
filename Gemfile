@@ -2,6 +2,7 @@ source 'https://rubygems.org'
 
 group :development do
   gem 'pry'
+  gem "github_changelog_generator"
 end
 
 group :test do
