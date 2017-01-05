@@ -20,4 +20,8 @@ Gem::Specification.new do |gem|
 
   gem.add_development_dependency "mongoid", ">= 3.1"
   gem.add_development_dependency "activerecord", ">= 3.2", "< 5.1"
+
+  if RUBY_VERSION < '2.1'
+    gem.add_development_dependency 'nokogiri', '~> 1.6.8'
+  end
 end
