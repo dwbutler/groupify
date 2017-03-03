@@ -22,7 +22,7 @@ module Groupify
         end
 
         if ActiveSupport::VERSION::MAJOR > 3
-          has_many :groups, ->{ uniq },
+          has_many :groups, ->{ distinct },
                    through: :group_memberships_as_member,
                    as: :group,
                    source_type: @group_class_name,

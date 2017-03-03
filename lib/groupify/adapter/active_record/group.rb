@@ -149,7 +149,7 @@ module Groupify
 
           if ActiveSupport::VERSION::MAJOR > 3
             has_many association_name,
-                     ->{ uniq },
+                     ->{ distinct },
                      through: :group_memberships_as_group,
                      source: :member,
                      source_type: source_type,
