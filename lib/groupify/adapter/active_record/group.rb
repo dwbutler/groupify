@@ -152,7 +152,7 @@ module Groupify
                      ->{ distinct },
                      through: :group_memberships_as_group,
                      source: :member,
-                     source_type: source_type,
+                     source_type: source_type.to_s,
                      extend: MemberAssociationExtensions
           else
             has_many association_name,
