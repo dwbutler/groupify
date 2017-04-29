@@ -13,8 +13,6 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
-        attr_accessible(:member, :group, :group_name, :membership_type, :as) if ActiveSupport::VERSION::MAJOR < 4
-
         belongs_to :member, polymorphic: true
         belongs_to :group, polymorphic: true
       end
