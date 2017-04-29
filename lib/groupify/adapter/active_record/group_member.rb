@@ -21,20 +21,11 @@ module Groupify
                    class_name: Groupify.group_membership_class_name
         end
 
-        if ActiveSupport::VERSION::MAJOR > 3
-          has_many :groups, ->{ distinct },
-                   through: :group_memberships_as_member,
-                   as: :group,
-                   source_type: @group_class_name,
-                   extend: GroupAssociationExtensions
-        else
-          has_many :groups,
-                   uniq: true,
-                   through: :group_memberships_as_member,
-                   as: :group,
-                   source_type: @group_class_name,
-                   extend: GroupAssociationExtensions
-        end
+        has_many :groups, ->{ distinct },
+                 through: :group_memberships_as_member,
+                 as: :group,
+                 source_type: @group_class_name,
+                 extend: GroupAssociationExtensions
       end
 
       module GroupAssociationExtensions
