@@ -153,16 +153,6 @@ module Groupify
                    source: :member,
                    source_type: source_type.to_s,
                    extend: MemberAssociationExtensions
-
-          define_method(association_name) do |*args|
-            opts = args.extract_options!
-            membership_type = opts[:as]
-            if membership_type.present?
-              super().as(membership_type)
-            else
-              super()
-            end
-          end
         end
       end
     end
