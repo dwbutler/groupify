@@ -406,10 +406,10 @@ describe Groupify::ActiveRecord do
       end
 
       it "finds the group a member belongs to with a membership type" do
-        group.add user, as: Manager
+        group.add user, as: :manager
         user.groups.create!
 
-        expect(Group.with_member(user).as(Manager)).to eq([group])
+        expect(Group.with_member(user).as(:manager)).to eq([group])
       end
 
       it "checks if members belong to any groups with a certain membership type" do
