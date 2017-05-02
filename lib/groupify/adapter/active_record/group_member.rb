@@ -140,7 +140,7 @@ module Groupify
           return none unless groups.present?
 
           in_all_groups(*groups).
-            where.not(id: in_other_groups(*groups).select(:id)).
+            where.not(id: in_other_groups(*groups).select("#{quoted_table_name}.#{connection.quote_column_name('id')}")).
             uniq
         end
 
