@@ -29,6 +29,9 @@ matrix:
     - rvm: rbx-2
     - rvm: jruby-9.1.5.0
       gemfile: gemfiles/rails_5.0.gemfile
+    - rvm: jruby-9.1.5.0
+      gemfile: gemfiles/rails_5.1.gemfile
+
 sudo: false
 cache: bundler
 addons:
