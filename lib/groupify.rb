@@ -10,6 +10,10 @@ module Groupify
   def self.configure
     yield self
   end
+
+  def self.group_membership_klass
+    group_membership_class_name.constantize
+  end
 end
 
 require 'groupify/railtie' if defined?(Rails)

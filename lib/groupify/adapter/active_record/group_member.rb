@@ -106,20 +106,22 @@ module Groupify
 
       module ClassMethods
         def as(membership_type)
-          joins(:group_memberships_as_member).where(group_memberships: { membership_type: membership_type })
+          joins(:group_memberships_as_member).where(Groupify.group_membership_klass.table_name => { membership_type: membership_type })
         end
 
         def in_group(group)
           return none unless group.present?
 
-          joins(:group_memberships_as_member).where(group_memberships: { group_id: group.id }).uniq
+          joins(:group_memberships_as_member).where(Groupify.group_membership_klass.table_name => { group_id: group.id }).uniq
         end
 
         def in_any_group(*groups)
           groups = groups.flatten
           return none unless groups.present?
 
-          joins(:group_memberships_as_member).where(group_memberships: { group_id: groups.map(&:id) }).uniq
+          joins(:group_memberships_as_member).
+            where(Groupify.group_membership_klass.table_name => { group_id: groups.map(&:id) }).
+            uniq
         end
 
         def in_all_groups(*groups)
@@ -127,26 +129,29 @@ module Groupify
           return none unless groups.present?
 
           joins(:group_memberships_as_member).
-              group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
-              where(group_memberships: {group_id: groups.map(&:id)}).
-              having("COUNT(#{reflect_on_association(:group_memberships_as_member).klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
-              uniq
+            group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
+            where(Groupify.group_membership_klass.table_name => {group_id: groups.map(&:id)}).
+            having("COUNT(DISTINCT #{Groupify.group_membership_klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
+            uniq
         end
 
         def in_only_groups(*groups)
           groups = groups.flatten
           return none unless groups.present?
 
+          in_all_groups(*groups).
+            where.not(id: in_other_groups(*groups).select(:id)).
+            uniq
+        end
+
+        def in_other_groups(*groups)
           joins(:group_memberships_as_member).
-              group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
-              having("COUNT(DISTINCT #{reflect_on_association(:group_memberships_as_member).klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
-              uniq
+            where.not(Groupify.group_membership_klass.table_name => {group_id: groups.map(&:id)})
         end
 
         def shares_any_group(other)
           in_any_group(other.groups)
         end
-
       end
     end
   end

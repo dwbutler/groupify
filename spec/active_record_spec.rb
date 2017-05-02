@@ -99,7 +99,7 @@ describe Groupify::ActiveRecord do
         end
 
         class CustomGroup < ActiveRecord::Base
-          groupify :group
+          groupify :group, members: [:custom_users]
         end
       end
 
@@ -116,6 +116,21 @@ describe Groupify::ActiveRecord do
         custom_user.groups << custom_group
         expect(GroupMembership.count).to eq(0)
         expect(CustomGroupMembership.count).to eq(1)
+      end
+
+      it "correctly queries the custom models" do
+        custom_user = CustomUser.create!
+        custom_group = CustomGroup.create!
+        custom_group.add(custom_user, as: :manager)
+
+        expect(custom_user.in_any_group?(custom_group)).to be true
+        expect(CustomUser.in_group(custom_group)).to eq([custom_user])
+        expect(CustomUser.in_any_group(custom_group)).to eq([custom_user])
+        expect(CustomUser.in_all_groups(custom_group)).to eq([custom_user])
+        expect(CustomUser.in_only_groups(custom_group)).to eq([custom_user])
+        expect(CustomUser.as(:manager)).to eq([custom_user])
+
+        expect(custom_group.custom_users.as(:manager)).to eq([custom_user])
       end
     end
 
@@ -429,8 +444,13 @@ describe Groupify::ActiveRecord do
       it "checks if members belong to all groups with a certain membership type" do
         group2 = Group.create!
         group3 = Group.create!
-        user.group_memberships_as_member.create!([{group: group, as: 'employee'}, {group: group2, as: 'employee'}, {group: group3, as: 'contractor'}])
+        group4 = Group.create!
+        group.add(user, as: 'employee')
+        group2.add(user, as: 'employee')
+        group3.add(user, as: 'contractor')
 
+        expect(User.in_all_groups(group, group2, group3)).to match_array([user])
+        expect(User.in_all_groups(group, group2, group3, group4)).to be_empty
         expect(User.in_all_groups(group, group2).as('employee').first).to eql(user)
         expect(User.in_all_groups([group, group2]).as('employee').first).to eql(user)
         expect(User.in_all_groups(group, group3).as('employee')).to be_empty
@@ -440,18 +460,24 @@ describe Groupify::ActiveRecord do
         expect(user.in_all_groups?(group, group3, as: 'employee')).to be false
       end
 
-      it "checks if members belong to only groups with a certain membership type" do
+      xit "checks if members belong to only groups with a certain membership type" do
         group2 = Group.create!
         group3 = Group.create!
         group4 = Group.create!
-        user.group_memberships_as_member.create!([{group: group, as: 'employee'}, {group: group2, as: 'employee'}, {group: group3, as: 'contractor'}, {group: group4, as: 'employee'}])
+        group.add(user)
+        group2.add(user, as: 'employee')
+        group3.add(user, as: 'contractor')
+        group4.add(user, as: 'employee')
 
-        expect(User.in_only_groups(group, group2, group4).as('employee').first).to eql(user)
+        expect(User.in_only_groups(group, group2, group3, group4)).to match_array([user])
+        expect(User.in_only_groups(group, group2, group4)).to be_empty
+
+        expect(User.in_only_groups(group2, group4).as('employee').first).to eql(user)
         expect(User.in_only_groups([group, group2]).as('employee')).to be_empty
         expect(User.in_only_groups(group, group2, group3, group4).as('employee')).to be_empty
 
-        expect(user.in_only_groups?(group, group2, group3, group4))
-        expect(user.in_only_groups?(group, group2, group4, as: 'employee')).to be true
+        expect(user.in_only_groups?(group, group2, group3, group4)).to be true
+        expect(user.in_only_groups?(group2, group4, as: 'employee')).to be true
         expect(user.in_only_groups?(group, group2, as: 'employee')).to be false
         expect(user.in_only_groups?(group, group2, group3, group4, as: 'employee')).to be false
       end
