@@ -1,7 +1,5 @@
 # Change Log
 
-- Drop Rails 3.2 support
-
 ## [v0.8.0](https://github.com/dwbutler/groupify/tree/v0.8.0) (2016-06-10)
 [Full Changelog](https://github.com/dwbutler/groupify/compare/v0.7.2...v0.8.0)
 
