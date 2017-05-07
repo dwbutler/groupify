@@ -69,14 +69,14 @@ module Groupify
         def in_named_group(named_group)
           return none unless named_group.present?
 
-          joins(:group_memberships_as_member).where(group_memberships: {group_name: named_group}).uniq
+          joins(:group_memberships_as_member).where(group_memberships: {group_name: named_group}).distinct
         end
 
         def in_any_named_group(*named_groups)
           named_groups.flatten!
           return none unless named_groups.present?
 
-          joins(:group_memberships_as_member).where(group_memberships: {group_name: named_groups.flatten}).uniq
+          joins(:group_memberships_as_member).where(group_memberships: {group_name: named_groups.flatten}).distinct
         end
 
         def in_all_named_groups(*named_groups)
@@ -87,7 +87,7 @@ module Groupify
               group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
               where(:group_memberships => {:group_name => named_groups}).
               having("COUNT(DISTINCT #{reflect_on_association(:group_memberships_as_member).klass.quoted_table_name}.#{connection.quote_column_name('group_name')}) = ?", named_groups.count).
-              uniq
+              distinct
         end
 
         def in_only_named_groups(*named_groups)
@@ -97,7 +97,7 @@ module Groupify
           joins(:group_memberships_as_member).
               group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
               having("COUNT(DISTINCT #{reflect_on_association(:group_memberships_as_member).klass.quoted_table_name}.#{connection.quote_column_name('group_name')}) = ?", named_groups.count).
-              uniq
+              distinct
         end
 
         def shares_any_named_group(other)
