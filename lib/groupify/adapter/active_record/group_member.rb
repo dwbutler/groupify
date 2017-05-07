@@ -21,20 +21,11 @@ module Groupify
                    class_name: Groupify.group_membership_class_name
         end
 
-        if ActiveSupport::VERSION::MAJOR > 3
-          has_many :groups, ->{ uniq },
-                   through: :group_memberships_as_member,
-                   as: :group,
-                   source_type: @group_class_name,
-                   extend: GroupAssociationExtensions
-        else
-          has_many :groups,
-                   uniq: true,
-                   through: :group_memberships_as_member,
-                   as: :group,
-                   source_type: @group_class_name,
-                   extend: GroupAssociationExtensions
-        end
+        has_many :groups, ->{ distinct },
+                 through: :group_memberships_as_member,
+                 as: :group,
+                 source_type: @group_class_name,
+                 extend: GroupAssociationExtensions
       end
 
       module GroupAssociationExtensions
@@ -112,7 +103,7 @@ module Groupify
         def in_group(group)
           return none unless group.present?
 
-          joins(:group_memberships_as_member).where(Groupify.group_membership_klass.table_name => { group_id: group.id }).uniq
+          joins(:group_memberships_as_member).where(Groupify.group_membership_klass.table_name => { group_id: group.id }).distinct
         end
 
         def in_any_group(*groups)
@@ -121,7 +112,7 @@ module Groupify
 
           joins(:group_memberships_as_member).
             where(Groupify.group_membership_klass.table_name => { group_id: groups.map(&:id) }).
-            uniq
+            distinct
         end
 
         def in_all_groups(*groups)
@@ -132,7 +123,7 @@ module Groupify
             group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
             where(Groupify.group_membership_klass.table_name => {group_id: groups.map(&:id)}).
             having("COUNT(DISTINCT #{Groupify.group_membership_klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
-            uniq
+            distinct
         end
 
         def in_only_groups(*groups)
@@ -141,7 +132,7 @@ module Groupify
 
           in_all_groups(*groups).
             where.not(id: in_other_groups(*groups).select("#{quoted_table_name}.#{connection.quote_column_name('id')}")).
-            uniq
+            distinct
         end
 
         def in_other_groups(*groups)

@@ -147,31 +147,12 @@ module Groupify
           association_name ||= member_klass.model_name.plural.to_sym
           source_type = member_klass.base_class
 
-          if ActiveSupport::VERSION::MAJOR > 3
-            has_many association_name,
-                     ->{ uniq },
-                     through: :group_memberships_as_group,
-                     source: :member,
-                     source_type: source_type,
-                     extend: MemberAssociationExtensions
-          else
-            has_many association_name,
-                     uniq: true,
-                     through: :group_memberships_as_group,
-                     source: :member,
-                     source_type: source_type,
-                     extend: MemberAssociationExtensions
-          end
-
-          define_method(association_name) do |*args|
-            opts = args.extract_options!
-            membership_type = opts[:as]
-            if membership_type.present?
-              super().as(membership_type)
-            else
-              super()
-            end
-          end
+          has_many association_name,
+                   ->{ distinct },
+                   through: :group_memberships_as_group,
+                   source: :member,
+                   source_type: source_type.to_s,
+                   extend: MemberAssociationExtensions
         end
       end
     end

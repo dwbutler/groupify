@@ -381,7 +381,6 @@ describe Groupify::ActiveRecord do
         expect(group.members).to include(user)
         expect(group.users).to include(user)
 
-        expect(user.groups(:as => :admin)).to include(group)
         expect(user.groups.as(:admin)).to include(group)
         expect(group.members).to include(user)
         expect(group.users).to include(user)
@@ -396,7 +395,6 @@ describe Groupify::ActiveRecord do
         expect(group.members.as(:manager)).to include(user)
         expect(group.users).to include(user)
 
-        expect(user.groups(:as => :manager)).to include(group)
         expect(group.members).to include(user)
         expect(group.users).to include(user)
       end
@@ -406,7 +404,6 @@ describe Groupify::ActiveRecord do
         group.add(user, manager, as: :manager)
 
         expect(group.users.as(:manager)).to include(user, manager)
-        expect(group.users(as: :manager)).to include(user, manager)
       end
 
       it "finds members by membership type" do
@@ -421,10 +418,10 @@ describe Groupify::ActiveRecord do
       end
 
       it "finds the group a member belongs to with a membership type" do
-        group.add user, as: Manager
+        group.add user, as: :manager
         user.groups.create!
 
-        expect(Group.with_member(user).as(Manager)).to eq([group])
+        expect(Group.with_member(user).as(:manager)).to eq([group])
       end
 
       it "checks if members belong to any groups with a certain membership type" do
