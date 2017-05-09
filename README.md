@@ -132,8 +132,9 @@ class Organization < Group
   has_members :offices, :equipment
 end
 
-class Organization < Group
-  has_members users: 'CustomUserClass', teams: 'CustomTeamClass'
+class Organization2 < Group
+  has_member :offices, class_name: 'CustomOfficeClass'
+  has_member :equipment, class_name: 'CustomEquipmentClass'
 end
 ```
 

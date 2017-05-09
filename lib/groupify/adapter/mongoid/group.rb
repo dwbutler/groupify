@@ -66,20 +66,23 @@ module Groupify
 
         # Define which classes are members of this group
         def has_members(*names)
-          klass_map = names.last.is_a?(Hash) ? names.pop : {}
-          klass_map = names.inject({}){ |hash, name| hash.merge(name => nil) }.merge(klass_map)
-
-          klass_map.each do |name, klass_name|
-            if klass_name.nil?
-              klass = name.to_s.classify.constantize
-              association_name = name.is_a?(Symbol) ? name : klass.model_name.plural.to_sym
-            else
-              klass = klass_name.to_s.classify.constantize
-              association_name = name.to_sym
-            end
-
-            register(klass, association_name)
+          Array.wrap(names.flatten).each do |name|
+            has_member name
           end
+        end
+
+        def has_member(name, options = {})
+          klass_name = options[:class_name]
+
+          if klass_name.nil?
+            klass = name.to_s.classify.constantize
+            association_name = name.is_a?(Symbol) ? name : klass.model_name.plural.to_sym
+          else
+            klass = klass_name.to_s.classify.constantize
+            association_name = name.to_sym
+          end
+
+          register(klass, association_name)
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
@@ -115,7 +118,7 @@ module Groupify
           (@member_klasses ||= Set.new) << member_klass
 
           associate_member_class(member_klass, association_name)
-          
+
           member_klass
         end
 
