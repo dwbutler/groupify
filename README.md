@@ -74,7 +74,7 @@ Set up your member models:
 ```ruby
 class User
   include Mongoid::Document
-  
+
   groupify :group_member
   groupify :named_group_member
 end
@@ -130,6 +130,10 @@ Example:
 ```ruby
 class Organization < Group
   has_members :offices, :equipment
+end
+
+class Organization < Group
+  has_members users: 'CustomUserClass', teams: 'CustomTeamClass'
 end
 ```
 
