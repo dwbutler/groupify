@@ -68,9 +68,19 @@ module Groupify
 
         # Define which classes are members of this group
         def has_members(*names)
-          Array.wrap(names.flatten).each do |name|
-            klass = name.to_s.classify.constantize
-            register(klass)
+          klass_map = names.last.is_a?(Hash) ? names.pop : {}
+          klass_map = names.inject({}){ |hash, name| hash.merge(name => nil) }.merge(klass_map)
+
+          klass_map.each do |name, klass_name|
+            if klass_name.nil?
+              klass = name.to_s.classify.constantize
+              association_name = name.is_a?(Symbol) ? name : klass.model_name.plural.to_sym
+            else
+              klass = klass_name.to_s.classify.constantize
+              association_name = name.to_sym
+            end
+
+            register(klass, association_name)
           end
         end
 
@@ -92,10 +102,10 @@ module Groupify
 
         protected
 
-        def register(member_klass)
+        def register(member_klass, association_name = nil)
           (@member_klasses ||= Set.new) << member_klass
 
-          associate_member_class(member_klass)
+          associate_member_class(member_klass, association_name)
 
           member_klass
         end
@@ -134,8 +144,8 @@ module Groupify
           end
         end
 
-        def associate_member_class(member_klass)
-          define_member_association(member_klass)
+        def associate_member_class(member_klass, association_name = nil)
+          define_member_association(member_klass, association_name)
 
           if member_klass == default_member_class
             define_member_association(member_klass, :members)
