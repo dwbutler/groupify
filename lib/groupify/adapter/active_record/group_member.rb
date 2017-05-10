@@ -30,6 +30,28 @@ module Groupify
           merge(Groupify.group_membership_klass.as(membership_type))
         end
 
+        def <<(*args)
+          opts = args.extract_options!
+          membership_type = opts[:as]
+          groups = args.flatten
+          return self unless groups.present?
+
+          member = proxy_association.owner
+          member.__send__(:clear_association_cache)
+
+          groups.each do |group|
+            super(group) unless include?(group)
+            if membership_type
+              membership = group.group_memberships_as_group.where(member_id: member.id, member_type: member.class.model_name.to_s, membership_type: membership_type).first_or_initialize
+              group.group_memberships_as_group << membership unless membership.persisted?
+            end
+            group.__send__(:clear_association_cache)
+          end
+
+          self
+        end
+        alias_method :add, :<<
+
         def delete(*args)
           opts = args.extract_options!
           groups = args.flatten
