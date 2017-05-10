@@ -52,7 +52,9 @@ module Groupify
       module ClassMethods
         def with_member(member)
           #member.groups
-          where(id: member.group_memberships_as_member.where(group_type: self.model_name.to_s).select(:group_id))
+          joins(:group_memberships_as_group).
+          where(group_memberships: {member_id: member.id, member_type: member.class.model_name.to_s}).
+          extending(Groupify::ActiveRecord::GroupMember::GroupAssociationExtensions)
         end
 
         def default_member_class
