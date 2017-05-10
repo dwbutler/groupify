@@ -140,6 +140,33 @@ end
 
 Mongoid works the same way by creating Mongoid relations.
 
+With polymorphic groups, the `default_members` option specifies the association
+on the group to which members should be added. When specifying individual `has_member`
+options, `default_members: true` indicates the association is the one to add new
+members to. (If the `default_members` is not specified and the `members` association
+does not exist, adding users to subclasses of a group can cause a
+`ActiveRecord::AssociationTypeMismatch` exception.)
+
+Example:
+
+```ruby
+class GroupBase < ActiveRecord::Base
+  self.table_name = "groups"
+  self.abstract_class = true
+end
+
+class Organization < GroupBase
+  acts_as_group default_member_association: :users
+  has_member :users, class_name: 'CustomUserClass', default_members: true
+end
+
+org = Organization.create!
+user = CustomUserClass.create!
+
+# adds the user to the `ord.users` association
+org.add user, as: 'admin'
+```
+
 ##### Group Associations on Member (ActiveRecord only)
 
 Your member class can be configured to create associations for each expected group type.

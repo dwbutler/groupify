@@ -28,19 +28,20 @@ module Groupify
 
       def add(*args)
         opts = args.extract_options!
-        membership_type = opts[:as]
         members = args.flatten
-        return unless members.present?
 
-        __send__(:clear_association_cache)
-
-        members.each do |member|
-          member.groups << self unless member.groups.include?(self)
-          if membership_type
-            member.group_memberships_as_member.where(group_id: id, group_type: self.class.model_name.to_s, membership_type: membership_type).first_or_create!
+        if members.present?
+          if self.class.default_members_association_name.present? && respond_to?(self.class.default_members_association_name)
+            association = __send__(self.class.default_members_association_name)
+            association.add members, opts
+          else
+            members.each do |member|
+              member.groups << self
+            end
           end
-          member.__send__(:clear_association_cache)
         end
+
+        self
       end
 
       # Merge a source group into this group.
@@ -84,7 +85,15 @@ module Groupify
             association_name = name.to_sym
           end
 
+          if options[:default_members]
+            @default_members_association_name = association_name
+          end
+
           register(klass, association_name)
+        end
+
+        def default_members_association_name
+          @default_members_association_name ||= :members
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
