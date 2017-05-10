@@ -139,13 +139,31 @@ module Groupify
             group = proxy_association.owner
             group.__send__(:clear_association_cache)
 
+            to_add_directly = []
+            to_add_with_membership_type = []
+
+            # first prepare changes
             members.each do |member|
-              super(member) unless include?(member)
+              # add to collection without membership type
+              to_add_directly << member unless include?(member)
+              # add a second entry for the given membership type
               if membership_type
                 membership = member.group_memberships_as_member.where(group_id: group.id, group_type: group.class.model_name.to_s, membership_type: membership_type).first_or_initialize
-                member.group_memberships_as_member << membership unless membership.persisted?
+                to_add_with_membership_type << membership unless membership.persisted?
               end
               member.__send__(:clear_association_cache)
+            end
+
+            # then validate changes
+            return false unless to_add_directly.all?(&:valid?)
+            return false unless to_add_with_membership_type.all?(&:valid?)
+
+            # then persist changes
+            super(to_add_directly)
+
+            to_add_with_membership_type.each do |membership|
+              membership.member.group_memberships_as_member << membership
+              membership.member.__send__(:clear_association_cache)
             end
 
             self
