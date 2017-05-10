@@ -30,15 +30,8 @@ module Groupify
         opts = {silent: false}.merge args.extract_options!
         members = args.flatten
 
-        if members.present?
-          if self.class.default_members_association_name && respond_to?(self.class.default_members_association_name)
-            association = __send__(self.class.default_members_association_name)
-            association.add members, opts
-          else
-            members.each do |member|
-              member.groups.add self, opts
-            end
-          end
+        members.each do |member|
+          member.groups.add(self, opts)
         end
 
         self
@@ -88,15 +81,7 @@ module Groupify
             association_name = name.to_sym
           end
 
-          if options[:default_members]
-            @default_members_association_name = association_name
-          end
-
           register(klass, association_name)
-        end
-
-        def default_members_association_name
-          @default_members_association_name
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
