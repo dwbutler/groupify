@@ -36,7 +36,7 @@ module Groupify
             association.add members, opts
           else
             members.each do |member|
-              member.groups << self
+              member.groups.add self, opts
             end
           end
         end
