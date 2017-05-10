@@ -53,7 +53,7 @@ module Groupify
         def with_member(member)
           #member.groups
           joins(:group_memberships_as_group).
-          where(group_memberships: {member_id: member.id, member_type: member.class.model_name.to_s}).
+          where(group_memberships: {member_id: member.id, member_type: member.class.base_class.to_s}).
           extending(Groupify::ActiveRecord::GroupMember::GroupAssociationExtensions)
         end
 

@@ -48,7 +48,7 @@ module Groupify
             to_add_directly << group unless include?(group)
             # add a second entry for the given membership type
             if membership_type
-              membership = group.group_memberships_as_group.where(member_id: member.id, member_type: member.class.model_name.to_s, membership_type: membership_type).first_or_initialize
+              membership = group.group_memberships_as_group.where(member_id: member.id, member_type: member.class.base_class.to_s, membership_type: membership_type).first_or_initialize
               to_add_with_membership_type << membership unless membership.persisted?
             end
             group.__send__(:clear_association_cache)
