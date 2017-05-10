@@ -110,7 +110,7 @@ module Groupify
           end
 
           source_group.transaction do
-            source_group.group_memberships_as_group.update_all(group_id: destination_group.id, group_type: destination_group.class.model_name.to_s)
+            source_group.group_memberships_as_group.update_all(group_id: destination_group.id)
             source_group.destroy
           end
         end
@@ -148,7 +148,7 @@ module Groupify
               to_add_directly << member unless include?(member)
               # add a second entry for the given membership type
               if membership_type
-                membership = member.group_memberships_as_member.where(group_id: group.id, group_type: group.class.model_name.to_s, membership_type: membership_type).first_or_initialize
+                membership = member.group_memberships_as_member.where(group_id: group.id, membership_type: membership_type).first_or_initialize
                 to_add_with_membership_type << membership unless membership.persisted?
               end
               member.__send__(:clear_association_cache)
