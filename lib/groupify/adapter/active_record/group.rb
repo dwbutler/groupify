@@ -31,7 +31,7 @@ module Groupify
         members = args.flatten
 
         if members.present?
-          if self.class.default_members_association_name.present? && respond_to?(self.class.default_members_association_name)
+          if self.class.default_members_association_name && respond_to?(self.class.default_members_association_name)
             association = __send__(self.class.default_members_association_name)
             association.add members, opts
           else
@@ -93,7 +93,7 @@ module Groupify
         end
 
         def default_members_association_name
-          @default_members_association_name ||= :members
+          @default_members_association_name
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
@@ -101,13 +101,13 @@ module Groupify
           # Ensure that all the members of the source can be members of the destination
           invalid_member_classes = (source_group.member_classes - destination_group.member_classes)
           invalid_member_classes.each do |klass|
-            if klass.joins(:group_memberships_as_member).merge(Groupify.group_membership_klass.where(group_id: source_group)).count > 0
+            if klass.joins(:group_memberships_as_member).merge(Groupify.group_membership_klass.where(group_id: source_group.id)).count > 0
               raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
             end
           end
 
           source_group.transaction do
-            source_group.group_memberships_as_group.update_all(:group_id => destination_group.id)
+            source_group.group_memberships_as_group.update_all(group_id: destination_group.id)
             source_group.destroy
           end
         end
