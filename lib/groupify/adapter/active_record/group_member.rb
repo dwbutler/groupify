@@ -61,6 +61,8 @@ module Groupify
           else
             super(*groups)
           end
+
+          groups.each{|group| group.__send__(:clear_association_cache)}
         end
 
         def destroy(*args)
@@ -72,6 +74,8 @@ module Groupify
           else
             super(*groups)
           end
+
+          groups.each{|group| group.__send__(:clear_association_cache)}
         end
       end
 
