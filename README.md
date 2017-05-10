@@ -156,7 +156,7 @@ class GroupBase < ActiveRecord::Base
 end
 
 class Organization < GroupBase
-  acts_as_group default_member_association: :users
+  acts_as_group
   has_member :users, class_name: 'CustomUserClass', default_members: true
 end
 
