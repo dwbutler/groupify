@@ -31,7 +31,7 @@ module Groupify
         end
 
         def <<(*args)
-          opts = args.extract_options!
+          opts = {silent: true}.merge args.extract_options!
           membership_type = opts[:as]
           groups = args.flatten
           return self unless groups.present?
@@ -55,8 +55,9 @@ module Groupify
           end
 
           # then validate changes
-          return false unless to_add_directly.all?(&:valid?)
-          return false unless to_add_with_membership_type.all?(&:valid?)
+          validation_method = opts[:silent] ? :valid? : :validate!
+          return false unless to_add_directly.all?(&validation_method)
+          return false unless to_add_with_membership_type.all?(&validation_method)
 
           # then persist changes
           super(to_add_directly)
