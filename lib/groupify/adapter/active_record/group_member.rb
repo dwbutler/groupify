@@ -21,11 +21,7 @@ module Groupify
                    class_name: Groupify.group_membership_class_name
         end
 
-        has_many :groups, ->{ distinct },
-                 through: :group_memberships_as_member,
-                 as: :group,
-                 source_type: @group_class_name,
-                 extend: GroupAssociationExtensions
+        has_group :groups
       end
 
       module GroupAssociationExtensions
@@ -121,10 +117,10 @@ module Groupify
           return none unless groups.present?
 
           joins(:group_memberships_as_member).
-            group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
+              group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
             merge(Groupify.group_membership_klass.where(group_id: groups)).
             having("COUNT(DISTINCT #{Groupify.group_membership_klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
-            distinct
+              distinct
         end
 
         def in_only_groups(*groups)
@@ -143,6 +139,15 @@ module Groupify
 
         def shares_any_group(other)
           in_any_group(other.groups)
+        end
+
+        def has_group(name, options = {})
+          has_many name.to_sym, ->{ distinct }, {
+            through: :group_memberships_as_member,
+            source: :group,
+            source_type: @group_class_name,
+            extend: GroupAssociationExtensions
+          }.merge(options.slice :class_name)
         end
       end
     end
