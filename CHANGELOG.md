@@ -1,6 +1,14 @@
 # Change Log
 
-## [v0.8.0](https://github.com/dwbutler/groupify/tree/v0.8.0) (2016-06-10)
+## [v0.9.0](https://github.com/dwbutler/groupify/tree/v0.9.0) (2017-05-09)
+[Full Changelog](https://github.com/dwbutler/groupify/compare/v0.8.0...v0.9.0)
+
+**Merged pull requests:**
+
+- Switch .uniq to .distinct while dropping rails 3.2 Support [\#53](https://github.com/dwbutler/groupify/pull/53) ([rposborne](https://github.com/rposborne))
+- Add timestamps to groups table in migration generator template [\#51](https://github.com/dwbutler/groupify/pull/51) ([juhazi](https://github.com/juhazi))
+
+## [v0.8.0](https://github.com/dwbutler/groupify/tree/v0.8.0) (2016-06-11)
 [Full Changelog](https://github.com/dwbutler/groupify/compare/v0.7.2...v0.8.0)
 
 **Fixed bugs:**
