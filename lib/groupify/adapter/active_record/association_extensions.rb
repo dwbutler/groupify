@@ -8,22 +8,20 @@ module Groupify
       end
 
       def delete(*records)
-        opts = records.extract_options!
-
-        if opts[:as]
-          find_for_destruction(opts[:as], *records).delete_all
-        else
-          super(*records)
-        end
-
-        records.each{|record| record.__send__(:clear_association_cache)}
+        remove_children_from_parent(:delete, *records, &super)
       end
 
       def destroy(*records)
-        opts = records.extract_options!
+        remove_children_from_parent(:destroy, *records, &super)
+      end
 
-        if opts[:as]
-          find_for_destruction(opts[:as], *records).destroy_all
+    private
+
+      def remove_children_from_parent(destruction_type, *records)
+        membership_type = records.extract_options![:as]
+
+        if membership_type
+          find_for_destruction(membership_type, *records).__send__(:"#{destruction_type}_all")
         else
           super(*records)
         end
