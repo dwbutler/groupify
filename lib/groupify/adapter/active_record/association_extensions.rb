@@ -29,9 +29,7 @@ module Groupify
         records.each{|record| record.__send__(:clear_association_cache)}
       end
 
-      def add_children_to_parent(parent_type, *args, &_super)
-        opts = {silent: true}.merge args.extract_options!
-        membership_type = opts[:as]
+      def add_children_to_parent(parent_type, should_raise_exception, *args, &_super)
         children = args.flatten
         return self unless children.present?
 
@@ -59,10 +57,10 @@ module Groupify
         list_to_validate.each do |item|
           next if item.valid?
 
-          if opts[:silent]
-            return false
-          else
+          if should_raise_exception
             raise RecordInvalid.new(item)
+          else
+            return false
           end
         end
 

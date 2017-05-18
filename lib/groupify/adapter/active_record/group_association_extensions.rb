@@ -6,9 +6,12 @@ module Groupify
       include AssociationExtensions
 
       def <<(*children)
-        add_children_to_parent(:group, *children, &super)
+        add_children_to_parent(:group, false, *children, &super)
       end
-      alias_method :add, :<<
+
+      def add(*children)
+        add_children_to_parent(:group, true, *children, &super)
+      end
 
     protected
 

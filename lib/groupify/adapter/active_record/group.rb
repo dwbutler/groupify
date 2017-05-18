@@ -28,12 +28,9 @@ module Groupify
         self.class.member_classes
       end
 
-      def add(*args)
-        opts = {silent: false}.merge args.extract_options!
-        members = args.flatten
-
-        members.each do |member|
-          member.groups.add(self, opts)
+      def add(*members)
+        members.flatten.each do |member|
+          member.groups.add(self)
         end
 
         self
