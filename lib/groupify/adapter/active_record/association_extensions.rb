@@ -7,6 +7,30 @@ module Groupify
         where(group_memberships: {membership_type: membership_type})
       end
 
+      def delete(*records)
+        opts = records.extract_options!
+
+        if opts[:as]
+          find_for_destruction(opts[:as], *records).delete_all
+        else
+          super(*records)
+        end
+
+        records.each{|record| record.__send__(:clear_association_cache)}
+      end
+
+      def destroy(*records)
+        opts = records.extract_options!
+
+        if opts[:as]
+          find_for_destruction(opts[:as], *records).destroy_all
+        else
+          super(*records)
+        end
+
+        records.each{|record| record.__send__(:clear_association_cache)}
+      end
+
     private
 
       def add_children_to_parent(parent_type, *args)

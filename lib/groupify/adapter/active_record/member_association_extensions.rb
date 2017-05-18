@@ -8,30 +8,6 @@ module Groupify
       end
       alias_method :add, :<<
 
-      def delete(*members)
-        opts = members.extract_options!
-
-        if opts[:as]
-          find_for_destruction(opts[:as], *members).delete_all
-        else
-          super(*members)
-        end
-
-        members.each{|member| member.__send__(:clear_association_cache)}
-      end
-
-      def destroy(*members)
-        opts = members.extract_options!
-
-        if opts[:as]
-          find_for_destruction(opts[:as], *members).destroy_all
-        else
-          super(*members)
-        end
-
-        members.each{|member| member.__send__(:clear_association_cache)}
-      end
-
     protected
 
       def find_for_destruction(membership_type, *members)
