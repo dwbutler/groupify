@@ -15,7 +15,7 @@ module Groupify
         remove_children_from_parent(:destroy, *records, &super)
       end
 
-    private
+    protected
 
       def remove_children_from_parent(destruction_type, *records)
         membership_type = records.extract_options![:as]
