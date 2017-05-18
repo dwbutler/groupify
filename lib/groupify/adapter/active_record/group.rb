@@ -140,9 +140,17 @@ module Groupify
             end
 
             # then validate changes
-            validation_method = opts[:silent] ? :valid? : :validate!
-            return false unless to_add_directly.all?(&validation_method)
-            return false unless to_add_with_membership_type.all?(&validation_method)
+            list_to_validate = to_add_directly + to_add_with_membership_type
+
+            list_to_validate.each do |item|
+              next if item.valid?
+
+              if opts[:silent]
+                return false
+              else
+                raise RecordInvalid.new(item)
+              end
+            end
 
             # then persist changes
             super(to_add_directly)
