@@ -1,4 +1,4 @@
-require 'groupify/active_record/member_association_extensions'
+require 'groupify/adapter/active_record/member_association_extensions'
 
 module Groupify
   module ActiveRecord
@@ -28,8 +28,10 @@ module Groupify
       end
 
       def add(*members)
+        opts = members.extract_options!
+
         members.flatten.each do |member|
-          member.groups.add(self)
+          member.groups.add(self, opts)
         end
 
         self

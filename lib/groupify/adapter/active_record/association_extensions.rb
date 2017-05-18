@@ -25,30 +25,31 @@ module Groupify
       end
 
       def delete(*records)
-        remove_children_from_parent(:delete, *records, &super)
+        remove_children_from_parent(records.flatten, :delete, &method(:super))
       end
 
       def destroy(*records)
-        remove_children_from_parent(:destroy, *records, &super)
+        remove_children_from_parent(records.flatten, :destroy, &method(:super))
       end
 
     protected
 
-      def remove_children_from_parent(destruction_type, *records)
+      def remove_children_from_parent(records, destruction_type, &fallback)
         membership_type = records.extract_options![:as]
 
         if membership_type
           find_for_destruction(membership_type, *records).__send__(:"#{destruction_type}_all")
         else
-          super(*records)
+          fallback.call(*records)
         end
 
         records.each{|record| record.__send__(:clear_association_cache)}
       end
 
-      def add_children_to_parent(parent_type, should_raise_exception, *args, &_super)
-        children = args.flatten
-        return self unless children.present?
+      def add_children_to_parent(children, exception_on_invalidation)
+        membership_type = children.extract_options![:as]
+
+        return self if children.none?
 
         parent = proxy_association.owner
         parent.__send__(:clear_association_cache)
@@ -59,10 +60,10 @@ module Groupify
         # first prepare changes
         children.each do |child|
           # add to collection without membership type
-          to_add_directly << item unless association.include?(item)
+          to_add_directly << child unless self.include?(child)
           # add a second entry for the given membership type
           if membership_type
-            membership = find_memberships_for_adding_children(parent, child).first_or_initialize
+            membership = find_memberships_for(child, membership_type).first_or_initialize
             to_add_with_membership_type << membership unless membership.persisted?
           end
           parent.__send__(:clear_association_cache)
@@ -71,23 +72,23 @@ module Groupify
         # then validate changes
         list_to_validate = to_add_directly + to_add_with_membership_type
 
-        list_to_validate.each do |item|
-          next if item.valid?
+        list_to_validate.each do |child|
+          next if child.valid?
 
-          if should_raise_exception
-            raise RecordInvalid.new(item)
+          if exception_on_invalidation
+            raise RecordInvalid.new(child)
           else
             return false
           end
         end
 
         # then persist changes
-        _super.call(to_add_directly)
+        add_as_usual(to_add_directly)
 
-        memberships_association = :"group_memberships_as_#{parent_type}"
+        memberships_association = :"group_memberships_as_#{association_parent_type}"
 
         to_add_with_membership_type.each do |membership|
-          membership_parent = membership.__send__(parent_type)
+          membership_parent = membership.__send__(association_parent_type)
           membership_parent.__send__(memberships_association) << membership
           membership_parent.__send__(:clear_association_cache)
         end
