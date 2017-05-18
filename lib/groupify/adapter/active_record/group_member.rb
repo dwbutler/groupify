@@ -1,3 +1,5 @@
+require 'groupify/active_record/group_association_extensions'
+
 module Groupify
   module ActiveRecord
 
