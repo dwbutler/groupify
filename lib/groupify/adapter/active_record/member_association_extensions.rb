@@ -56,15 +56,11 @@ module Groupify
       end
       alias_method :add, :<<
 
-      def delete(*args)
-        opts = args.extract_options!
-        members = args
+      def delete(*members)
+        opts = members.extract_options!
 
         if opts[:as]
-          proxy_association.owner.group_memberships_as_group.
-              where(member_id: members.map(&:id), member_type: proxy_association.reflection.options[:source_type]).
-              as(opts[:as]).
-              delete_all
+          find_for_destruction(opts[:as], *members).delete_all
         else
           super(*members)
         end
@@ -72,20 +68,24 @@ module Groupify
         members.each{|member| member.__send__(:clear_association_cache)}
       end
 
-      def destroy(*args)
-        opts = args.extract_options!
-        members = args
+      def destroy(*members)
+        opts = members.extract_options!
 
         if opts[:as]
-          proxy_association.owner.group_memberships_as_group.
-              where(member_id: members.map(&:id), member_type: proxy_association.reflection.options[:source_type]).
-              as(opts[:as]).
-              destroy_all
+          find_for_destruction(opts[:as], *members).destroy_all
         else
           super(*members)
         end
 
         members.each{|member| member.__send__(:clear_association_cache)}
+      end
+
+    protected
+
+      def find_for_destruction(membership_type, *members)
+        proxy_association.owner.group_memberships_as_group.
+          where(member_id: members.map(&:id), member_type: proxy_association.reflection.options[:source_type]).
+          as(membership_type)
       end
     end
   end
