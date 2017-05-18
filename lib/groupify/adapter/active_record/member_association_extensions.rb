@@ -4,11 +4,15 @@ module Groupify
       include AssociationExtensions
 
       def <<(*children)
-        add_children_to_parent(:member, *children)
+        add_children_to_parent(:member, *children, &super)
       end
       alias_method :add, :<<
 
     protected
+
+      def find_memberships_for_adding_children(member, group, membership_type)
+        member.group_memberships_as_member.where(group_id: group.id, membership_type: membership_type)
+      end
 
       def find_for_destruction(membership_type, *members)
         proxy_association.owner.group_memberships_as_group.
