@@ -3,14 +3,11 @@ require 'groupify/active_record/association_extensions'
 module Groupify
   module ActiveRecord
     module MemberAssociationExtensions
+      extend ActiveSupport::Concern
       include AssociationExtensions
 
-      def <<(*children)
-        add_children_to_parent(:member, false, *children, &super)
-      end
-
-      def add(*children)
-        add_children_to_parent(:member, true, *children, &super)
+      included do
+        setup_alias_methods!
       end
 
     protected

@@ -1,6 +1,23 @@
 module Groupify
   module ActiveRecord
     module AssociationExtensions
+      extend ActiveSupport::Concern
+
+      module ClassMethods
+        def setup_alias_methods!
+          alias_method :add_as_usual, :<<
+          alias_method :<<, :add_without_exception
+          alias_method :add, :add_with_exception
+        end
+      end
+
+      def add_without_exception(*children)
+        add_children_to_parent(children.flatten, false)
+      end
+
+      def add_with_exception(*children)
+        add_children_to_parent(children.flatten, true)
+      end
 
       def as(membership_type)
         return self unless membership_type
@@ -77,8 +94,6 @@ module Groupify
 
         self
       end
-      alias_method :add, :<<
-
     end
   end
 end

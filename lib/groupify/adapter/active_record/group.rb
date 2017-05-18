@@ -21,7 +21,6 @@ module Groupify
                  dependent: :destroy,
                  as: :group,
                  class_name: Groupify.group_membership_class_name
-
       end
 
       def member_classes
