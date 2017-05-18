@@ -153,7 +153,7 @@ module Groupify
         def in_group(group)
           return none unless group.present?
 
-          joins(:group_memberships_as_member).merge(Groupify.group_membership_klass.where(group_id: group)).distinct
+          joins(:group_memberships_as_member).merge(Groupify.group_membership_klass.where(group_id: group.id)).distinct
         end
 
         def in_any_group(*groups)
@@ -199,7 +199,7 @@ module Groupify
             through: :group_memberships_as_member,
             source: :group,
             source_type: @group_class_name,
-            extend: GroupAssociationExtensions
+            extend: Groupify::ActiveRecord::GroupAssociationExtensions
           }.merge(options.slice :class_name)
         end
       end
