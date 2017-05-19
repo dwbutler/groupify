@@ -27,11 +27,11 @@ module Groupify
       end
 
       def delete(*records)
-        remove_children_from_parent(records.flatten, :delete, &method(:super))
+        remove_children_from_parent(records.flatten, :delete){ |*args| super(*args) }
       end
 
       def destroy(*records)
-        remove_children_from_parent(records.flatten, :destroy, &method(:super))
+        remove_children_from_parent(records.flatten, :destroy){ |*args| super(*args) }
       end
 
     protected
@@ -87,11 +87,9 @@ module Groupify
         # then persist changes
         add_as_usual(to_add_directly)
 
-        memberships_association = :"group_memberships_as_#{association_parent_type}"
-
         to_add_with_membership_type.each do |membership|
           membership_parent = membership.__send__(association_parent_type)
-          membership_parent.__send__(memberships_association) << membership
+          membership_parent.__send__(:"group_memberships_as_#{association_parent_type}") << membership
           membership_parent.__send__(:clear_association_cache)
         end
 
