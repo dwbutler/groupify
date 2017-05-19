@@ -3,12 +3,7 @@ require 'groupify/adapter/active_record/association_extensions'
 module Groupify
   module ActiveRecord
     module MemberAssociationExtensions
-      extend ActiveSupport::Concern
       include AssociationExtensions
-
-      included do
-        setup_alias_methods!
-      end
 
     protected
 
