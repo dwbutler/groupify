@@ -201,7 +201,7 @@ module Groupify
             through: :group_memberships_as_member,
             source: :group,
             source_type: @group_class_name,
-            extend: Groupify::ActiveRecord::GroupAssociationExtensions
+            extend: GroupAssociationExtensions
           }.merge(options.slice :class_name)
         end
       end

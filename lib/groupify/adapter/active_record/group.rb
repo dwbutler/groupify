@@ -214,7 +214,7 @@ module Groupify
                    through: :group_memberships_as_group,
                    source: :member,
                    source_type: source_type.to_s,
-                   extend: Groupify::ActiveRecord::MemberAssociationExtensions
+                   extend: MemberAssociationExtensions
         end
       end
     end
