@@ -26,6 +26,8 @@ require 'groupify/adapter/active_record'
 class User < ActiveRecord::Base
   groupify :group_member
   groupify :named_group_member
+
+  has_group :organizations, class_name: "Organization"
 end
 
 class Manager < User
@@ -242,6 +244,29 @@ describe Groupify::ActiveRecord do
         child_org = Organization.create!
         parent_org.add(child_org)
         expect(parent_org.organizations).to include(child_org)
+      end
+
+      it "can have subclassed associations for groups of a specific kind" do
+        org = Organization.create!
+
+        user.groups << group
+        user.groups << org
+
+        expect(user.groups).to include(group)
+        expect(user.groups).to include(org)
+
+        expect(user.organizations).to_not include(group)
+        expect(user.organizations).to include(org)
+
+        expect(org.members).to include(user)
+        expect(group.members).to include(user)
+
+        expect(user.organizations.count).to eq(1)
+        expect(user.organizations.first).to be_a(Organization)
+
+        expect(user.groups.count).to eq(2)
+        expect(user.groups.first).to be_a(Organization)
+        expect(user.groups.second).to be_a(Group)
       end
     end
 
