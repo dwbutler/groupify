@@ -209,6 +209,28 @@ describe Groupify::ActiveRecord do
         expect(group.users).to include(*users)
       end
 
+      it "only adds group to member.groups once when added directly to association" do
+        user.groups << group
+        user.groups << group
+
+        expect(user.groups.count).to eq(1)
+
+        user.groups.reload
+
+        expect(user.groups.count).to eq(1)
+      end
+
+      it "only adds member to group.members once when added directly to association" do
+        group.members << user
+        group.members << user
+
+        expect(group.members.count).to eq(1)
+
+        group.members.reload
+
+        expect(group.members.count).to eq(1)
+      end
+
       it "only allows members to be added to their configured group type" do
         classroom = Classroom.create!
         expect { classroom.add(user) }.to raise_error(ActiveRecord::AssociationTypeMismatch)
