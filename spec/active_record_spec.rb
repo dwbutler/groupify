@@ -250,6 +250,9 @@ describe Groupify::ActiveRecord do
         group.users.delete(user)
         group.widgets.destroy(widget)
 
+        expect(user.groups).to_not include(group)
+        expect(widget.groups).to_not include(group)
+
         expect(group.widgets).to_not include(widget)
         expect(group.users).to_not include(user)
 
@@ -263,6 +266,9 @@ describe Groupify::ActiveRecord do
 
         user.groups.delete(group)
         widget.groups.destroy(group)
+
+        expect(group.users).to_not include(user)
+        expect(group.widgets).to_not include(widget)
 
         expect(group.widgets).to_not include(widget)
         expect(group.users).to_not include(user)
