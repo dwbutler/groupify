@@ -58,6 +58,7 @@ module Groupify
       end
 
       def in_group?(group, opts={})
+        return false unless group.present?
         criteria = {group_id: group.id}
 
         if opts[:as]
