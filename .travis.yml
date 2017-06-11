@@ -2,7 +2,9 @@ language: ruby
 dist: trusty
 sudo: false
 cache: bundler
-services: mongodb
+services:
+  - mongodb
+  - mysql
 bundler_args: --without development
 before_script:
   - sh -c "if [ '$DATABASE' = 'postgresql' ]; then psql -c 'create database groupify_test;' -U postgres; fi"
