@@ -22,5 +22,5 @@ end
 
 appraise "rails-5.1" do
   gem 'activerecord', "~> 5.1.0"
-  gem 'mongoid', '~> 6.1.0'
+  gem 'mongoid', '~> 6.2.0'
 end

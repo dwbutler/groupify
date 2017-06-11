@@ -16,8 +16,8 @@ Gem::Specification.new do |gem|
   gem.version       = Groupify::VERSION
   gem.license       = 'MIT'
 
-  gem.required_ruby_version = ">= 1.9.3"
+  gem.required_ruby_version = ">= 2.2"
 
-  gem.add_development_dependency "mongoid", ">= 3.1"
-  gem.add_development_dependency "activerecord", ">= 3.2", "< 5.2"
+  gem.add_development_dependency "mongoid", ">= 4"
+  gem.add_development_dependency "activerecord", ">= 4", "< 5.2"
 end

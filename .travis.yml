@@ -1,4 +1,7 @@
 language: ruby
+dist: trusty
+sudo: false
+cache: bundler
 services: mongodb
 bundler_args: --without development
 before_script:
@@ -12,10 +15,10 @@ env:
   - DATABASE=postgresql
   - DATABASE=mysql
 rvm:
-  - 2.2.6
+  - 2.2.7
   - 2.3.4
   - 2.4.1
-  - jruby-9.1.5.0
+  - jruby-9.1.9.0
   - rbx-2
 gemfile:
   - gemfiles/rails_4.0.gemfile
@@ -27,13 +30,10 @@ matrix:
   allow_failures:
     - rvm: 2.4.1
     - rvm: rbx-2
-    - rvm: jruby-9.1.5.0
+    - rvm: jruby-9.1.9.0
       gemfile: gemfiles/rails_5.0.gemfile
-    - rvm: jruby-9.1.5.0
+    - rvm: jruby-9.1.9.0
       gemfile: gemfiles/rails_5.1.gemfile
-
-sudo: false
-cache: bundler
 addons:
   code_climate:
     repo_token: 9ba385a9a2a4ccd816cf6768fcde3e9cc163a76b67838e3572be70850ffb5dc9
