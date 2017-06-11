@@ -13,7 +13,7 @@ begin
   require 'github_changelog_generator/task'
   desc "Regenerate changelog"
   GitHubChangelogGenerator::RakeTask.new :changelog do |config|
-    config.future_release = 'v0.8.0'
+    config.future_release = 'v0.9.0'
   end
 rescue LoadError
 end

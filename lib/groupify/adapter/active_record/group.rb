@@ -93,7 +93,7 @@ module Groupify
           # Ensure that all the members of the source can be members of the destination
           invalid_member_classes = (source_group.member_classes - destination_group.member_classes)
           invalid_member_classes.each do |klass|
-            if klass.joins(:group_memberships_as_member).where(:group_memberships => {:group_id => source_group.id}).count > 0
+            if klass.joins(:group_memberships_as_member).merge(Groupify.group_membership_klass.where(group_id: source_group)).count > 0
               raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
             end
           end
@@ -116,7 +116,7 @@ module Groupify
 
         module MemberAssociationExtensions
           def as(membership_type)
-            where(group_memberships: {membership_type: membership_type})
+            merge(Groupify.group_membership_klass.as(membership_type))
           end
 
           def delete(*args)

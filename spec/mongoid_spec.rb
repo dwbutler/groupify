@@ -243,6 +243,10 @@ describe Groupify::Mongoid do
         expect(user.shares_any_group?(user2)).to be true
         expect(MongoidUser.shares_any_group(user).to_a).to include(user2)
       end
+
+      it "gracefully handles missing groups" do
+        expect(user.in_group?(nil)).to be false
+      end
     end
 
     context 'when merging' do

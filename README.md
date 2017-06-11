@@ -9,7 +9,7 @@ model? Use named groups instead to add members to named groups such as
 ## Compatibility
 
 The following ORMs are supported:
- * ActiveRecord 4.1, 4.2, 5.0
+ * ActiveRecord 4.x, 5.x
  * Mongoid 4.x, 5.x, 6.x
 
 The following Rubies are supported:
@@ -188,18 +188,19 @@ user.in_group?(group)
 group.add(user, widget, task)
 ```
 
-### Add to named groups
-
-```ruby
-user.named_groups << :admin
-user.in_named_group?(:admin)        # => true
-```
-
 ### Remove from groups
 
 ```ruby
 users.groups.destroy(group)          # Destroys this user's group membership for this group
 group.users.delete(user)             # Deletes this group's group membership for this user
+```
+
+### Named groups
+
+```ruby
+user.named_groups << :admin
+user.in_named_group?(:admin)        # => true
+user.named_groups.destroy(:admin)
 ```
 
 ### Check if two members share any of the same groups:
@@ -256,7 +257,7 @@ within a larger group (say, an organization).
 group.add(user, as: 'manager')
 
 # Works with named groups too
-user.named_groups.add user, as: 'manager'
+user.named_groups.add 'Company', as: 'manager'
 
 # Query for the groups that a user belongs to with a certain role
 user.groups.as(:manager)
@@ -391,11 +392,20 @@ class PostPolicy < Struct.new(:user, :post)
 end
 ```
 
-## Upgrading
+## Backwards-Incompatible Releases
+
+### 0.9+ - Dropped support for Rails 3.2 and Ruby 1.9 - 2.1
+
+Groupify 0.9 added support for Rails 5.1, and dropped support for EOL'ed versions of Ruby,
+Rails, ActiveRecord, and Mongoid.
+
+ActiveRecord 5.1 no longer supports passing arguments to collection
+associations. Because of this, the undocumented syntax `groups.as(:membership_type)`
+is no longer supported.
 
 ### 0.8+ - Name Change for `group_memberships` Associations (ActiveRecord only)
 
-Groupify 0.8+ changed the ActiveRecord adapter to support configuring the same
+Groupify 0.8 changed the ActiveRecord adapter to support configuring the same
 model as both a group and a group member. To accomplish this, the internal `group_memberships`
 association was renamed to be different for groups and members. If you were
 using it, please be aware that you will need to change your code. This
@@ -403,6 +413,7 @@ association is considered to be an internal implementation details and not part
 of the public API, so please don't rely on it if you can avoid it.
 
 ### 0.7+ - Polymorphic Groups (ActiveRecord only)
+
 Groupify < 0.7 required a single `Group` model used for all group memberships.
 Groupify 0.7+ supports using multiple models as groups by implementing polymorphic associations.
 Upgrading requires adding a new `group_type` column to the `group_memberships` table and
