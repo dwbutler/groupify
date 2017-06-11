@@ -21,7 +21,7 @@ rvm:
   - 2.3.4
   - 2.4.1
   - jruby-9.1.9.0
-  - rubinius-3
+  #- rubinius-3
 gemfile:
   - gemfiles/rails_4.0.gemfile
   - gemfiles/rails_4.1.gemfile
@@ -31,7 +31,7 @@ gemfile:
 matrix:
   allow_failures:
     - rvm: 2.4.1
-    - rvm: rubinius-3
+    #- rvm: rubinius-3
     - rvm: jruby-9.1.9.0
       gemfile: gemfiles/rails_5.0.gemfile
     - rvm: jruby-9.1.9.0
