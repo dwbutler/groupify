@@ -71,6 +71,7 @@ module Groupify
       end
 
       def in_group?(group, opts={})
+        return false unless group.present?
         groups.as(opts[:as]).include?(group)
       end
 
