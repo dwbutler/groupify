@@ -1,6 +1,6 @@
 language: ruby
 dist: trusty
-sudo: false
+sudo: required
 cache: bundler
 services:
   - mongodb
