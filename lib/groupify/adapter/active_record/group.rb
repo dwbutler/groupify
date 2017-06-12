@@ -50,7 +50,6 @@ module Groupify
 
       module ClassMethods
         def with_member(member)
-          #joins(:group_memberships).where(:group_memberships => {:member_id => member.id, :member_type => member.class.to_s})
           member.groups
         end
 
