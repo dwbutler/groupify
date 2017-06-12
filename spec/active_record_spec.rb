@@ -96,6 +96,7 @@ describe Groupify::ActiveRecord do
 
         class CustomUser < ActiveRecord::Base
           groupify :group_member
+          groupify :named_group_member
         end
 
         class CustomGroup < ActiveRecord::Base
@@ -114,11 +115,12 @@ describe Groupify::ActiveRecord do
         custom_user = CustomUser.create!
         custom_group = CustomGroup.create!
         custom_user.groups << custom_group
+        custom_user.named_groups << :test
         expect(GroupMembership.count).to eq(0)
-        expect(CustomGroupMembership.count).to eq(1)
+        expect(CustomGroupMembership.count).to eq(2)
       end
 
-      it "correctly queries the custom models" do
+      it "correctly queries the custom models for groups" do
         custom_user = CustomUser.create!
         custom_group = CustomGroup.create!
         custom_group.add(custom_user, as: :manager)
@@ -131,6 +133,19 @@ describe Groupify::ActiveRecord do
         expect(CustomUser.as(:manager)).to eq([custom_user])
 
         expect(custom_group.custom_users.as(:manager)).to eq([custom_user])
+      end
+
+      it "correctly queries the custom models for named groups" do
+        custom_user = CustomUser.create!
+        custom_user.named_groups.add(:test_group, as: :observer)
+        custom_user.named_groups << :admins
+
+        expect(CustomUser.in_named_group(:test_group)).to eq([custom_user])
+        expect(CustomUser.in_named_group(:test_group).as(:observer)).to eq([custom_user])
+        expect(CustomUser.in_any_named_group(:test_group, :test)).to eq([custom_user])
+        expect(CustomUser.in_all_named_groups(:test_group, :admins)).to eq([custom_user])
+        expect(CustomUser.in_only_named_groups(:test_group, :admins)).to eq([custom_user])
+        expect(CustomUser.as(:observer)).to eq([custom_user])
       end
     end
 
@@ -644,7 +659,7 @@ describe Groupify::ActiveRecord do
         expect(User.in_all_named_groups(:team1, :team2).as('employee').first).to eql(user)
       end
 
-      it "checks if a member belongs to only certain named groups with a certain membership type" do
+      xit "checks if a member belongs to only certain named groups with a certain membership type" do
         expect(user.in_only_named_groups?(:team1, :team2, as: 'employee')).to be true
         expect(user.in_only_named_groups?(:team1, as: 'employee')).to be false
         expect(user.in_only_named_groups?(:team1, :team3, as: 'employee')).to be false
