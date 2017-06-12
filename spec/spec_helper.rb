@@ -11,6 +11,8 @@ SimpleCov.formatter = SimpleCov::Formatter::MultiFormatter.new [
 SimpleCov.start
 
 require 'active_support'
+# https://github.com/rails/rails/issues/28918
+require "active_support/core_ext/module/remove_method"
 require 'active_support/deprecation'
 require 'active_support/dependencies/autoload'
 
