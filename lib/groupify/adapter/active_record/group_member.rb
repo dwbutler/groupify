@@ -21,11 +21,7 @@ module Groupify
                    class_name: Groupify.group_membership_class_name
         end
 
-        has_many :groups, ->{ distinct },
-                 through: :group_memberships_as_member,
-                 as: :group,
-                 source_type: @group_class_name,
-                 extend: GroupAssociationExtensions
+        has_group :groups
       end
 
       module GroupAssociationExtensions
@@ -143,6 +139,15 @@ module Groupify
 
         def shares_any_group(other)
           in_any_group(other.groups)
+        end
+
+        def has_group(name, options = {})
+          has_many name.to_sym, ->{ distinct }, {
+            through: :group_memberships_as_member,
+            source: :group,
+            source_type: @group_class_name,
+            extend: GroupAssociationExtensions
+          }.merge(options.slice :class_name)
         end
       end
     end

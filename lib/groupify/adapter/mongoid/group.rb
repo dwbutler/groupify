@@ -67,9 +67,22 @@ module Groupify
         # Define which classes are members of this group
         def has_members(*names)
           Array.wrap(names.flatten).each do |name|
-            klass = name.to_s.classify.constantize
-            register(klass)
+            has_member name
           end
+        end
+
+        def has_member(name, options = {})
+          klass_name = options[:class_name]
+
+          if klass_name.nil?
+            klass = name.to_s.classify.constantize
+            association_name = name.is_a?(Symbol) ? name : klass.model_name.plural.to_sym
+          else
+            klass = klass_name.to_s.classify.constantize
+            association_name = name.to_sym
+          end
+
+          register(klass, association_name)
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
@@ -101,9 +114,11 @@ module Groupify
 
         protected
 
-        def register(member_klass)
+        def register(member_klass, association_name = nil)
           (@member_klasses ||= Set.new) << member_klass
-          associate_member_class(member_klass)
+
+          associate_member_class(member_klass, association_name)
+
           member_klass
         end
 
@@ -137,7 +152,7 @@ module Groupify
           end
         end
 
-        def associate_member_class(member_klass)
+        def associate_member_class(member_klass, association_name = nil)
           association_name ||= member_klass.model_name.plural.to_sym
 
           has_many association_name, class_name: member_klass.to_s, dependent: :nullify, foreign_key: 'group_ids', extend: MemberAssociationExtensions

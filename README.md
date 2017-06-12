@@ -74,7 +74,7 @@ Set up your member models:
 ```ruby
 class User
   include Mongoid::Document
-  
+
   groupify :group_member
   groupify :named_group_member
 end
@@ -131,9 +131,43 @@ Example:
 class Organization < Group
   has_members :offices, :equipment
 end
+
+class InternationalOrganization < Organization
+  has_member :offices, class_name: 'CustomOfficeClass'
+  has_member :equipment, class_name: 'CustomEquipmentClass'
+end
 ```
 
 Mongoid works the same way by creating Mongoid relations.
+
+##### Group Associations on Member (ActiveRecord only)
+
+Your member class can be configured to create associations for each expected group type.
+For example, let's say that your member class will have multiple types of organizations as groups.
+The following configuration adds `organizations` and `international_organizations` associations
+on the member model:
+
+```ruby
+class Group < ActiveRecord::Base
+  groupify :group, members: [:users, :assignments], default_members: :users
+end
+
+class Organization < Group
+  has_members :offices, :equipment
+end
+
+class InternationalOrganization < Organization
+end
+
+class Member < ActiveRecord::Base
+  groupify :group_member
+
+  has_group :organizations, class_name: 'Organization'
+  has_group :international_organizations, class_name: 'InternationalOrganization'
+end
+```
+
+Mongoid does not support the `has_group` helper method.
 
 ## Usage
 
