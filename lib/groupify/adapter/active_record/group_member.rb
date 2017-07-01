@@ -172,10 +172,10 @@ module Groupify
           return none unless groups.present?
 
           joins(:group_memberships_as_member).
-              group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
+            group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
             merge(Groupify.group_membership_klass.where(group_id: groups)).
             having("COUNT(DISTINCT #{Groupify.group_membership_klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
-              distinct
+            distinct
         end
 
         def in_only_groups(*groups)
