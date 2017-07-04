@@ -23,7 +23,7 @@ module Groupify
 
       def as(membership_type)
         return self unless membership_type
-        where(group_memberships: {membership_type: membership_type})
+        merge(Groupify.group_membership_klass.as(membership_type))
       end
 
       def delete(*records)
