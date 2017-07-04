@@ -46,7 +46,7 @@ module Groupify
         def with_member(member)
           #member.groups
           joins(:group_memberships_as_group).
-          merge(Groupify.group_membership_klass.where(member_id: member.id, member_type: member.class.base_class.to_s)).
+          merge(member.group_memberships_as_member).
           extending(Groupify::ActiveRecord::GroupMember::GroupAssociationExtensions)
         end
 
@@ -133,7 +133,7 @@ module Groupify
               to_add_directly << member unless include?(member)
               # add a second entry for the given membership type
               if membership_type
-                membership = member.group_memberships_as_member.where(group_id: group.id, membership_type: membership_type).first_or_initialize
+                membership = member.group_memberships_as_member.merge(group.group_memberships_as_group).as(membership_type).first_or_initialize
                 to_add_with_membership_type << membership unless membership.persisted?
               end
               member.__send__(:clear_association_cache)
@@ -170,7 +170,7 @@ module Groupify
 
             if opts[:as]
               proxy_association.owner.group_memberships_as_group.
-                  where(member_id: members.map(&:id), member_type: proxy_association.reflection.options[:source_type]).
+                  where(member_id: members, member_type: proxy_association.reflection.options[:source_type]).
                   as(opts[:as]).
                   delete_all
             else
