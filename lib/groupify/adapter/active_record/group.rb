@@ -95,7 +95,7 @@ module Groupify
           end
 
           source_group.transaction do
-            source_group.group_memberships_as_group.update_all(group_id: destination_group.id)
+            source_group.group_memberships_as_group.update_all(group_id: destination_group.id, group_type: destination_group.class.base_class.name)
             source_group.destroy
           end
         end
