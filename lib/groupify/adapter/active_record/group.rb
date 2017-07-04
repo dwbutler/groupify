@@ -44,7 +44,6 @@ module Groupify
 
       module ClassMethods
         def with_member(member)
-          #member.groups
           joins(:group_memberships_as_group).
           merge(member.group_memberships_as_member).
           extending(Groupify::ActiveRecord::GroupMember::GroupAssociationExtensions)
