@@ -17,10 +17,11 @@ module Groupify
       included do
         @default_member_class = nil
         @member_klasses ||= Set.new
+
         has_many :group_memberships_as_group,
-                 dependent: :destroy,
-                 as: :group,
-                 class_name: Groupify.group_membership_class_name
+          dependent: :destroy,
+          as: :group,
+          class_name: Groupify.group_membership_class_name
       end
 
       def member_classes
@@ -46,7 +47,7 @@ module Groupify
         def with_member(member)
           joins(:group_memberships_as_group).
           merge(member.group_memberships_as_member).
-          extending(Groupify::ActiveRecord::GroupMember::GroupAssociationExtensions)
+          extending(Groupify::ActiveRecord::GroupAssociationExtensions)
         end
 
         def default_member_class
@@ -109,93 +110,6 @@ module Groupify
           member_klass
         end
 
-        module MemberAssociationExtensions
-          def as(membership_type)
-            merge(Groupify.group_membership_klass.as(membership_type))
-          end
-
-          def <<(*args)
-            opts = {silent: true}.merge args.extract_options!
-            membership_type = opts[:as]
-            members = args.flatten
-            return self unless members.present?
-
-            group = proxy_association.owner
-            group.__send__(:clear_association_cache)
-
-            to_add_directly = []
-            to_add_with_membership_type = []
-
-            # first prepare changes
-            members.each do |member|
-              # add to collection without membership type
-              to_add_directly << member unless include?(member)
-              # add a second entry for the given membership type
-              if membership_type
-                membership = member.group_memberships_as_member.merge(group.group_memberships_as_group).as(membership_type).first_or_initialize
-                to_add_with_membership_type << membership unless membership.persisted?
-              end
-              member.__send__(:clear_association_cache)
-            end
-
-            # then validate changes
-            list_to_validate = to_add_directly + to_add_with_membership_type
-
-            list_to_validate.each do |item|
-              next if item.valid?
-
-              if opts[:silent]
-                return false
-              else
-                raise RecordInvalid.new(item)
-              end
-            end
-
-            # then persist changes
-            super(to_add_directly)
-
-            to_add_with_membership_type.each do |membership|
-              membership.member.group_memberships_as_member << membership
-              membership.member.__send__(:clear_association_cache)
-            end
-
-            self
-          end
-          alias_method :add, :<<
-
-          def delete(*args)
-            opts = args.extract_options!
-            members = args
-
-            if opts[:as]
-              proxy_association.owner.group_memberships_as_group.
-                  where(member_id: members, member_type: proxy_association.reflection.options[:source_type]).
-                  as(opts[:as]).
-                  delete_all
-            else
-              super(*members)
-            end
-
-            members.each{|member| member.__send__(:clear_association_cache)}
-          end
-
-          def destroy(*args)
-            opts = args.extract_options!
-            members = args
-
-            if opts[:as]
-              proxy_association.owner.group_memberships_as_group.
-                  where(member_id: members.map(&:id), member_type: proxy_association.reflection.options[:source_type]).
-                  as(opts[:as]).
-                  destroy_all
-            else
-              super(*members)
-            end
-
-            members.each{|member| member.__send__(:clear_association_cache)}
-          end
-        end
-
         def associate_member_class(member_klass, association_name = nil)
           define_member_association(member_klass, association_name)
 
@@ -213,7 +127,7 @@ module Groupify
                    through: :group_memberships_as_group,
                    source: :member,
                    source_type: source_type.to_s,
-                   extend: MemberAssociationExtensions
+                   extend: Groupify::ActiveRecord::MemberAssociationExtensions
         end
       end
     end

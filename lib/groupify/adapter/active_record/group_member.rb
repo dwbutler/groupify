@@ -15,102 +15,18 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
-        unless respond_to?(:group_memberships_as_member)
-          has_many :group_memberships_as_member,
-                   as: :member,
-                   autosave: true,
-                   dependent: :destroy,
-                   class_name: Groupify.group_membership_class_name
-        end
+        has_many :group_memberships_as_member,
+          as: :member,
+          autosave: true,
+          dependent: :destroy,
+          class_name: Groupify.group_membership_class_name
 
         has_group :groups
       end
 
-      module GroupAssociationExtensions
-        def as(membership_type)
-          return self unless membership_type
-          merge(Groupify.group_membership_klass.as(membership_type))
-        end
-
-        def <<(*args)
-          opts = {silent: true}.merge args.extract_options!
-          membership_type = opts[:as]
-          groups = args.flatten
-          return self unless groups.present?
-
-          member = proxy_association.owner
-          member.__send__(:clear_association_cache)
-
-          to_add_directly = []
-          to_add_with_membership_type = []
-
-          # first prepare changes
-          groups.each do |group|
-            # add to collection without membership type
-            to_add_directly << group unless include?(group)
-            # add a second entry for the given membership type
-            if membership_type
-              membership = group.group_memberships_as_group.merge(member.group_memberships_as_member).as(membership_type).first_or_initialize
-              to_add_with_membership_type << membership unless membership.persisted?
-            end
-            group.__send__(:clear_association_cache)
-          end
-
-          # then validate changes
-          list_to_validate = to_add_directly + to_add_with_membership_type
-
-          list_to_validate.each do |item|
-            next if item.valid?
-
-            if opts[:silent]
-              return false
-            else
-              raise RecordInvalid.new(item)
-            end
-          end
-
-          # then persist changes
-          super(to_add_directly)
-
-          to_add_with_membership_type.each do |membership|
-            membership.group.group_memberships_as_group << membership
-            membership.group.__send__(:clear_association_cache)
-          end
-
-          self
-        end
-        alias_method :add, :<<
-
-        def delete(*args)
-          opts = args.extract_options!
-          groups = args.flatten
-
-          if opts[:as]
-            proxy_association.owner.group_memberships_as_member.where(group: groups).as(opts[:as]).delete_all
-          else
-            super(*groups)
-          end
-
-          groups.each{|group| group.__send__(:clear_association_cache)}
-        end
-
-        def destroy(*args)
-          opts = args.extract_options!
-          groups = args.flatten
-
-          if opts[:as]
-            proxy_association.owner.group_memberships_as_member.where(group: groups).as(opts[:as]).destroy_all
-          else
-            super(*groups)
-          end
-
-          groups.each{|group| group.__send__(:clear_association_cache)}
-        end
-      end
-
       def in_group?(group, opts={})
         return false unless group.present?
-        criteria = {group_id: group.id}
+        criteria = {group: group}
 
         if opts[:as]
           criteria.merge!(membership_type: opts[:as])
@@ -201,7 +117,7 @@ module Groupify
             through: :group_memberships_as_member,
             source: :group,
             source_type: @group_class_name,
-            extend: GroupAssociationExtensions
+            extend: Groupify::ActiveRecord::GroupAssociationExtensions
           }.merge(options.slice :class_name)
         end
       end

@@ -3,6 +3,11 @@ module Groupify
     module AssociationExtensions
       extend ActiveSupport::Concern
 
+      def as(membership_type)
+        return self unless membership_type
+        merge(Groupify.group_membership_klass.as(membership_type))
+      end
+
       # Defined to create alias methods before
       # the association is extended with this module
       def <<(*)
@@ -21,17 +26,12 @@ module Groupify
       alias_method :<<, :add_without_exception
       alias_method :add, :add_with_exception
 
-      def as(membership_type)
-        return self unless membership_type
-        merge(Groupify.group_membership_klass.as(membership_type))
-      end
-
       def delete(*records)
-        remove_children_from_parent(records.flatten, :delete){ |*args| super(*args) }
+        remove_children_from_parent(records.flatten, :delete){ |records| super(records) }
       end
 
       def destroy(*records)
-        remove_children_from_parent(records.flatten, :destroy){ |*args| super(*args) }
+        remove_children_from_parent(records.flatten, :destroy){ |records| super(records) }
       end
 
     protected
@@ -40,9 +40,9 @@ module Groupify
         membership_type = records.extract_options![:as]
 
         if membership_type
-          find_for_destruction(membership_type, *records).__send__(:"#{destruction_type}_all")
+          find_for_destruction(membership_type, records).__send__(:"#{destruction_type}_all")
         else
-          fallback.call(*records)
+          fallback.call(records)
         end
 
         records.each{|record| record.__send__(:clear_association_cache)}
