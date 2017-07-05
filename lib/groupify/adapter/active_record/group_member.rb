@@ -26,7 +26,7 @@ module Groupify
 
       def in_group?(group, opts={})
         return false unless group.present?
-        
+
         criteria = group_memberships_as_member.merge(group.group_memberships_as_group)
         criteria = criteria.as(opts[:as]) if opts[:as]
         criteria.exists?
@@ -34,12 +34,9 @@ module Groupify
 
       def in_any_group?(*args)
         opts = args.extract_options!
-        groups = args
+        groups = args.flatten
 
-        groups.flatten.each do |group|
-          return true if in_group?(group, opts)
-        end
-        return false
+        groups.any?{ |group| in_group?(group, opts) }
       end
 
       def in_all_groups?(*args)
