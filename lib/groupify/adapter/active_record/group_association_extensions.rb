@@ -19,7 +19,7 @@ module Groupify
 
       def find_for_destruction(membership_type, groups)
         proxy_association.owner.group_memberships_as_member.
-          where(group: groups).as(membership_type)
+          for_groups(groups).as(membership_type)
       end
     end
   end

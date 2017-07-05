@@ -79,7 +79,7 @@ module Groupify
           return none unless groups.present?
 
           joins(:group_memberships_as_member).
-            merge(Groupify.group_membership_klass.where(group: groups)).
+            merge(Groupify.group_membership_klass.for_groups(groups)).
             distinct
         end
 
@@ -89,7 +89,7 @@ module Groupify
 
           joins(:group_memberships_as_member).
             group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
-            merge(Groupify.group_membership_klass.where(group: groups)).
+            merge(Groupify.group_membership_klass.for_groups(groups)).
             having("COUNT(DISTINCT #{Groupify.group_membership_klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
             distinct
         end
@@ -105,7 +105,7 @@ module Groupify
 
         def in_other_groups(*groups)
           joins(:group_memberships_as_member).
-            merge(Groupify.group_membership_klass.where.not(group: groups))
+            merge(Groupify.group_membership_klass.not_for_groups(groups))
         end
 
         def shares_any_group(other)
