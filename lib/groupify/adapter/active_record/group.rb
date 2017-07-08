@@ -45,8 +45,7 @@ module Groupify
 
       module ClassMethods
         def with_member(member)
-          joins(:group_memberships_as_group).
-          merge(member.group_memberships_as_member).
+          memberships_merge(member.group_memberships_as_member).
           extending(Groupify::ActiveRecord::GroupAssociationExtensions)
         end
 
@@ -89,7 +88,7 @@ module Groupify
           # Ensure that all the members of the source can be members of the destination
           invalid_member_classes = (source_group.member_classes - destination_group.member_classes)
           invalid_member_classes.each do |klass|
-            if klass.joins(:group_memberships_as_member).merge(source_group.group_memberships_as_group).count > 0
+            if klass.memberships_merge(source_group.group_memberships_as_group).count > 0
               raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
             end
           end
@@ -129,6 +128,12 @@ module Groupify
             source_type: source_type.to_s,
             extend: Groupify::ActiveRecord::MemberAssociationExtensions
         end
+
+        def memberships_merge(merge_criteria, &group_membership_filter)
+          query = joins(:group_memberships_as_group)
+          query = query.merge(merge_criteria) if merge_criteria
+          query = query.merge(Groupify.group_membership_klass.instance_eval(&group_membership_filter)) if block_given?
+          query
         end
       end
     end

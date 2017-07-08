@@ -56,22 +56,20 @@ module Groupify
 
       module ClassMethods
         def as(membership_type)
-          joins(:group_memberships_as_member).merge(Groupify.group_membership_klass.as(membership_type))
+          memberships_merge{as(membership_type)}
         end
 
         def in_group(group)
           return none unless group.present?
 
-          joins(:group_memberships_as_member).merge(group.group_memberships_as_group).distinct
+          memberships_merge(group.group_memberships_as_group).distinct
         end
 
         def in_any_group(*groups)
           groups = groups.flatten
           return none unless groups.present?
 
-          joins(:group_memberships_as_member).
-            merge(Groupify.group_membership_klass.for_groups(groups)).
-            distinct
+          memberships_merge{for_groups(groups)}.distinct
         end
 
         def in_all_groups(*groups)
@@ -88,9 +86,8 @@ module Groupify
                                     "CONCAT(#{group_id_column}, #{group_type_column})"
                                   end
 
-          joins(:group_memberships_as_member).
+          memberships_merge{for_groups(groups)}.
             group(Groupify.quoted_column_name_for(self, 'id')).
-            merge(Groupify.group_membership_klass.for_groups(groups)).
             having("COUNT(DISTINCT #{concatenated_columns}) = ?", groups.count).
             distinct
         end
@@ -105,8 +102,7 @@ module Groupify
         end
 
         def in_other_groups(*groups)
-          joins(:group_memberships_as_member).
-            merge(Groupify.group_membership_klass.not_for_groups(groups))
+          memberships_merge{not_for_groups(groups)}
         end
 
         def shares_any_group(other)
@@ -124,6 +120,13 @@ module Groupify
             source_type: source_type || @group_class_name,
             extend: Groupify::ActiveRecord::GroupAssociationExtensions
           }.merge(options.slice :class_name)
+        end
+
+        def memberships_merge(merge_criteria = nil, &group_membership_filter)
+          query = joins(:group_memberships_as_member)
+          query = query.merge(merge_criteria) if merge_criteria
+          query = query.merge(Groupify.group_membership_klass.instance_eval(&group_membership_filter)) if block_given?
+          query
         end
       end
     end
