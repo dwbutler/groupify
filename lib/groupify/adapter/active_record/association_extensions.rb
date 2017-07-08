@@ -27,11 +27,11 @@ module Groupify
       alias_method :add, :add_with_exception
 
       def delete(*records)
-        remove_children_from_parent(records.flatten, :delete){ |records| super(records) }
+        remove_children_from_parent(records.flatten, :delete){ |records| super(*records) }
       end
 
       def destroy(*records)
-        remove_children_from_parent(records.flatten, :destroy){ |records| super(records) }
+        remove_children_from_parent(records.flatten, :destroy){ |records| super(*records) }
       end
 
     protected
