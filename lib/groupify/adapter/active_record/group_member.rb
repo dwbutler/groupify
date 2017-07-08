@@ -128,11 +128,6 @@ module Groupify
             extend: Groupify::ActiveRecord::GroupAssociationExtensions
           }.merge(options.slice :class_name)
         end
-
-      private
-
-        def build_having_count_distinct_concatenated_criteria
-        end
       end
     end
   end
