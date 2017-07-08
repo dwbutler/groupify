@@ -81,10 +81,20 @@ module Groupify
           groups = groups.flatten
           return none unless groups.present?
 
+          group_id_column = "#{Groupify.group_membership_klass.quoted_table_name}.#{connection.quote_column_name('group_id')}"
+          group_type_column = "#{Groupify.group_membership_klass.quoted_table_name}.#{connection.quote_column_name('group_type')}"
+          # Count distinct on ID and type combo
+          concatenated_columns =  case connection.adapter_name.downcase
+                                  when /sqlite/
+                                    "#{group_id_column} || #{group_type_column}"
+                                  else #when /mysql/, /postgres/, /pg/
+                                    "CONCAT(#{group_id_column}, #{group_type_column})"
+                                  end
+
           joins(:group_memberships_as_member).
             group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
             merge(Groupify.group_membership_klass.for_groups(groups)).
-            having("COUNT(DISTINCT #{Groupify.group_membership_klass.quoted_table_name}.#{connection.quote_column_name('group_id')}) = ?", groups.count).
+            having("COUNT(DISTINCT #{concatenated_columns}) = ?", groups.count).
             distinct
         end
 
@@ -117,6 +127,11 @@ module Groupify
             source_type: source_type || @group_class_name,
             extend: Groupify::ActiveRecord::GroupAssociationExtensions
           }.merge(options.slice :class_name)
+        end
+
+      private
+
+        def build_having_count_distinct_concatenated_criteria
         end
       end
     end
