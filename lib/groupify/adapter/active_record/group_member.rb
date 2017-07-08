@@ -106,11 +106,15 @@ module Groupify
           in_any_group(other.groups)
         end
 
-        def has_group(name, options = {})
+        def has_group(name, source_type = nil, options = {})
+          if source_type.is_a?(Hash)
+            options, source_type = source_type, nil
+          end
+
           has_many name.to_sym, ->{ distinct }, {
             through: :group_memberships_as_member,
             source: :group,
-            source_type: @group_class_name,
+            source_type: source_type || @group_class_name,
             extend: Groupify::ActiveRecord::GroupAssociationExtensions
           }.merge(options.slice :class_name)
         end
