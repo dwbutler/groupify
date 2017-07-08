@@ -11,21 +11,16 @@ module Groupify
 
       def add(named_group, opts={})
         named_group = named_group.to_sym
-        membership_type = opts[:as]
+        # always add a nil membership type and then a specific one (if specified)
+        membership_types = [nil, opts[:as]].uniq
 
-        if @member.new_record?
-          @member.group_memberships_as_member.build(group_name: named_group, membership_type: nil)
-        else
-          @member.transaction do
-            @member.group_memberships_as_member.where(group_name: named_group, membership_type: nil).first_or_create!
-          end
-        end
-
-        if membership_type
-          if @member.new_record?
-            @member.group_memberships_as_member.build(group_name: named_group, membership_type: membership_type)
-          else
-            @member.group_memberships_as_member.where(group_name: named_group, membership_type: membership_type).first_or_create!
+        @member.transaction do
+          membership_types.each do |membership_type|
+            if @member.new_record?
+              @member.group_memberships_as_member.build(group_name: named_group, membership_type: membership_type)
+            else
+              @member.group_memberships_as_member.where(group_name: named_group, membership_type: membership_type).first_or_create!
+            end
           end
         end
 
