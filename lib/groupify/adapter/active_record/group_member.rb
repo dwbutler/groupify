@@ -32,25 +32,22 @@ module Groupify
         criteria.exists?
       end
 
-      def in_any_group?(*args)
-        opts = args.extract_options!
-        groups = args.flatten
+      def in_any_group?(*groups)
+        opts = groups.extract_options!
 
-        groups.any?{ |group| in_group?(group, opts) }
+        groups.flatten.any?{ |group| in_group?(group, opts) }
       end
 
-      def in_all_groups?(*args)
-        opts = args.extract_options!
-        groups = args.flatten
+      def in_all_groups?(*groups)
+        opts = groups.extract_options!
 
-        groups.to_set.subset? self.groups.as(opts[:as]).to_set
+        groups.flatten.to_set.subset? self.groups.as(opts[:as]).to_set
       end
 
-      def in_only_groups?(*args)
-        opts = args.extract_options!
-        groups = args.flatten
+      def in_only_groups?(*groups)
+        opts = groups.extract_options!
 
-        groups.to_set == self.groups.as(opts[:as]).to_set
+        groups.flatten.to_set == self.groups.as(opts[:as]).to_set
       end
 
       def shares_any_group?(other, opts={})

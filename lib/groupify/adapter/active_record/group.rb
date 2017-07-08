@@ -100,7 +100,7 @@ module Groupify
           end
         end
 
-        protected
+      protected
 
         def register(member_klass, association_name = nil)
           (@member_klasses ||= Set.new) << member_klass
@@ -123,11 +123,12 @@ module Groupify
           source_type = member_klass.base_class
 
           has_many association_name,
-                   ->{ distinct },
-                   through: :group_memberships_as_group,
-                   source: :member,
-                   source_type: source_type.to_s,
-                   extend: Groupify::ActiveRecord::MemberAssociationExtensions
+            ->{ distinct },
+            through: :group_memberships_as_group,
+            source: :member,
+            source_type: source_type.to_s,
+            extend: Groupify::ActiveRecord::MemberAssociationExtensions
+        end
         end
       end
     end

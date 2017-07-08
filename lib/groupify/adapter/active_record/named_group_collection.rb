@@ -6,6 +6,7 @@ module Groupify
         @member = member
         @named_group_memberships = member.group_memberships_as_member.named
         @group_names = @named_group_memberships.pluck(:group_name).map(&:to_sym)
+
         super(@group_names)
       end
 
@@ -30,10 +31,10 @@ module Groupify
       alias_method :push, :add
       alias_method :<<, :add
 
-      def merge(*args)
-        opts = args.extract_options!
-        named_groups = args.flatten
-        named_groups.each do |named_group|
+      def merge(*named_groups)
+        opts = named_groups.extract_options!
+
+        named_groups.flatten.each do |named_group|
           add(named_group, opts)
         end
       end
@@ -42,6 +43,7 @@ module Groupify
 
       def include?(named_group, opts={})
         named_group = named_group.to_sym
+
         if opts[:as]
           as(opts[:as]).include?(named_group)
         else
@@ -49,18 +51,16 @@ module Groupify
         end
       end
 
-      def delete(*args)
-        opts = args.extract_options!
-        named_groups = args.flatten.compact
+      def delete(*named_groups)
+        opts = named_groups.extract_options!
 
-        remove(named_groups, :delete_all, opts)
+        remove(named_groups.flatten.compact, :delete_all, opts)
       end
 
-      def destroy(*args)
-        opts = args.extract_options!
-        named_groups = args.flatten.compact
+      def destroy(*named_groups)
+        opts = named_groups.extract_options!
 
-        remove(named_groups, :destroy_all, opts)
+        remove(named_groups.flatten.compact, :destroy_all, opts)
       end
 
       def clear
@@ -76,7 +76,7 @@ module Groupify
         @named_group_memberships.as(membership_type).pluck(:group_name).map(&:to_sym)
       end
 
-      protected
+    protected
 
       def remove(named_groups, method, opts)
         if named_groups.present?
