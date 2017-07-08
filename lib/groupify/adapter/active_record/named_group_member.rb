@@ -39,10 +39,7 @@ module Groupify
       def in_any_named_group?(*args)
         opts = args.extract_options!
         named_groups = args.flatten
-        named_groups.each do |named_group|
-          return true if in_named_group?(named_group, opts)
-        end
-        return false
+        named_groups.any?{ |named_group| in_named_group?(named_group, opts) }
       end
 
       def in_all_named_groups?(*args)
