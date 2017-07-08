@@ -14,7 +14,7 @@ module Groupify
         end
       end
 
-      def <<(named_group, opts={})
+      def <<(named_group, opts = {})
         named_group = named_group.to_sym
         super(named_group)
         uniq!

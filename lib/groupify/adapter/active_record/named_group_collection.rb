@@ -10,7 +10,7 @@ module Groupify
         super(@group_names)
       end
 
-      def add(named_group, opts={})
+      def add(named_group, opts = {})
         named_group = named_group.to_sym
         # always add a nil membership type and then a specific one (if specified)
         membership_types = [nil, opts[:as]].uniq
@@ -41,7 +41,7 @@ module Groupify
 
       alias_method :concat, :merge
 
-      def include?(named_group, opts={})
+      def include?(named_group, opts = {})
         named_group = named_group.to_sym
 
         if opts[:as]

@@ -24,7 +24,7 @@ module Groupify
         end
       end
 
-      def in_named_group?(named_group, opts={})
+      def in_named_group?(named_group, opts = {})
         named_groups.as(opts[:as]).include?(named_group)
       end
 
@@ -52,12 +52,12 @@ module Groupify
         named_groups == self.named_groups.as(opts[:as]).to_set
       end
 
-      def shares_any_named_group?(other, opts={})
+      def shares_any_named_group?(other, opts = {})
         in_any_named_group?(other.named_groups, opts)
       end
 
       module ClassMethods
-        def in_named_group(named_group, opts={})
+        def in_named_group(named_group, opts = {})
           in_any_named_group(named_group, opts)
         end
 
@@ -82,7 +82,7 @@ module Groupify
           where(named_groups: named_groups.flatten)
         end
 
-        def shares_any_named_group(other, opts={})
+        def shares_any_named_group(other, opts = {})
           in_any_named_group(other.named_groups, opts)
         end
       end

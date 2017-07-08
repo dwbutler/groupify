@@ -70,7 +70,7 @@ module Groupify
         end
       end
 
-      def in_group?(group, opts={})
+      def in_group?(group, opts = {})
         return false unless group.present?
         groups.as(opts[:as]).include?(group)
       end
@@ -99,7 +99,7 @@ module Groupify
         groups.to_set == self.groups.as(opts[:as]).to_set
       end
 
-      def shares_any_group?(other, opts={})
+      def shares_any_group?(other, opts = {})
         in_any_group?(other.groups.to_a, opts)
       end
 

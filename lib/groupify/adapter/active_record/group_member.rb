@@ -24,7 +24,7 @@ module Groupify
         has_group :groups
       end
 
-      def in_group?(group, opts={})
+      def in_group?(group, opts = {})
         return false unless group.present?
 
         criteria = group_memberships_as_member.merge(group.group_memberships_as_group)
@@ -50,7 +50,7 @@ module Groupify
         groups.flatten.to_set == self.groups.as(opts[:as]).to_set
       end
 
-      def shares_any_group?(other, opts={})
+      def shares_any_group?(other, opts = {})
         in_any_group?(other.groups, opts)
       end
 
