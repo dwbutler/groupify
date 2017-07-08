@@ -30,7 +30,7 @@ module Groupify
       end
 
       module ClassMethods
-        def named(group_name=nil)
+        def named(group_name = nil)
           if group_name.present?
             where(group_name: group_name)
           else
@@ -47,49 +47,47 @@ module Groupify
         end
 
         def not_for_groups(groups)
-          for_polymorphic(:group, groups, not: true)
+          where.not(build_polymorphic_criteria_for(:group, groups))
         end
 
         def for_members(members)
           for_polymorphic(:member, members)
         end
 
+        def not_for_members(groups)
+          where.not(build_polymorphic_criteria_for(:member, members))
+        end
+
         def criteria_for_groups(groups)
-          criteria_for_polymorphic(:group, groups)
+          build_polymorphic_criteria_for(:group, groups)
         end
 
         def criteria_for_members(members)
-          criteria_for_polymorphic(:member, members)
+          build_polymorphic_criteria_for(:member, members)
         end
 
-        def for_polymorphic(name, records, options = {})
-          if records.is_a?(Array)
-            if options[:not]
-              where.not(criteria_for_polymorphic(name, records))
-            else
-              where(criteria_for_polymorphic(name, records))
-            end
-          elsif records.is_a?(::ActiveRecord::Relation)
+        def for_polymorphic(source, records, options = {})
+          case records
+          when Array
+            where(build_polymorphic_criteria_for(source, records))
+          when ::ActiveRecord::Relation
             merge(records)
-          elsif records
-            merge(records.__send__(:"group_memberships_as_#{name}"))
+          when ::ActiveRecord::Base
+            merge(records.__send__(:"group_memberships_as_#{source}"))
           else
             self
           end
         end
 
-        def criteria_for_polymorphic(prefix, records)
-          records_by_base_class = records.group_by{ |record| record.class.base_class }
-          klass = respond_to?(:proxy_association) ? proxy_association.klass : self
+        # Build criteria to search on ID grouped by base class type.
+        # This is for polymorphic associations where the ID may be from
+        # different tables.
+        def build_polymorphic_criteria_for(source, records)
+          records_by_base_class = records.group_by{ |record| record.class.base_class.name }
+          table = respond_to?(:proxy_association) ? proxy_association.klass.arel_table : self.arel_table
+          id_column, type_column = table[:"#{source}_id"], table[:"#{source}_type"]
 
-          criteria_values = records_by_base_class.map do |base_class, records|
-            klass.arel_table.grouping([
-              klass.arel_table[:"#{prefix}_type"].eq(base_class.name),
-              klass.arel_table[:"#{prefix}_id"].in(records.map(&:id))
-            ].reduce(:and))
-          end
-
-          criteria_values.reduce(:or)
+          records_by_base_class.map{ |type, records| table.grouping(type_column.eq(type).and(id_column.in(records.map(&:id)))) }.reduce(:or)
         end
       end
     end
