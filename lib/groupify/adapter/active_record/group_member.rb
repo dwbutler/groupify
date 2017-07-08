@@ -81,8 +81,8 @@ module Groupify
           groups = groups.flatten
           return none unless groups.present?
 
-          group_id_column = "#{Groupify.group_membership_klass.quoted_table_name}.#{connection.quote_column_name('group_id')}"
-          group_type_column = "#{Groupify.group_membership_klass.quoted_table_name}.#{connection.quote_column_name('group_type')}"
+          group_id_column = Groupify.quoted_column_name_for(Groupify.group_membership_klass, 'group_id')
+          group_type_column = Groupify.quoted_column_name_for(Groupify.group_membership_klass, 'group_type')
           # Count distinct on ID and type combo
           concatenated_columns =  case connection.adapter_name.downcase
                                   when /sqlite/
@@ -92,7 +92,7 @@ module Groupify
                                   end
 
           joins(:group_memberships_as_member).
-            group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
+            group(Groupify.quoted_column_name_for(self, 'id')).
             merge(Groupify.group_membership_klass.for_groups(groups)).
             having("COUNT(DISTINCT #{concatenated_columns}) = ?", groups.count).
             distinct
@@ -103,7 +103,7 @@ module Groupify
           return none unless groups.present?
 
           in_all_groups(*groups).
-            where.not(id: in_other_groups(*groups).select("#{quoted_table_name}.#{connection.quote_column_name('id')}")).
+            where.not(id: in_other_groups(*groups).select(Groupify.quoted_column_name_for(self, 'id'))).
             distinct
         end
 

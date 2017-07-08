@@ -84,9 +84,9 @@ module Groupify
           return none unless named_groups.present?
 
           joins(:group_memberships_as_member).
-              group("#{quoted_table_name}.#{connection.quote_column_name('id')}").
+              group(Groupify.quoted_column_name_for(self, 'id')).
               merge(Groupify.group_membership_klass.where(group_name: named_groups)).
-              having("COUNT(DISTINCT #{Groupify.group_membership_klass.quoted_table_name}.#{connection.quote_column_name('group_name')}) = ?", named_groups.count).
+              having("COUNT(DISTINCT #{Groupify.quoted_column_name_for(Groupify.group_membership_klass, 'group_name')}) = ?", named_groups.count).
               distinct
         end
 
@@ -95,7 +95,7 @@ module Groupify
           return none unless named_groups.present?
 
           in_all_named_groups(*named_groups).
-            where.not(id: in_other_named_groups(*named_groups).select("#{quoted_table_name}.#{connection.quote_column_name('id')}")).
+            where.not(id: in_other_named_groups(*named_groups).select(Groupify.quoted_column_name_for(self, 'id'))).
             distinct
         end
 
