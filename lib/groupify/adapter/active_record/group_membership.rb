@@ -84,10 +84,9 @@ module Groupify
         # different tables.
         def build_polymorphic_criteria_for(source, records)
           records_by_base_class = records.group_by{ |record| record.class.base_class.name }
-          table = respond_to?(:proxy_association) ? proxy_association.klass.arel_table : self.arel_table
-          id_column, type_column = table[:"#{source}_id"], table[:"#{source}_type"]
+          id_column, type_column = arel_table[:"#{source}_id"], arel_table[:"#{source}_type"]
 
-          records_by_base_class.map{ |type, records| table.grouping(type_column.eq(type).and(id_column.in(records.map(&:id)))) }.reduce(:or)
+          records_by_base_class.map{ |type, records| arel_table.grouping(type_column.eq(type).and(id_column.in(records.map(&:id)))) }.reduce(:or)
         end
       end
     end
