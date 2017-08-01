@@ -58,14 +58,6 @@ module Groupify
           where.not(build_polymorphic_criteria_for(:member, members))
         end
 
-        def criteria_for_groups(groups)
-          build_polymorphic_criteria_for(:group, groups)
-        end
-
-        def criteria_for_members(members)
-          build_polymorphic_criteria_for(:member, members)
-        end
-
         def for_polymorphic(source, records, options = {})
           case records
           when Array
