@@ -28,6 +28,7 @@ class User < ActiveRecord::Base
   groupify :named_group_member
 
   has_group :organizations, class_name: "Organization"
+  has_group :classrooms, class_name: "Classroom"
 end
 
 class Manager < User
@@ -76,6 +77,60 @@ describe User do
   it { should respond_to :in_any_group?}
   it { should respond_to :in_all_groups?}
   it { should respond_to :shares_any_group?}
+end
+
+describe Groupify::ActiveRecord do
+  let(:user) { User.create! }
+  let(:group) { Group.create! }
+  let(:classroom) { Classroom.create! }
+  let(:organization) { Organization.create! }
+
+  describe "polymorphic groups" do
+    context "memberships" do
+      # before do
+      #   Groupify.configure do |config|
+      #     config.group_class_name = 'CustomGroup'
+      #     config.group_membership_class_name = 'CustomGroupMembership'
+      #   end
+      #
+      #   class CustomGroupMembership < ActiveRecord::Base
+      #     groupify :group_membership
+      #   end
+      #
+      #   class CustomUser < ActiveRecord::Base
+      #     groupify :group_member
+      #     groupify :named_group_member
+      #   end
+      #
+      #   class CustomGroup < ActiveRecord::Base
+      #     groupify :group, members: [:custom_users]
+      #   end
+      # end
+      #
+      # after do
+      #   Groupify.configure do |config|
+      #     config.group_class_name = 'Group'
+      #     config.group_membership_class_name = 'GroupMembership'
+      #   end
+      # end
+
+      it "finds multiple records for different models with same ID" do
+        group.add user
+        classroom.add user
+        organization.add user
+
+        expect(group.id).to eq(1)
+        expect(classroom.id).to eq(1)
+        expect(organization.id).to eq(2)
+        expect(user.group_memberships_as_member.map(&:group)).to eq([group, classroom, organization])
+        expect(GroupMembership.for_groups([group, classroom]).count).to eq(2)
+        expect(GroupMembership.for_groups([group, classroom, organization]).count).to eq(3)
+        expect(GroupMembership.for_groups([group, classroom]).distinct.count).to eq(2)
+        expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.size).to eq(1)
+        expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.first).to eq(user)
+      end
+    end
+  end
 end
 
 describe Groupify::ActiveRecord do

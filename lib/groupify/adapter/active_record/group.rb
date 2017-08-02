@@ -31,9 +31,7 @@ module Groupify
       def add(*members)
         opts = members.extract_options!
 
-        members.flatten.each do |member|
-          member.groups.add(self, opts)
-        end
+        ActiveRecord.add_children_to_parent(self, members.flatten, opts)
 
         self
       end
