@@ -1,4 +1,4 @@
-require 'groupify/adapter/active_record/member_association_extensions'
+require 'groupify/adapter/active_record/association_extensions'
 
 module Groupify
   module ActiveRecord
@@ -46,7 +46,7 @@ module Groupify
       module ClassMethods
         def with_member(member)
           memberships_merge(member.group_memberships_as_member).
-          extending(Groupify::ActiveRecord::GroupAssociationExtensions)
+          extending(Groupify::ActiveRecord::AssociationExtensions)
         end
 
         def default_member_class
@@ -119,14 +119,14 @@ module Groupify
 
         def define_member_association(member_klass, association_name = nil)
           association_name ||= member_klass.model_name.plural.to_sym
-          source_type = member_klass.base_class
+          source_type = member_klass.base_class.to_s
 
           has_many association_name,
             ->{ distinct },
             through: :group_memberships_as_group,
             source: :member,
-            source_type: source_type.to_s,
-            extend: Groupify::ActiveRecord::MemberAssociationExtensions
+            source_type: source_type,
+            extend: Groupify::ActiveRecord::AssociationExtensions
         end
 
         def memberships_merge(merge_criteria, &group_membership_filter)

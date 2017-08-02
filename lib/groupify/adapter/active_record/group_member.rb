@@ -1,4 +1,4 @@
-require 'groupify/adapter/active_record/group_association_extensions'
+require 'groupify/adapter/active_record/association_extensions'
 
 module Groupify
   module ActiveRecord
@@ -76,8 +76,8 @@ module Groupify
           groups = groups.flatten
           return none unless groups.present?
 
-          group_id_column = Groupify.quoted_column_name_for(Groupify.group_membership_klass, 'group_id')
-          group_type_column = Groupify.quoted_column_name_for(Groupify.group_membership_klass, 'group_type')
+          group_id_column = ActiveRecord.quote(Groupify.group_membership_klass, 'group_id')
+          group_type_column = ActiveRecord.quote(Groupify.group_membership_klass, 'group_type')
           # Count distinct on ID and type combo
           concatenated_columns =  case connection.adapter_name.downcase
                                   when /sqlite/
@@ -87,7 +87,7 @@ module Groupify
                                   end
 
           memberships_merge{for_groups(groups)}.
-            group(Groupify.quoted_column_name_for(self, 'id')).
+            group(ActiveRecord.quote(self, 'id')).
             having("COUNT(DISTINCT #{concatenated_columns}) = ?", groups.count).
             distinct
         end
@@ -97,7 +97,7 @@ module Groupify
           return none unless groups.present?
 
           in_all_groups(*groups).
-            where.not(id: in_other_groups(*groups).select(Groupify.quoted_column_name_for(self, 'id'))).
+            where.not(id: in_other_groups(*groups).select(ActiveRecord.quote(self, 'id'))).
             distinct
         end
 
@@ -114,11 +114,13 @@ module Groupify
             options, source_type = source_type, nil
           end
 
+          source_type ||= @group_class_name
+
           has_many name.to_sym, ->{ distinct }, {
             through: :group_memberships_as_member,
             source: :group,
-            source_type: source_type || @group_class_name,
-            extend: Groupify::ActiveRecord::GroupAssociationExtensions
+            source_type: source_type,
+            extend: Groupify::ActiveRecord::AssociationExtensions
           }.merge(options.slice :class_name)
         end
 
