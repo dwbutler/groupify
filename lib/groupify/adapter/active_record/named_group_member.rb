@@ -60,30 +60,29 @@ module Groupify
 
       module ClassMethods
         def as(membership_type)
-          joins(:group_memberships_as_member).merge(Groupify.group_membership_klass.as(membership_type))
+          memberships_merge(Groupify.group_membership_klass.as(membership_type))
         end
 
         def in_named_group(named_group)
           return none unless named_group.present?
 
-          joins(:group_memberships_as_member).merge(Groupify.group_membership_klass.where(group_name: named_group)).distinct
+          memberships_merge{where(group_name: named_group)}.distinct
         end
 
         def in_any_named_group(*named_groups)
           named_groups.flatten!
           return none unless named_groups.present?
 
-          joins(:group_memberships_as_member).merge(Groupify.group_membership_klass.where(group_name: named_groups.flatten)).distinct
+          memberships_merge{where(group_name: named_groups.flatten)}.distinct
         end
 
         def in_all_named_groups(*named_groups)
           named_groups.flatten!
           return none unless named_groups.present?
 
-          joins(:group_memberships_as_member).
-              group(Groupify.quoted_column_name_for(self, 'id')).
-              merge(Groupify.group_membership_klass.where(group_name: named_groups)).
-              having("COUNT(DISTINCT #{Groupify.quoted_column_name_for(Groupify.group_membership_klass, 'group_name')}) = ?", named_groups.count).
+          memberships_merge{where(group_name: named_groups)}.
+              group(ActiveRecord.quote(self, 'id')).
+              having("COUNT(DISTINCT #{ActiveRecord.quote(Groupify.group_membership_klass, 'group_name')}) = ?", named_groups.count).
               distinct
         end
 
@@ -92,17 +91,23 @@ module Groupify
           return none unless named_groups.present?
 
           in_all_named_groups(*named_groups).
-            where.not(id: in_other_named_groups(*named_groups).select(Groupify.quoted_column_name_for(self, 'id'))).
+            where.not(id: in_other_named_groups(*named_groups).select(ActiveRecord.quote(self, 'id'))).
             distinct
         end
 
         def in_other_named_groups(*named_groups)
-          joins(:group_memberships_as_member).
-            merge(Groupify.group_membership_klass.where.not(group_name: named_groups))
+          memberships_merge{where.not(group_name: named_groups)}
         end
 
         def shares_any_named_group(other)
           in_any_named_group(other.named_groups.to_a)
+        end
+
+        def memberships_merge(merge_criteria = nil, &group_membership_filter)
+          query = joins(:group_memberships_as_member)
+          query = query.merge(merge_criteria) if merge_criteria
+          query = query.merge(Groupify.group_membership_klass.instance_eval(&group_membership_filter)) if block_given?
+          query
         end
       end
     end
