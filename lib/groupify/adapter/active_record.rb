@@ -17,12 +17,12 @@ module Groupify
 
     def self.memberships_merge(scope, options = {}, &group_membership_filter)
       parent, parent_type, _ = infer_parent_and_types(scope, options[:parent_type])
-      merge_criteria = options[:merge_criteria]
+      group_membership_filter ||= ->{ all }
 
-      query = parent.joins(:"group_memberships_as_#{parent_type}")
-      query = query.merge(merge_criteria) if merge_criteria
-      query = query.merge(Groupify.group_membership_klass.instance_eval(&group_membership_filter)) if block_given?
-      query
+      parent.
+        joins(:"group_memberships_as_#{parent_type}").
+        merge(options[:merge_criteria] || {}).
+        merge(Groupify.group_membership_klass.instance_eval(&group_membership_filter))
     end
 
     def self.find_memberships_for(parent, children, options = {})
