@@ -27,9 +27,10 @@ module Groupify
       def in_group?(group, opts = {})
         return false unless group.present?
 
-        criteria = group_memberships_as_member.merge(group.group_memberships_as_group)
-        criteria = criteria.as(opts[:as]) if opts[:as]
-        criteria.exists?
+        group_memberships_as_member.
+          merge(group.group_memberships_as_group).
+          as(opts[:as]).
+          exists?
       end
 
       def in_any_group?(*groups)

@@ -46,7 +46,7 @@ module Groupify
         # add to collection without membership type
         to_add_directly << memberships_association.build(child_type => child)
         # add a second entry for the given membership type
-        if membership_type
+        if membership_type.present?
           membership =  memberships_association.
                           merge(child.__send__(:"group_memberships_as_#{child_type}")).
                           as(membership_type).

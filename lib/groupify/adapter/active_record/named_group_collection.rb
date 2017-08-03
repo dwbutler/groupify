@@ -12,8 +12,10 @@ module Groupify
 
       def add(named_group, opts = {})
         named_group = named_group.to_sym
+        membership_type = opts[:as]
+        membership_type = membership_type.to_s if membership_type.is_a?(Symbol)
         # always add a nil membership type and then a specific one (if specified)
-        membership_types = [nil, opts[:as]].uniq
+        membership_types = [nil, membership_type].uniq
 
         @member.transaction do
           membership_types.each do |membership_type|
@@ -54,13 +56,13 @@ module Groupify
       def delete(*named_groups)
         opts = named_groups.extract_options!
 
-        remove(named_groups.flatten.compact, :delete_all, opts)
+        remove(named_groups.flatten.compact, :delete_all, opts[:as])
       end
 
       def destroy(*named_groups)
         opts = named_groups.extract_options!
 
-        remove(named_groups.flatten.compact, :destroy_all, opts)
+        remove(named_groups.flatten.compact, :destroy_all, opts[:as])
       end
 
       def clear
@@ -73,22 +75,23 @@ module Groupify
 
       # Criteria to filter by membership type
       def as(membership_type)
-        @named_group_memberships.as(membership_type).pluck(:group_name).map(&:to_sym)
+        if membership_type.present?
+          @named_group_memberships.as(membership_type).pluck(:group_name).map(&:to_sym)
+        else
+          to_a
+        end
       end
 
     protected
 
-      def remove(named_groups, method, opts)
+      def remove(named_groups, destruction_type, membership_type = nil)
         if named_groups.present?
-          scope = @named_group_memberships.where(group_name: named_groups)
+          @named_group_memberships.
+            where(group_name: named_groups).
+            as(membership_type).
+            __send__(destruction_type)
 
-          if opts[:as]
-            scope = scope.where(membership_type: opts[:as])
-          end
-
-          scope.send(method)
-
-          unless opts[:as]
+          unless membership_type.present?
             named_groups.each do |named_group|
               @hash.delete(named_group)
             end

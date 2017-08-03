@@ -136,7 +136,7 @@ module Groupify
             opts = args.extract_options!
             members = args
 
-            if opts[:as]
+            if opts[:as].present?
               members.each do |member|
                 member.group_memberships.as(opts[:as]).first.groups.delete(base)
               end

@@ -4,11 +4,7 @@ module Groupify
       extend ActiveSupport::Concern
 
       def as(membership_type)
-        if membership_type
-          merge(Groupify.group_membership_klass.as(membership_type))
-        else
-          self
-        end
+        merge(Groupify.group_membership_klass.as(membership_type))
       end
 
       def delete(*records)

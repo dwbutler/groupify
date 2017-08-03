@@ -15,10 +15,10 @@ module Groupify
       included do
         unless respond_to?(:group_memberships_as_member)
           has_many :group_memberships_as_member,
-                   as: :member,
-                   autosave: true,
-                   dependent: :destroy,
-                   class_name: Groupify.group_membership_class_name
+            as: :member,
+            autosave: true,
+            dependent: :destroy,
+            class_name: Groupify.group_membership_class_name
         end
       end
 
@@ -36,22 +36,19 @@ module Groupify
         named_groups.include?(named_group, opts)
       end
 
-      def in_any_named_group?(*args)
-        opts = args.extract_options!
-        named_groups = args.flatten
-        named_groups.any?{ |named_group| in_named_group?(named_group, opts) }
+      def in_any_named_group?(*named_groups)
+        opts = named_groups.extract_options!
+        named_groups.flatten.any?{ |named_group| in_named_group?(named_group, opts) }
       end
 
-      def in_all_named_groups?(*args)
-        opts = args.extract_options!
-        named_groups = args.flatten.to_set
-        named_groups.subset? self.named_groups.as(opts[:as]).to_set
+      def in_all_named_groups?(*named_groups)
+        membership_type = named_groups.extract_options![:as]
+        named_groups.flatten.to_set.subset? self.named_groups.as(membership_type).to_set
       end
 
-      def in_only_named_groups?(*args)
-        opts = args.extract_options!
-        named_groups = args.flatten.to_set
-        named_groups == self.named_groups.as(opts[:as]).to_set
+      def in_only_named_groups?(*named_groups)
+        membership_type = named_groups.extract_options![:as]
+        named_groups.flatten.to_set == self.named_groups.as(membership_type).to_set
       end
 
       def shares_any_named_group?(other, opts = {})
@@ -60,7 +57,7 @@ module Groupify
 
       module ClassMethods
         def as(membership_type)
-          memberships_merge(Groupify.group_membership_klass.as(membership_type))
+          memberships_merge{as(membership_type)}
         end
 
         def in_named_group(named_group)
@@ -81,9 +78,9 @@ module Groupify
           return none unless named_groups.present?
 
           memberships_merge{where(group_name: named_groups)}.
-              group(ActiveRecord.quote(self, 'id')).
-              having("COUNT(DISTINCT #{ActiveRecord.quote(Groupify.group_membership_klass, 'group_name')}) = ?", named_groups.count).
-              distinct
+            group(ActiveRecord.quote(self, 'id')).
+            having("COUNT(DISTINCT #{ActiveRecord.quote(Groupify.group_membership_klass, 'group_name')}) = ?", named_groups.count).
+            distinct
         end
 
         def in_only_named_groups(*named_groups)

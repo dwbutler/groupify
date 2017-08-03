@@ -18,7 +18,7 @@ module Groupify
       included do
         has_and_belongs_to_many :groups, autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name do
           def as(membership_type)
-            return self unless membership_type
+            return self unless membership_type.present?
             group_ids = base.group_memberships.as(membership_type).first.group_ids
 
             if group_ids.present?
@@ -37,7 +37,7 @@ module Groupify
             groups = args.flatten
 
 
-            if opts[:as]
+            if opts[:as].present?
               base.group_memberships.as(opts[:as]).each do |membership|
                 membership.groups.delete(*groups)
               end

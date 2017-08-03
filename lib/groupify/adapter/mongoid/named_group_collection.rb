@@ -19,7 +19,7 @@ module Groupify
         super(named_group)
         uniq!
 
-        if @member && opts[:as]
+        if @member && opts[:as].present?
           membership = @member.group_memberships.find_or_initialize_by(as: opts[:as])
           membership.named_groups << named_group
           membership.save!
@@ -42,7 +42,7 @@ module Groupify
         named_groups = args.flatten
 
         if @member
-          if opts[:as]
+          if opts[:as].present?
             membership = @member.group_memberships.as(opts[:as]).first
             if membership
               if ::Mongoid::VERSION > "4"
