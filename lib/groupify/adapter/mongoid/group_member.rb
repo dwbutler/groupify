@@ -18,7 +18,8 @@ module Groupify
       included do
         has_and_belongs_to_many :groups, autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name do
           def as(membership_type)
-            return self unless membership_type.present?
+            # `membership_type.present?` causes tests to fail for `MongoidManager` class....
+            return self unless membership_type
 
             group_ids = base.group_memberships.as(membership_type).first.group_ids
 
