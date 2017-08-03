@@ -15,16 +15,27 @@ module Groupify
       "#{model_class.quoted_table_name}.#{::ActiveRecord::Base.connection.quote_column_name(column_name)}"
     end
 
-    def self.find_memberships_for(parent, children, membership_type = nil)
-      parent_type, child_type = detect_types_from_parent(parent)
+    def self.memberships_merge(scope, options = {}, &group_membership_filter)
+      parent, parent_type, _ = infer_parent_and_types(scope, options[:parent_type])
+      merge_criteria = options[:merge_criteria]
 
-      query = parent.__send__(:"group_memberships_as_#{parent_type}").__send__(:"for_#{child_type}s", children)
-      query = query.as(membership_type) if membership_type
+      query = parent.joins(:"group_memberships_as_#{parent_type}")
+      query = query.merge(merge_criteria) if merge_criteria
+      query = query.merge(Groupify.group_membership_klass.instance_eval(&group_membership_filter)) if block_given?
       query
     end
 
+    def self.find_memberships_for(parent, children, options = {})
+      parent, parent_type, child_type = infer_parent_and_types(parent, options[:parent_type])
+
+      parent.
+        __send__(:"group_memberships_as_#{parent_type}").
+        __send__(:"for_#{child_type}s", children).
+        as(options[:as])
+    end
+
     def self.add_children_to_parent(parent, children, options = {})
-      parent_type, child_type = detect_types_from_parent(parent)
+      parent, parent_type, child_type = infer_parent_and_types(parent, options[:parent_type])
 
       membership_type = options[:as]
       exception_on_invalidation = options[:exception_on_invalidation]
@@ -38,7 +49,7 @@ module Groupify
       to_add_directly = []
       to_add_with_membership_type = []
 
-      already_children = find_memberships_for(parent, children).includes(child_type).map(&child_type).uniq
+      already_children = find_memberships_for(parent, children, parent_type: parent_type).includes(child_type).map(&child_type).uniq
       children -= already_children
 
       # first prepare changes
@@ -85,11 +96,36 @@ module Groupify
 
   protected
 
-    def self.detect_types_from_parent(parent)
-      if parent.is_a?(Groupify::ActiveRecord::Group)
-        [:group, :member]
+    # Takes an association or model as the parent. If a model
+    # is passed in, the `default_parent_type` option needs
+    # to be passed in if the model is both a group and group member.
+    #
+    # Can't detect based on included `Group` or `GroupMember`
+    # modules because a model can be both a group and a gorup member.
+    def self.infer_parent_and_types(parent, default_parent_type = nil)
+      parent_is_group = true
+
+      # Association assumed to be a `has_many through`
+      if parent.respond_to?(:through_reflection)
+        parent_is_group = (parent.through_reflection.name == :group_memberships_as_group)
+        parent = parent.owner
+      elsif default_parent_type
+        parent_is_group = (default_parent_type == :group)
       else
-        [:member, :group]
+        parent_is_group  = parent.class.include?(Groupify::ActiveRecord::Group)
+        detected_modules = [detected_group, parent.class.include?(Groupify::ActiveRecord::GroupMember)].count{ |bool| bool == true }
+
+        if detected_modules == 0
+          raise "The specified record is neither group nor group member."
+        elsif detected_modules == 2
+          raise "Can't infer whether record should be treated as group or group member because it is configured as both. Pass the `default_parent_type` option to specify which it should be treated as."
+        end
+      end
+
+      if parent_is_group
+        [parent, :group, :member]
+      else
+        [parent, :member, :group]
       end
     end
   end

@@ -29,7 +29,7 @@ module Groupify
       end
 
       def add(*members)
-        opts = members.extract_options!
+        opts = members.extract_options!.merge(parent_type: :group)
 
         ActiveRecord.add_children_to_parent(self, members.flatten, opts)
 

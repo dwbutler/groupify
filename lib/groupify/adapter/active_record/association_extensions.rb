@@ -37,7 +37,7 @@ module Groupify
 
       def add_children(children, options = {})
         ActiveRecord.add_children_to_parent(
-          proxy_association.owner,
+          proxy_association,
           children,
           options
         )
@@ -45,9 +45,9 @@ module Groupify
 
       def remove_children(children, destruction_type, membership_type = nil)
         ActiveRecord.find_memberships_for(
-          proxy_association.owner,
+          proxy_association,
           children,
-          membership_type
+          as: membership_type
         ).__send__(:"#{destruction_type}_all")
 
         children.each{|record| record.__send__(:clear_association_cache)}
