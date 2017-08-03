@@ -122,7 +122,7 @@ module Groupify
             extend: Groupify::ActiveRecord::AssociationExtensions
         end
 
-        def memberships_merge(merge_criteria, &group_membership_filter)
+        def memberships_merge(merge_criteria = nil, &group_membership_filter)
           ActiveRecord.memberships_merge(self, parent_type: :group, criteria: merge_criteria, filter: group_membership_filter)
         end
       end

@@ -39,11 +39,7 @@ module Groupify
         end
 
         def as(membership_type)
-          if membership_type.present?
-            where(membership_type: membership_type.to_s)
-          else
-            all
-          end
+          membership_type.present? ? where(membership_type: membership_type.to_s) : all
         end
 
         def for_groups(groups)

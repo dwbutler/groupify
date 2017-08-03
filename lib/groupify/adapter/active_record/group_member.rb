@@ -35,20 +35,17 @@ module Groupify
 
       def in_any_group?(*groups)
         opts = groups.extract_options!
-
         groups.flatten.any?{ |group| in_group?(group, opts) }
       end
 
       def in_all_groups?(*groups)
-        opts = groups.extract_options!
-
-        groups.flatten.to_set.subset? self.groups.as(opts[:as]).to_set
+        membership_type = groups.extract_options![:as]
+        groups.flatten.to_set.subset? self.groups.as(membership_type).to_set
       end
 
       def in_only_groups?(*groups)
-        opts = groups.extract_options!
-
-        groups.flatten.to_set == self.groups.as(opts[:as]).to_set
+        membership_type = groups.extract_options![:as]
+        groups.flatten.to_set == self.groups.as(membership_type).to_set
       end
 
       def shares_any_group?(other, opts = {})
@@ -61,20 +58,17 @@ module Groupify
         end
 
         def in_group(group)
-          return none unless group.present?
-
-          memberships_merge(group.group_memberships_as_group).distinct
+          group.present? ? memberships_merge(group.group_memberships_as_group).distinct : none
         end
 
         def in_any_group(*groups)
-          groups = groups.flatten
-          return none unless groups.present?
-
-          memberships_merge{for_groups(groups)}.distinct
+          groups.flatten!
+          groups.present? ? memberships_merge{for_groups(groups)}.distinct : none
         end
 
         def in_all_groups(*groups)
-          groups = groups.flatten
+          groups.flatten!
+
           return none unless groups.present?
 
           group_id_column = ActiveRecord.quote(Groupify.group_membership_klass, 'group_id')
@@ -94,7 +88,8 @@ module Groupify
         end
 
         def in_only_groups(*groups)
-          groups = groups.flatten
+          groups.flatten!
+
           return none unless groups.present?
 
           in_all_groups(*groups).
