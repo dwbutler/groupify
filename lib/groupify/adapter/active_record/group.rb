@@ -123,10 +123,7 @@ module Groupify
         end
 
         def memberships_merge(merge_criteria, &group_membership_filter)
-          query = joins(:group_memberships_as_group)
-          query = query.merge(merge_criteria) if merge_criteria
-          query = query.merge(Groupify.group_membership_klass.instance_eval(&group_membership_filter)) if block_given?
-          query
+          ActiveRecord.memberships_merge(self, merge_criteria: merge_criteria, parent_type: :group, &group_membership_filter)
         end
       end
     end

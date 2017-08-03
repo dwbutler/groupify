@@ -121,6 +121,7 @@ module Groupify
             options, source_type = source_type, nil
           end
 
+          #source_type ||= Groupify.infer_class_and_association_name(name).first || @group_class_name
           source_type ||= @group_class_name
 
           has_many name.to_sym, ->{ distinct }, {
@@ -132,10 +133,7 @@ module Groupify
         end
 
         def memberships_merge(merge_criteria = nil, &group_membership_filter)
-          query = joins(:group_memberships_as_member)
-          query = query.merge(merge_criteria) if merge_criteria
-          query = query.merge(Groupify.group_membership_klass.instance_eval(&group_membership_filter)) if block_given?
-          query
+          ActiveRecord.memberships_merge(self, merge_criteria: merge_criteria, parent_type: :member, &group_membership_filter)
         end
       end
     end
