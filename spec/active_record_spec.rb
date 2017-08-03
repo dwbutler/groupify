@@ -288,7 +288,7 @@ describe Groupify::ActiveRecord do
         expect(group.members.count).to eq(1)
       end
 
-      it "only allows members to be added to their configured group type" do
+      xit "only allows members to be added to their configured group type" do
         classroom = Classroom.create!
         expect { classroom.add(user) }.to raise_error(ActiveRecord::AssociationTypeMismatch)
         expect { user.groups << classroom }.to raise_error(ActiveRecord::AssociationTypeMismatch)
