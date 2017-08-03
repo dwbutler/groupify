@@ -109,6 +109,12 @@ module Groupify
           in_any_group(other.groups)
         end
 
+        def has_groups(*names)
+          names.flatten.each do |name|
+            has_group(name)
+          end
+        end
+
         def has_group(name, source_type = nil, options = {})
           if source_type.is_a?(Hash)
             options, source_type = source_type, nil

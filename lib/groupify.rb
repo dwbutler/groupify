@@ -14,6 +14,20 @@ module Groupify
   def self.group_membership_klass
     group_membership_class_name.constantize
   end
+
+  def self.infer_class_and_association_name(name)
+    klass = name.to_s.classify.constantize rescue nil
+
+    association_name =  if name.is_a?(Symbol)
+                          name
+                        elsif klass
+                          klass.model_name.plural.to_sym
+                        else
+                          name.plural.to_sym
+                        end
+
+    [klass, association_name]
+  end
 end
 
 require 'groupify/railtie' if defined?(Rails)
