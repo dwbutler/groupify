@@ -19,6 +19,7 @@ module Groupify
         has_and_belongs_to_many :groups, autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name do
           def as(membership_type)
             return self unless membership_type.present?
+
             group_ids = base.group_memberships.as(membership_type).first.group_ids
 
             if group_ids.present?
@@ -28,17 +29,16 @@ module Groupify
             end
           end
 
-          def destroy(*args)
-            delete(*args)
+          def destroy(*groups)
+            delete(*groups)
           end
 
-          def delete(*args)
-            opts = args.extract_options!
-            groups = args.flatten
+          def delete(*groups)
+            membership_type = groups.extract_options![:as]
+            groups.flatten!
 
-
-            if opts[:as].present?
-              base.group_memberships.as(opts[:as]).each do |membership|
+            if membership_type.present?
+              base.group_memberships.as(membership_type).each do |membership|
                 membership.groups.delete(*groups)
               end
             else
@@ -65,38 +65,28 @@ module Groupify
 
         embeds_many :group_memberships, class_name: GroupMembership.to_s, as: :member do
           def as(membership_type)
-            where(membership_type: membership_type.to_s)
+            where(membership_type: membership_type)
           end
         end
       end
 
       def in_group?(group, opts = {})
-        return false unless group.present?
-        groups.as(opts[:as]).include?(group)
+        group.present? ? groups.as(opts[:as]).include?(group) : false
       end
 
-      def in_any_group?(*args)
-        opts = args.extract_options!
-        groups = args
-
-        groups.flatten.each do |group|
-          return true if in_group?(group, opts)
-        end
-        return false
+      def in_any_group?(*groups)
+        opts = groups.extract_options!
+        groups.flatten.any?{ |group| in_group?(group, opts) }
       end
 
-      def in_all_groups?(*args)
-        opts = args.extract_options!
-        groups = args
-
-        groups.flatten.to_set.subset? self.groups.as(opts[:as]).to_set
+      def in_all_groups?(*groups)
+        membership_type = groups.extract_options![:as]
+        groups.flatten.to_set.subset? self.groups.as(membership_type).to_set
       end
 
-      def in_only_groups?(*args)
-        opts = args.extract_options!
-        groups = args.flatten
-
-        groups.to_set == self.groups.as(opts[:as]).to_set
+      def in_only_groups?(*groups)
+        membership_type = groups.extract_options![:as]
+        groups.to_set == self.groups.as(membership_type).to_set
       end
 
       def shares_any_group?(other, opts = {})
@@ -123,7 +113,6 @@ module Groupify
         def shares_any_group(other)
           in_any_group(other.groups.to_a)
         end
-
       end
     end
   end

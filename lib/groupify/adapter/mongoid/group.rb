@@ -27,10 +27,10 @@ module Groupify
         self.class.member_classes
       end
 
-      def add(*args)
-        opts = args.extract_options!
-        membership_type = opts[:as]
-        members = args.flatten
+      def add(*members)
+        membership_type = members.extract_options![:as]
+        members.flatten!
+
         return unless members.present?
 
         members.each do |member|
@@ -98,12 +98,16 @@ module Groupify
             klass.in(group_ids: [source_group.id]).update_all(:$set => {:"group_ids.$" => destination_group.id})
 
             if klass.relations['group_memberships']
+              scope = klass.in(:"group_memberships.group_ids" => [source_group.id])
+              criteria_for_add_to_set = {:"group_memberships.$.group_ids" => destination_group.id}
+              criteria_for_pull = {:"group_memberships.$.group_ids" => source_group.id}
+
               if ::Mongoid::VERSION > "4"
-                klass.in(:"group_memberships.group_ids" => [source_group.id]).add_to_set(:"group_memberships.$.group_ids" => destination_group.id)
-                klass.in(:"group_memberships.group_ids" => [source_group.id]).pull(:"group_memberships.$.group_ids" => source_group.id)
+                scope.add_to_set(criteria_for_add_to_set)
+                scope.pull(criteria_for_pull)
               else
-                klass.in(:"group_memberships.group_ids" => [source_group.id]).add_to_set(:"group_memberships.$.group_ids", destination_group.id)
-                klass.in(:"group_memberships.group_ids" => [source_group.id]).pull(:"group_memberships.$.group_ids", source_group.id)
+                scope.add_to_set(*criteria_for_add_to_set.to_a.flatten)
+                scope.pull(*criteria_for_pull.to_a.flatten)
               end
             end
           end
@@ -115,20 +119,19 @@ module Groupify
 
         module MemberAssociationExtensions
           def as(membership_type)
-            return self unless membership_type.present?
-            where(:group_memberships.elem_match => { as: membership_type.to_s, group_ids: [base.id] })
+            membership_type.present? ? where(:group_memberships.elem_match => {as: membership_type, group_ids: [base.id]}) : self
           end
 
-          def destroy(*args)
-            delete(*args)
+          def destroy(*members)
+            delete(*members)
           end
 
           def delete(*members)
-            opts = members.extract_options!
+            membership_type = members.extract_options![:as]
 
-            if opts[:as].present?
+            if membership_type.present?
               members.each do |member|
-                member.group_memberships.as(opts[:as]).first.groups.delete(base)
+                member.group_memberships.as(membership_type).first.groups.delete(base)
               end
             else
               members.each do |member|
@@ -147,10 +150,17 @@ module Groupify
 
           association_name ||= member_klass.model_name.plural.to_sym
 
-          has_many association_name, class_name: member_klass.to_s, dependent: :nullify, foreign_key: 'group_ids', extend: MemberAssociationExtensions
+          options = {
+            class_name: member_klass.to_s,
+            dependent: :nullify,
+            foreign_key: 'group_ids',
+            extend: MemberAssociationExtensions
+          }
+
+          has_many association_name, options
 
           if member_klass == default_member_class
-            has_many :members, class_name: member_klass.to_s, dependent: :nullify, foreign_key: 'group_ids', extend: MemberAssociationExtensions
+            has_many :members, options
           end
 
           member_klass
