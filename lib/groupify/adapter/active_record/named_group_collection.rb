@@ -12,8 +12,8 @@ module Groupify
 
       def add(named_group, opts = {})
         named_group = named_group.to_sym
-        membership_type = opts[:as]
-        membership_type = membership_type.to_s if membership_type.is_a?(Symbol)
+        membership_type = opts[:as].present? ? opts[:as].to_s : nil
+
         # always add a nil membership type and then a specific one (if specified)
         membership_types = [nil, membership_type].uniq
 
