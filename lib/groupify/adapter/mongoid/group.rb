@@ -66,8 +66,8 @@ module Groupify
 
         # Define which classes are members of this group
         def has_members(*names)
-          Array.wrap(names.flatten).each do |name|
-            has_member name
+          names.flatten.each do |name|
+            has_member(name)
           end
         end
 
@@ -75,14 +75,13 @@ module Groupify
           klass_name = options[:class_name]
 
           if klass_name.nil?
-            klass = name.to_s.classify.constantize
-            association_name = name.is_a?(Symbol) ? name : klass.model_name.plural.to_sym
+            klass, association_name = Groupify.infer_class_and_association_name(name)
           else
             klass = klass_name.to_s.classify.constantize
             association_name = name.to_sym
           end
 
-          register(klass, association_name)
+          associate_member_class(klass, association_name)
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
@@ -114,17 +113,9 @@ module Groupify
 
         protected
 
-        def register(member_klass, association_name = nil)
-          (@member_klasses ||= Set.new) << member_klass
-
-          associate_member_class(member_klass, association_name)
-
-          member_klass
-        end
-
         module MemberAssociationExtensions
           def as(membership_type)
-            return self unless membership_type
+            return self unless membership_type.present?
             where(:group_memberships.elem_match => { as: membership_type.to_s, group_ids: [base.id] })
           end
 
@@ -132,9 +123,8 @@ module Groupify
             delete(*args)
           end
 
-          def delete(*args)
-            opts = args.extract_options!
-            members = args
+          def delete(*members)
+            opts = members.extract_options!
 
             if opts[:as].present?
               members.each do |member|
@@ -153,6 +143,8 @@ module Groupify
         end
 
         def associate_member_class(member_klass, association_name = nil)
+          (@member_klasses ||= Set.new) << member_klass
+
           association_name ||= member_klass.model_name.plural.to_sym
 
           has_many association_name, class_name: member_klass.to_s, dependent: :nullify, foreign_key: 'group_ids', extend: MemberAssociationExtensions
@@ -160,6 +152,8 @@ module Groupify
           if member_klass == default_member_class
             has_many :members, class_name: member_klass.to_s, dependent: :nullify, foreign_key: 'group_ids', extend: MemberAssociationExtensions
           end
+
+          member_klass
         end
       end
     end
