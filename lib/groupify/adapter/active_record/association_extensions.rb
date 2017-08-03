@@ -36,6 +36,13 @@ module Groupify
     protected
 
       def add_children(children, options = {})
+        # Throw an exception here when adding direction to an association
+        # because when adding the children to the parent this won't
+        # happen because the group membership is polymorphic.
+        children.each do |child|
+          proxy_association.__send__(:raise_on_type_mismatch!, child)
+        end
+
         ActiveRecord.add_children_to_parent(
           proxy_association,
           children,
