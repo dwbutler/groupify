@@ -15,13 +15,13 @@ module Groupify
       "#{model_class.quoted_table_name}.#{::ActiveRecord::Base.connection.quote_column_name(column_name)}"
     end
 
-    def self.memberships_merge(scope, options = {}, &group_membership_filter)
+    def self.memberships_merge(scope, options = {})
       parent, parent_type, _ = infer_parent_and_types(scope, options[:parent_type])
-      group_membership_filter ||= ->{ all }
+      group_membership_filter = options[:filter] || :all
 
       parent.
         joins(:"group_memberships_as_#{parent_type}").
-        merge(options[:merge_criteria] || {}).
+        merge(options[:criteria] || {}).
         merge(Groupify.group_membership_klass.instance_eval(&group_membership_filter))
     end
 
