@@ -17,21 +17,15 @@ module Groupify
 
       # Defined to create alias methods before
       # the association is extended with this module
-      def <<(*)
-        super
+      def <<(*children)
+        opts = children.extract_options!.merge(exception_on_invalidation: false)
+        add_children(children.flatten, opts)
       end
 
-      def add_without_exception(*children)
-        add_children(children, children.extract_options!.merge(exception_on_invalidation: false))
+      def add(*children)
+        opts = children.extract_options!.merge(exception_on_invalidation: true)
+        add_children(children.flatten, opts)
       end
-
-      def add_with_exception(*children)
-        add_children(children, children.extract_options!.merge(exception_on_invalidation: true))
-      end
-
-      alias_method :add_as_usual, :<<
-      alias_method :<<, :add_without_exception
-      alias_method :add, :add_with_exception
 
     protected
 
