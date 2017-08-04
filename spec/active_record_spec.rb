@@ -122,7 +122,7 @@ describe Groupify::ActiveRecord do
         expect(group.id).to eq(10)
         expect(classroom.id).to eq(10)
         expect(organization.id).to eq(11)
-        expect(user.group_memberships_as_member.map(&:group)).to eq([group, classroom, organization])
+        expect(user.group_memberships_as_member.map(&:group).sort).to eq([group, classroom, organization].sort)
         expect(GroupMembership.for_groups([group, classroom]).count).to eq(2)
         expect(GroupMembership.for_groups([group, classroom]).distinct.count).to eq(2)
         expect(GroupMembership.for_groups([group, classroom, organization]).count).to eq(3)
@@ -133,7 +133,7 @@ describe Groupify::ActiveRecord do
       it "member has groups in has_many through associations after adding member to groups" do
 
         expect(user.groups.size).to eq(0)
-        
+
         group.add user
         organization.add user
 
