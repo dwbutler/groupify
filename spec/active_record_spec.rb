@@ -81,9 +81,9 @@ end
 
 describe Groupify::ActiveRecord do
   let(:user) { User.create! }
-  let(:group) { Group.create! }
-  let(:classroom) { Classroom.create! }
-  let(:organization) { Organization.create! }
+  let(:group) { Group.create!(id: 10) }
+  let(:classroom) { Classroom.create!(id: 10) }
+  let(:organization) { Organization.create!(id: 11) }
 
   describe "polymorphic groups" do
     context "memberships" do
@@ -119,13 +119,13 @@ describe Groupify::ActiveRecord do
         classroom.add user
         organization.add user
 
-        expect(group.id).to eq(1)
-        expect(classroom.id).to eq(1)
-        expect(organization.id).to eq(2)
+        expect(group.id).to eq(10)
+        expect(classroom.id).to eq(10)
+        expect(organization.id).to eq(11)
         expect(user.group_memberships_as_member.map(&:group)).to eq([group, classroom, organization])
         expect(GroupMembership.for_groups([group, classroom]).count).to eq(2)
-        expect(GroupMembership.for_groups([group, classroom, organization]).count).to eq(3)
         expect(GroupMembership.for_groups([group, classroom]).distinct.count).to eq(2)
+        expect(GroupMembership.for_groups([group, classroom, organization]).count).to eq(3)
         expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.size).to eq(1)
         expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.first).to eq(user)
       end
