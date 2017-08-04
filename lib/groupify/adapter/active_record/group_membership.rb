@@ -75,7 +75,7 @@ module Groupify
         # This is for polymorphic associations where the ID may be from
         # different tables.
         def build_polymorphic_criteria_for(source, records)
-          records_by_base_class  = records.group_by{ |record| record.class.base_class.name }
+          records_by_base_class  = records.group_by{ |record| ActiveRecord.base_class_name(record) }
           id_column, type_column = arel_table[:"#{source}_id"], arel_table[:"#{source}_type"]
 
           criteria = records_by_base_class.map do |type, grouped_records|

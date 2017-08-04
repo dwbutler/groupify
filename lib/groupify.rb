@@ -15,15 +15,15 @@ module Groupify
     group_membership_class_name.constantize
   end
 
-  def self.infer_class_and_association_name(name)
-    klass = name.to_s.classify.constantize rescue nil
+  def self.infer_class_and_association_name(association_name)
+    klass = association_name.to_s.classify.constantize rescue nil
 
-    association_name =  if name.is_a?(Symbol)
-                          name
+    association_name =  if association_name.is_a?(Symbol)
+                          association_name
                         elsif klass
                           klass.model_name.plural.to_sym
                         else
-                          name.plural.to_sym
+                          association_name.to_sym
                         end
 
     [klass, association_name]

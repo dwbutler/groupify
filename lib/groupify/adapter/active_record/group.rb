@@ -61,61 +61,51 @@ module Groupify
         end
 
         # Define which classes are members of this group
-        def has_members(*names)
-          names.flatten.each do |name|
-            has_member(name)
+        def has_members(*association_names)
+          association_names.flatten.each do |association_name|
+            has_member(association_name)
           end
         end
 
-        def has_member(name, options = {})
-          klass_name = options[:class_name]
+        def has_member(association_name, options = {})
+          association_class, association_name = Groupify.infer_class_and_association_name(association_name)
+          model_klass = options[:class_name] || association_class
 
-          if klass_name.nil?
-            klass, association_name = Groupify.infer_class_and_association_name(name)
-          else
-            klass = klass_name.to_s.classify.constantize
-            association_name = name.to_sym
-          end
-
-          associate_member_class(klass, association_name)
+          define_member_association(model_klass.to_s.constantize, association_name, options)
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
         def merge!(source_group, destination_group)
           # Ensure that all the members of the source can be members of the destination
-          invalid_member_classes = (source_group.member_classes - destination_group.member_classes)
-          invalid_member_classes.each do |klass|
-            if klass.memberships_merge(source_group.group_memberships_as_group).count > 0
-              raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
-            end
+          invalid_member_classes = source_group.member_classes - destination_group.member_classes
+          invalid_found = invalid_member_classes.any?{ |klass| klass.memberships_merge(source_group.group_memberships_as_group).count > 0 }
+
+          if invalid_found
+            raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
           end
 
           source_group.transaction do
-            source_group.group_memberships_as_group.update_all(group_id: destination_group.id, group_type: destination_group.class.base_class.name)
+            source_group.group_memberships_as_group.update_all(
+              group_id: destination_group.id,
+              group_type: ActiveRecord.base_class_name(destination_group)
+            )
             source_group.destroy
           end
         end
 
       protected
 
-        def associate_member_class(member_klass, association_name = nil)
+        def define_member_association(member_klass, association_name, options = {})
           (@member_klasses ||= Set.new) << member_klass
 
-          define_member_association(member_klass, association_name)
+          has_many association_name, ->{ distinct }, {
+              through: :group_memberships_as_group,
+              source: :member,
+              source_type: ActiveRecord.base_class_name(member_klass),
+              extend: Groupify::ActiveRecord::AssociationExtensions
+            }.merge(options)
 
           member_klass
-        end
-
-        def define_member_association(member_klass, association_name = nil)
-          association_name ||= member_klass.model_name.plural.to_sym
-          source_type = member_klass.base_class.to_s
-
-          has_many association_name,
-            ->{ distinct },
-            through: :group_memberships_as_group,
-            source: :member,
-            source_type: source_type,
-            extend: Groupify::ActiveRecord::AssociationExtensions
         end
 
         def memberships_merge(merge_criteria = nil, &group_membership_filter)

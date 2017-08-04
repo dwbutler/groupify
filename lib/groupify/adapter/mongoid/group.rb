@@ -65,33 +65,27 @@ module Groupify
         end
 
         # Define which classes are members of this group
-        def has_members(*names)
-          names.flatten.each do |name|
-            has_member(name)
+        def has_members(*association_names)
+          association_names.flatten.each do |association_name|
+            has_member(association_name)
           end
         end
 
-        def has_member(name, options = {})
-          klass_name = options[:class_name]
+        def has_member(association_name, options = {})
+          association_class, association_name = Groupify.infer_class_and_association_name(association_name)
+          model_klass = options[:class_name] || association_class
 
-          if klass_name.nil?
-            klass, association_name = Groupify.infer_class_and_association_name(name)
-          else
-            klass = klass_name.to_s.classify.constantize
-            association_name = name.to_sym
-          end
-
-          associate_member_class(klass, association_name)
+          define_member_association(model_klass.to_s.constantize, association_name, options)
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
         def merge!(source_group, destination_group)
           # Ensure that all the members of the source can be members of the destination
-          invalid_member_classes = (source_group.member_classes - destination_group.member_classes)
-          invalid_member_classes.each do |klass|
-            if klass.in(group_ids: [source_group.id]).count > 0
-              raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
-            end
+          invalid_member_classes = source_group.member_classes - destination_group.member_classes
+          invalid_found = invalid_member_classes.any?{ |klass| klass.in(group_ids: [source_group.id]).count > 0 }
+
+          if invalid_found
+            raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
           end
 
           source_group.member_classes.each do |klass|
@@ -145,19 +139,15 @@ module Groupify
           end
         end
 
-        def associate_member_class(member_klass, association_name = nil)
+        def define_member_association(member_klass, association_name, options = {})
           (@member_klasses ||= Set.new) << member_klass
 
-          association_name ||= member_klass.model_name.plural.to_sym
-
-          options = {
+          has_many association_name, {
             class_name: member_klass.to_s,
             dependent: :nullify,
             foreign_key: 'group_ids',
             extend: MemberAssociationExtensions
-          }
-
-          has_many association_name, options
+          }.merge(options)
 
           member_klass
         end

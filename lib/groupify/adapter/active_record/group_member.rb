@@ -105,26 +105,22 @@ module Groupify
           in_any_group(other.groups)
         end
 
-        def has_groups(*names)
-          names.flatten.each do |name|
-            has_group(name)
+        def has_groups(*association_names)
+          association_names.flatten.each do |association_name|
+            has_group(association_name)
           end
         end
 
-        def has_group(name, source_type = nil, options = {})
-          if source_type.is_a?(Hash)
-            options, source_type = source_type, nil
-          end
-
-          #source_type ||= Groupify.infer_class_and_association_name(name).first || @group_class_name
-          source_type ||= @group_class_name
+        def has_group(association_name, options = {})
+          association_class, association_name = Groupify.infer_class_and_association_name(association_name)
+          model_klass = options[:class_name] || association_class || @group_class_name
 
           has_many name.to_sym, ->{ distinct }, {
             through: :group_memberships_as_member,
             source: :group,
-            source_type: source_type,
+            source_type: ActiveRecord.base_class_name(model_klass),
             extend: Groupify::ActiveRecord::AssociationExtensions
-          }.merge(options.slice :class_name)
+          }.merge(options)
         end
 
         def memberships_merge(merge_criteria = nil, &group_membership_filter)

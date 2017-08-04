@@ -15,6 +15,19 @@ module Groupify
       "#{model_class.quoted_table_name}.#{::ActiveRecord::Base.connection.quote_column_name(column_name)}"
     end
 
+    # Pass in record, class, or string
+    def self.base_class_name(target)
+      return if target.nil?
+
+      if target.is_a?(::ActiveRecord::Base)
+        target.class.base_class.name
+      elsif target.is_a?(Class) && target < ::ActiveRecord::Base
+        target.base_class.name
+      else
+        target.to_s.constantize.base_class.name
+      end
+    end
+
     def self.memberships_merge(scope, options = {})
       parent, parent_type, _ = infer_parent_and_types(scope, options[:parent_type])
 
