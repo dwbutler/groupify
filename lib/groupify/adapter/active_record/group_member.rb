@@ -115,10 +115,15 @@ module Groupify
           association_class, association_name = Groupify.infer_class_and_association_name(association_name)
           model_klass = options[:class_name] || association_class || @group_class_name
 
+          unless options[:source_type]
+            # only try to look up base class if needed - can cause circular dependency issue
+            source_type = ActiveRecord.base_class_name(model_klass) || model_klass
+          end
+
           has_many association_name.to_sym, ->{ distinct }, {
             through: :group_memberships_as_member,
             source: :group,
-            source_type: ActiveRecord.base_class_name(model_klass),
+            source_type: source_type,
             extend: Groupify::ActiveRecord::AssociationExtensions
           }.merge(options)
         end
