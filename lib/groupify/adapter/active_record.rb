@@ -65,8 +65,11 @@ module Groupify
                           first_or_initialize
           to_add_with_membership_type << membership unless membership.persisted?
         end
-        parent.__send__(:clear_association_cache)
+
+        child.__send__(:clear_association_cache)
       end
+
+      parent.__send__(:clear_association_cache)
 
       # then validate changes
       list_to_validate = to_add_directly + to_add_with_membership_type

@@ -129,6 +129,16 @@ describe Groupify::ActiveRecord do
         expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.size).to eq(1)
         expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.first).to eq(user)
       end
+
+      it "member has groups in has_many through associations after adding member to groups" do
+
+        expect(user.groups.size).to eq(0)
+        
+        group.add user
+        organization.add user
+
+        expect(user.groups.size).to eq(2)
+      end
     end
   end
 end
