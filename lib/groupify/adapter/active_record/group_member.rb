@@ -115,7 +115,7 @@ module Groupify
           association_class, association_name = Groupify.infer_class_and_association_name(association_name)
           model_klass = options[:class_name] || association_class || @group_class_name
 
-          has_many name.to_sym, ->{ distinct }, {
+          has_many association_name.to_sym, ->{ distinct }, {
             through: :group_memberships_as_member,
             source: :group,
             source_type: ActiveRecord.base_class_name(model_klass),
