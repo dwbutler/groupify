@@ -16,37 +16,7 @@ module Groupify
       include MemberScopedAs
 
       included do
-        has_and_belongs_to_many :groups, autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name do
-          def as(membership_type)
-            # `membership_type.present?` causes tests to fail for `MongoidManager` class....
-            return self unless membership_type
-
-            group_ids = base.group_memberships.as(membership_type).first.group_ids
-
-            if group_ids.present?
-              self.and(:id.in => group_ids)
-            else
-              self.and(:id => nil)
-            end
-          end
-
-          def destroy(*groups)
-            delete(*groups)
-          end
-
-          def delete(*groups)
-            membership_type = groups.extract_options![:as]
-            groups.flatten!
-
-            if membership_type.present?
-              base.group_memberships.as(membership_type).each do |membership|
-                membership.groups.delete(*groups)
-              end
-            else
-              super(*groups)
-            end
-          end
-        end
+        has_group :groups
 
         class GroupMembership
           include ::Mongoid::Document
@@ -113,6 +83,48 @@ module Groupify
 
         def shares_any_group(other)
           in_any_group(other.groups.to_a)
+        end
+
+        def has_groups(*association_names)
+          association_names.flatten.each do |association_name|
+            has_group(association_name)
+          end
+        end
+
+        def has_group(association_name, options = {})
+          options = {autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name}.merge(options)
+
+          has_and_belongs_to_many association_name, options do
+            def as(membership_type)
+              # `membership_type.present?` causes tests to fail for `MongoidManager` class....
+              return self unless membership_type
+
+              group_ids = base.group_memberships.as(membership_type).first.group_ids
+
+              if group_ids.present?
+                self.and(:id.in => group_ids)
+              else
+                self.and(:id => nil)
+              end
+            end
+
+            def destroy(*groups)
+              delete(*groups)
+            end
+
+            def delete(*groups)
+              membership_type = groups.extract_options![:as]
+              groups.flatten!
+
+              if membership_type.present?
+                base.group_memberships.as(membership_type).each do |membership|
+                  membership.groups.delete(*groups)
+                end
+              else
+                super(*groups)
+              end
+            end
+          end
         end
       end
     end
