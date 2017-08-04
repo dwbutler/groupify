@@ -103,10 +103,6 @@ module Groupify
 
           define_member_association(member_klass, association_name)
 
-          if member_klass == default_member_class
-            define_member_association(member_klass, :members)
-          end
-
           member_klass
         end
 

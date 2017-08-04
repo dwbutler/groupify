@@ -159,10 +159,6 @@ module Groupify
 
           has_many association_name, options
 
-          if member_klass == default_member_class
-            has_many :members, options
-          end
-
           member_klass
         end
       end

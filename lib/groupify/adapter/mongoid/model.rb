@@ -17,6 +17,8 @@ module Groupify
 
           if (member_klass = opts.delete :default_members)
             self.default_member_class = member_klass.to_s.classify.constantize
+
+            has_member(:members, class_name: member_klass)
           end
 
           if (member_klasses = opts.delete :members)
