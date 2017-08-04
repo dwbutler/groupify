@@ -14,7 +14,7 @@ module Groupify
 
       included do
         belongs_to :member, polymorphic: true
-        belongs_to :group, polymorphic: true
+        belongs_to :group, polymorphic: true, required: false
       end
 
       def membership_type=(membership_type)
