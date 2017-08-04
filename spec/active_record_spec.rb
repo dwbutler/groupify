@@ -122,10 +122,15 @@ describe Groupify::ActiveRecord do
         expect(group.id).to eq(10)
         expect(classroom.id).to eq(10)
         expect(organization.id).to eq(11)
-        expect(user.group_memberships_as_member.map(&:group).sort).to eq([group, classroom, organization].sort)
+
+        membership_groups = user.group_memberships_as_member.map(&:group)
+
+        expect(membership_groups).to include(group, classroom, organization)
         expect(GroupMembership.for_groups([group, classroom]).count).to eq(2)
+        expect(GroupMembership.for_groups([group, classroom]).map(&:group)).to include(group, classroom)
         expect(GroupMembership.for_groups([group, classroom]).distinct.count).to eq(2)
         expect(GroupMembership.for_groups([group, classroom, organization]).count).to eq(3)
+        expect(GroupMembership.for_groups([group, classroom, organization]).map(&:group)).to include(group, classroom, organization)
         expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.size).to eq(1)
         expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.first).to eq(user)
       end
