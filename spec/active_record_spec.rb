@@ -144,6 +144,16 @@ describe Groupify::ActiveRecord do
 
         expect(user.groups.size).to eq(2)
       end
+
+      it "member doesn't have groups in has_many through associations after deleting member from group" do
+        group.add user
+
+        expect(user.groups.size).to eq(1)
+
+        user.groups.delete group
+
+        expect(user.groups.size).to eq(0)
+      end
     end
   end
 end

@@ -51,6 +51,8 @@ module Groupify
           as: membership_type
         ).__send__(:"#{destruction_type}_all")
 
+        proxy_association.owner.__send__(:clear_association_cache)
+        
         children.each{|record| record.__send__(:clear_association_cache)}
 
         self
