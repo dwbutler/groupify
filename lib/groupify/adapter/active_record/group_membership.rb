@@ -14,7 +14,11 @@ module Groupify
 
       included do
         belongs_to :member, polymorphic: true
-        belongs_to :group, polymorphic: true, required: false
+        if ActiveSupport::VERSION::STRING > '4.1'
+          belongs_to :group, polymorphic: true, required: false
+        else
+          belongs_to :group, polymorphic: true
+        end
       end
 
       def membership_type=(membership_type)

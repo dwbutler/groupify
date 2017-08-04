@@ -578,6 +578,14 @@ describe Groupify::ActiveRecord do
       expect(user.named_groups).to be_empty
     end
 
+    it "works when using only named groups and not groups" do
+      project = Project.create!
+      project.named_groups.add(:accounting)
+      expect(project.named_groups).to include(:accounting)
+      project.named_groups.delete_all
+      expect(project.named_groups).to be_empty
+    end
+
     it "checks if a member belongs to one named group" do
       expect(user.in_named_group?(:admin)).to be true
       expect(User.in_named_group(:admin).first).to eql(user)
