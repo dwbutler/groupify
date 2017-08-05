@@ -126,6 +126,9 @@ module Groupify
             source_type: source_type,
             extend: Groupify::ActiveRecord::AssociationExtensions
           }.merge(options)
+
+        rescue NameError => ex
+          raise "Can't infer base class for #{model_klass}: #{ex.message}. Try specifying the `:source_type` option such as `has_group(#{association_name.inspect}, source_type: 'BaseClass')` in case there is a circular dependency."
         end
 
         def memberships_merge(merge_criteria = nil, &group_membership_filter)

@@ -74,8 +74,18 @@ module Groupify
         def has_member(association_name, options = {})
           association_class, association_name = Groupify.infer_class_and_association_name(association_name)
           model_klass = options[:class_name] || association_class
+          member_klass = model_klass.to_s.constantize
 
-          define_member_association(model_klass.to_s.constantize, association_name, options)
+          (@member_klasses ||= Set.new) << member_klass
+
+          has_many association_name, {
+            class_name: member_klass.to_s,
+            dependent: :nullify,
+            foreign_key: 'group_ids',
+            extend: MemberAssociationExtensions
+          }.merge(options)
+
+          member_klass
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
@@ -137,19 +147,6 @@ module Groupify
               super(*members)
             end
           end
-        end
-
-        def define_member_association(member_klass, association_name, options = {})
-          (@member_klasses ||= Set.new) << member_klass
-
-          has_many association_name, {
-            class_name: member_klass.to_s,
-            dependent: :nullify,
-            foreign_key: 'group_ids',
-            extend: MemberAssociationExtensions
-          }.merge(options)
-
-          member_klass
         end
       end
     end

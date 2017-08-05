@@ -70,8 +70,26 @@ module Groupify
         def has_member(association_name, options = {})
           association_class, association_name = Groupify.infer_class_and_association_name(association_name)
           model_klass = options[:class_name] || association_class
+          member_klass = model_klass.to_s.constantize
 
-          define_member_association(model_klass.to_s.constantize, association_name, options)
+          (@member_klasses ||= Set.new) << member_klass
+
+          unless options[:source_type]
+            # only try to look up base class if needed - can cause circular dependency issue
+            source_type = ActiveRecord.base_class_name(member_klass) || member_klass || default_member_class
+          end
+
+          has_many association_name, ->{ distinct }, {
+              through: :group_memberships_as_group,
+              source: :member,
+              source_type: source_type,
+              extend: Groupify::ActiveRecord::AssociationExtensions
+            }.merge(options)
+
+          member_klass
+
+        rescue NameError => ex
+          raise "Can't infer base class for #{member_klass}: #{ex.message}. Try specifying the `:source_type` option such as `has_member(#{association_name.inspect}, source_type: 'BaseClass')` in case there is a circular dependency."
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
@@ -94,24 +112,6 @@ module Groupify
         end
 
       protected
-
-        def define_member_association(member_klass, association_name, options = {})
-          (@member_klasses ||= Set.new) << member_klass
-
-          unless options[:source_type]
-            # only try to look up base class if needed - can cause circular dependency issue
-            source_type = ActiveRecord.base_class_name(member_klass) || member_klass || default_member_class
-          end
-
-          has_many association_name, ->{ distinct }, {
-              through: :group_memberships_as_group,
-              source: :member,
-              source_type: source_type,
-              extend: Groupify::ActiveRecord::AssociationExtensions
-            }.merge(options)
-
-          member_klass
-        end
 
         def memberships_merge(merge_criteria = nil, &group_membership_filter)
           ActiveRecord.memberships_merge(self, parent_type: :group, criteria: merge_criteria, filter: group_membership_filter)
