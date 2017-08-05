@@ -23,48 +23,70 @@ end
 
 require 'groupify/adapter/active_record'
 
-class User < ActiveRecord::Base
-  groupify :group_member
-  groupify :named_group_member
+autoload :Organization, 'active_record/organization'
+autoload :Group, 'active_record/group'
+autoload :User, 'active_record/user'
+autoload :Manager, 'active_record/manager'
+autoload :Classroom, 'active_record/classroom'
+autoload :GroupMembership, 'active_record/group_membership'
+autoload :Namespaced, 'active_record/namespaced'
+autoload :Project, 'active_record/project'
+autoload :Widget, 'active_record/widget'
+autoload :CustomGroupMembership, 'active_record/custom_group_membership'
+autoload :CustomUser, 'active_record/custom_user'
+autoload :CustomGroup, 'active_record/custom_group'
 
-  has_group :organizations, class_name: "Organization"
-  has_group :classrooms, class_name: "Classroom"
-end
-
-class Manager < User
-end
-
-class Widget < ActiveRecord::Base
-  groupify :group_member
-end
-
-module Namespaced
-  class Member < ActiveRecord::Base
-    groupify :group_member
-  end
-end
-
-class Project < ActiveRecord::Base
-  groupify :named_group_member
-end
-
-class Group < ActiveRecord::Base
-  groupify :group, members: [:users, :widgets, "namespaced/members"], default_members: :users
-end
-
-class Organization < Group
-  groupify :group_member
-
-  has_members :managers, :organizations
-end
-
-class GroupMembership < ActiveRecord::Base
-  groupify :group_membership
-end
-
-class Classroom < ActiveRecord::Base
-  groupify :group
-end
+# class Organization < Group
+#   groupify :group_member
+#
+#   has_members :managers, :organizations
+# end
+#
+# class Manager < User
+# end
+#
+# class User < ActiveRecord::Base
+#   groupify :group_member
+#   groupify :named_group_member
+#
+#   has_group :organizations, class_name: "Organization"
+#   has_group :classrooms, class_name: "Classroom"
+# end
+#
+# class Manager < User
+# end
+#
+# class Widget < ActiveRecord::Base
+#   groupify :group_member
+# end
+#
+# module Namespaced
+#   class Member < ActiveRecord::Base
+#     groupify :group_member
+#   end
+# end
+#
+# class Project < ActiveRecord::Base
+#   groupify :named_group_member
+# end
+#
+# class Group < ActiveRecord::Base
+#   groupify :group, members: [:users, :widgets, "namespaced/members"], default_members: :users
+# end
+#
+# class Organization < Group
+#   groupify :group_member
+#
+#   has_members :managers, :organizations
+# end
+#
+# class GroupMembership < ActiveRecord::Base
+#   groupify :group_membership
+# end
+#
+# class Classroom < ActiveRecord::Base
+#   groupify :group
+# end
 
 describe Group do
   it { should respond_to :members}
@@ -87,33 +109,6 @@ describe Groupify::ActiveRecord do
 
   describe "polymorphic groups" do
     context "memberships" do
-      # before do
-      #   Groupify.configure do |config|
-      #     config.group_class_name = 'CustomGroup'
-      #     config.group_membership_class_name = 'CustomGroupMembership'
-      #   end
-      #
-      #   class CustomGroupMembership < ActiveRecord::Base
-      #     groupify :group_membership
-      #   end
-      #
-      #   class CustomUser < ActiveRecord::Base
-      #     groupify :group_member
-      #     groupify :named_group_member
-      #   end
-      #
-      #   class CustomGroup < ActiveRecord::Base
-      #     groupify :group, members: [:custom_users]
-      #   end
-      # end
-      #
-      # after do
-      #   Groupify.configure do |config|
-      #     config.group_class_name = 'Group'
-      #     config.group_membership_class_name = 'GroupMembership'
-      #   end
-      # end
-
       it "finds multiple records for different models with same ID" do
         group.add user
         classroom.add user
@@ -172,18 +167,18 @@ describe Groupify::ActiveRecord do
           config.group_membership_class_name = 'CustomGroupMembership'
         end
 
-        class CustomGroupMembership < ActiveRecord::Base
-          groupify :group_membership
-        end
-
-        class CustomUser < ActiveRecord::Base
-          groupify :group_member
-          groupify :named_group_member
-        end
-
-        class CustomGroup < ActiveRecord::Base
-          groupify :group, members: [:custom_users]
-        end
+        # class CustomGroupMembership < ActiveRecord::Base
+        #   groupify :group_membership
+        # end
+        #
+        # class CustomUser < ActiveRecord::Base
+        #   groupify :group_member
+        #   groupify :named_group_member
+        # end
+        #
+        # class CustomGroup < ActiveRecord::Base
+        #   groupify :group, members: [:custom_users]
+        # end
       end
 
       after do
