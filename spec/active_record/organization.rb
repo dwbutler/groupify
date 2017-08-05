@@ -1,3 +1,5 @@
+require_relative 'group'
+
 class Organization < Group
   groupify :group_member
 

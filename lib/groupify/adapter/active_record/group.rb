@@ -89,7 +89,7 @@ module Groupify
           member_klass
 
         rescue NameError => ex
-          raise "Can't infer base class for #{member_klass}: #{ex.message}. Try specifying the `:source_type` option such as `has_member(#{association_name.inspect}, source_type: 'BaseClass')` in case there is a circular dependency."
+          raise "Can't infer base class for #{member_klass.inspect}: #{ex.message}. Try specifying the `:source_type` option such as `has_member(#{association_name.inspect}, source_type: 'BaseClass')` in case there is a circular dependency."
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
