@@ -18,17 +18,18 @@ module Groupify
   end
 
   def self.infer_class_and_association_name(association_name)
-    klass = association_name.to_s.classify.constantize rescue nil
+    begin
+      klass = association_name.to_s.classify.constantize
+    rescue StandardError => ex
+      puts "Error: #{ex.inspect}"
+      #puts ex.backtrace
+    end
 
-    association_name =  if association_name.is_a?(Symbol)
-                          association_name
-                        elsif klass
-                          klass.model_name.plural.to_sym
-                        else
-                          association_name.to_sym
-                        end
+    if !association_name.is_a?(Symbol) && klass
+      association_name = klass.model_name.plural
+    end
 
-    [klass, association_name]
+    [klass, association_name.to_sym]
   end
 end
 
