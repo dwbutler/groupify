@@ -16,16 +16,20 @@ module Groupify
     end
 
     # Pass in record, class, or string
-    def self.base_class_name(target)
-      return if target.nil?
+    def self.base_class_name(model_class)
+      return if model_class.nil?
 
-      if target.is_a?(::ActiveRecord::Base)
-        target.class.base_class.name
-      elsif target.is_a?(Class) && target < ::ActiveRecord::Base
-        target.base_class.name
-      else
-        target.to_s.constantize.base_class.name
+      if model_class.is_a?(::ActiveRecord::Base)
+        model_class = model_class.class
+      elsif !(model_class.is_a?(Class) && model_class < ::ActiveRecord::Base)
+        model_class = model_class.to_s.constantize
       end
+
+      model_class.base_class.name
+    rescue NameError
+      raise unless Groupify.ignore_base_class_inference_errors
+
+      model_class.to_s
     end
 
     def self.memberships_merge(scope, options = {})
