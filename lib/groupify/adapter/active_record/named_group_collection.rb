@@ -12,7 +12,7 @@ module Groupify
 
       def add(named_group, opts = {})
         named_group = named_group.to_sym
-        membership_type = opts[:as].present? ? opts[:as].to_s : nil
+        membership_type = opts[:as].to_s if opts[:as].present?
 
         # always add a nil membership type and then a specific one (if specified)
         membership_types = [nil, membership_type].uniq
@@ -54,15 +54,15 @@ module Groupify
       end
 
       def delete(*named_groups)
-        opts = named_groups.extract_options!
+        membership_type = named_groups.extract_options![:as]
 
-        remove(named_groups.flatten.compact, :delete_all, opts[:as])
+        remove(named_groups.flatten.compact, :delete_all, membership_type)
       end
 
       def destroy(*named_groups)
-        opts = named_groups.extract_options!
+        membership_type = named_groups.extract_options![:as]
 
-        remove(named_groups.flatten.compact, :destroy_all, opts[:as])
+        remove(named_groups.flatten.compact, :destroy_all, membership_type)
       end
 
       def clear
@@ -78,7 +78,7 @@ module Groupify
         if membership_type.present?
           @named_group_memberships.as(membership_type).pluck(:group_name).map(&:to_sym)
         else
-          to_a
+          to_a.map(&:to_sym)
         end
       end
 
