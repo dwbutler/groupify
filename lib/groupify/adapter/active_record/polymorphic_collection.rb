@@ -27,7 +27,7 @@ module Groupify
 
       alias_method :size, :count
 
-      def_delegators :to_a, :[]
+      def_delegators :to_a, :[], :pretty_print
 
       alias_method :to_ary, :to_a
       alias_method :[], :to_a
