@@ -25,7 +25,7 @@ module Groupify
       end
 
       def polymorphic_members
-        PolymorphicRelation.new(self, :group, &query_filter)
+        PolymorphicRelation.new(self, :group){ |query| query.merge(group_memberships_as_group) }
       end
 
       def member_classes
@@ -89,7 +89,7 @@ module Groupify
               source_type: source_type,
               extend: Groupify::ActiveRecord::AssociationExtensions
             }.merge(options)
-            
+
         rescue NameError => ex
           raise "Can't infer base class for #{member_klass.inspect}: #{ex.message}. Try specifying the `:source_type` option such as `has_member(#{association_name.inspect}, source_type: 'BaseClass')` in case there is a circular dependency."
         end

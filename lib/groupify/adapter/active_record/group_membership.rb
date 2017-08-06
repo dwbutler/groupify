@@ -42,12 +42,12 @@ module Groupify
           membership_type.present? ? where(membership_type: membership_type.to_s) : all
         end
 
-        def polymorphic_groups(&query_filter)
-          PolymorphicCollection.new(:group){ merge(self).instance_eval(&query_filter) }
+        def polymorphic_groups
+          PolymorphicCollection.new(:group){ |query| query.merge(self) }
         end
 
-        def polymorphic_members(&query_filter)
-          PolymorphicCollection.new(:member){ merge(self).instance_eval(&query_filter) }
+        def polymorphic_members
+          PolymorphicCollection.new(:member){ |query| query.merge(self) }
         end
 
         def for_groups(groups)

@@ -7,7 +7,7 @@ module Groupify
         @collection_parent, @collection_parent_type = parent, parent_type
         @child_type = parent_type == :group ? :member : :group
 
-        super(@child_type)
+        super(@child_type, &query_filter)
       end
 
       def as(membership_type)
