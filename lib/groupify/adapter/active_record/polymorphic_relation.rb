@@ -7,7 +7,11 @@ module Groupify
         @collection_parent, @collection_parent_type = parent, parent_type
         @child_type = parent_type == :group ? :member : :group
 
-        super(@child_type, &query_filter)
+        super(@child_type) do |query|
+          query = query.merge(parent.__send__(:"group_memberships_as_#{@child_type}"))
+          query = query.instance_eval(&query_filter) if block_given?
+          query
+        end
       end
 
       def as(membership_type)

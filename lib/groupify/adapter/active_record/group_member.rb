@@ -27,7 +27,7 @@ module Groupify
       end
 
       def polymorphic_groups(&query_filter)
-        PolymorphicRelation.new(self, :member){ |query| query.merge(group_memberships_as_member).instance_eval(&query_filter) }
+        PolymorphicRelation.new(self, :member, &query_filter)
       end
 
       def in_group?(group, opts = {})
