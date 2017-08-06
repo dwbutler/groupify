@@ -16,7 +16,7 @@ module Groupify
     end
 
     # Pass in record, class, or string
-    def self.base_class_name(model_class)
+    def self.base_class_name(model_class, &default_base_class)
       return if model_class.nil?
 
       if model_class.is_a?(::ActiveRecord::Base)
@@ -27,9 +27,10 @@ module Groupify
 
       model_class.base_class.name
     rescue NameError
-      raise unless Groupify.ignore_base_class_inference_errors
+      return base_class_name(yield) if block_given?
+      return model_class.to_s if Groupify.ignore_base_class_inference_errors
 
-      model_class.to_s
+      raise
     end
 
     def self.memberships_merge(scope, options = {})

@@ -117,7 +117,7 @@ module Groupify
 
           unless options[:source_type]
             # only try to look up base class if needed - can cause circular dependency issue
-            source_type = ActiveRecord.base_class_name(model_klass) || model_klass
+            source_type = ActiveRecord.base_class_name(model_klass){ @group_class_name }
           end
 
           has_many association_name.to_sym, ->{ distinct }, {
