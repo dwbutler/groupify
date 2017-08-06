@@ -113,6 +113,16 @@ describe Groupify::ActiveRecord do
 
         expect(user.groups.size).to eq(0)
       end
+
+      it "doesn't select duplicate groups" do
+        group.add user, as: 'manager'
+        group.add user, as: 'user'
+        classroom.add user
+
+        expect(user.polymorphic_groups.count).to eq(2)
+        expect(user.polymorphic_groups.to_a.size).to eq(2)
+        expect(user.groups.count).to eq(1)
+      end
     end
   end
 end
