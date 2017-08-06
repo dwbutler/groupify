@@ -16,7 +16,7 @@ module Groupify
       include MemberScopedAs
 
       included do
-        has_group :groups
+        has_group Groupify.groups_association_name.to_sym
 
         class GroupMembership
           include ::Mongoid::Document

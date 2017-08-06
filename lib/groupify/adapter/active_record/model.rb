@@ -24,7 +24,7 @@ module Groupify
           if (member_klass = opts.delete :default_members)
             self.default_member_class = member_klass.to_s.classify.constantize
 
-            has_member(:members,
+            has_member(Groupify.members_association_name.to_sym,
               source_type: ActiveRecord.base_class_name(default_member_class),
               class_name: default_member_class.to_s
             )
