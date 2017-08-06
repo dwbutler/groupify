@@ -22,7 +22,13 @@ module Groupify
       def_delegators :@query, :reload
 
       def count
-        @query.loaded? ? @query.size : @query.count.keys.size
+        return @query.size if @query.loaded?
+
+        queried_count = @query.count
+        # The `count` is a Hash when GROUP BY is used
+        # PostgreSQL uses DISTINCT ON, which may be different
+        queried_count = queried_count.keys.size if queried_count.is_a?(Hash)
+        queried_count
       end
 
       alias_method :size, :count
@@ -48,7 +54,7 @@ module Groupify
                 else #when /mysql/, /sqlite/
                   query.group(["#{@source}_id", "#{@source}_type"])
                 end
-        
+
         query
       end
     end
