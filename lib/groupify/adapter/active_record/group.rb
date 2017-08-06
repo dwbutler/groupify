@@ -24,6 +24,10 @@ module Groupify
           class_name: Groupify.group_membership_class_name
       end
 
+      def polymorphic_members
+        PolymorphicChildren.new(self, :group, &query_filter)
+      end
+
       def member_classes
         self.class.member_classes
       end

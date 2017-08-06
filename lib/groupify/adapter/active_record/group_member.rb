@@ -26,6 +26,10 @@ module Groupify
           class_name: @group_class_name
       end
 
+      def polymorphic_groups(&query_filter)
+        PolymorphicChildren.new(self, :member, &query_filter)
+      end
+
       def in_group?(group, opts = {})
         return false unless group.present?
 
@@ -42,16 +46,16 @@ module Groupify
 
       def in_all_groups?(*groups)
         membership_type = groups.extract_options![:as]
-        groups.flatten.to_set.subset? self.groups.as(membership_type).to_set
+        groups.flatten.to_set.subset? self.polymorphic_groups.as(membership_type).to_set
       end
 
       def in_only_groups?(*groups)
         membership_type = groups.extract_options![:as]
-        groups.flatten.to_set == self.groups.as(membership_type).to_set
+        groups.flatten.to_set == self.polymorphic_groups.as(membership_type).to_set
       end
 
       def shares_any_group?(other, opts = {})
-        in_any_group?(other.groups, opts)
+        in_any_group?(other.polymorphic_groups, opts)
       end
 
       module ClassMethods
@@ -104,7 +108,7 @@ module Groupify
         end
 
         def shares_any_group(other)
-          in_any_group(other.groups)
+          in_any_group(other.polymorphic_groups)
         end
 
         def has_groups(*association_names)

@@ -8,6 +8,7 @@ module Groupify
     autoload :Group, 'groupify/adapter/active_record/group'
     autoload :GroupMember, 'groupify/adapter/active_record/group_member'
     autoload :GroupMembership, 'groupify/adapter/active_record/group_membership'
+    autoload :PolymorphicChildren, 'groupify/adapter/active_record/polymorphic_children'
     autoload :NamedGroupCollection, 'groupify/adapter/active_record/named_group_collection'
     autoload :NamedGroupMember, 'groupify/adapter/active_record/named_group_member'
 
