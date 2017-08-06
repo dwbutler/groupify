@@ -21,7 +21,7 @@ module Groupify
           dependent: :destroy,
           class_name: Groupify.group_membership_class_name
 
-        has_group :groups, source_type: ActiveRecord.base_class_name(@group_class_name)
+        has_group :groups, source_type: ActiveRecord.base_class_name(@group_class_name), class_name: @group_class_name
       end
 
       def in_group?(group, opts = {})
