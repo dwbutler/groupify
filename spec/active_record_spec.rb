@@ -123,6 +123,16 @@ describe Groupify::ActiveRecord do
         expect(user.polymorphic_groups.to_a.size).to eq(2)
         expect(user.groups.count).to eq(1)
       end
+
+      it "adds based on membership_type" do
+        group.add user
+        group.add user, as: 'manager'
+        organization.add user
+        organization.add user, as: 'owner'
+        
+        expect(user.polymorphic_groups.count).to eq(2)
+        expect(user.group_memberships_as_member.count).to eq(4)
+      end
     end
   end
 end

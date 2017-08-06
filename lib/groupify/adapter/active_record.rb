@@ -70,13 +70,12 @@ module Groupify
       to_add_directly = []
       to_add_with_membership_type = []
 
-      already_children = find_memberships_for(parent, children, parent_type: parent_type).includes(child_type).map(&child_type).uniq
-      children -= already_children
-
+      already_children = find_memberships_for(parent, children, parent_type: parent_type).includes(child_type).group_by{ |membership| membership.__send__(child_type) }
+      
       # first prepare changes
       children.each do |child|
         # add to collection without membership type
-        to_add_directly << memberships_association.build(child_type => child)
+        to_add_directly << memberships_association.build(child_type => child) unless already_children[child] && already_children[child].find{ |m| m.membership_type.nil? }
         # add a second entry for the given membership type
         if membership_type.present?
           membership =  memberships_association.
