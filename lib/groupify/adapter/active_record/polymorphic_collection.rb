@@ -38,7 +38,7 @@ module Groupify
 
       def build_query(&group_membership_filter)
         query = Groupify.group_membership_klass.where.not(:"#{@source}_id" => nil)
-        query = yield(query) if block_given?
+        query = query.instance_eval(&group_membership_filter) if block_given?
         query = query.group(["#{@source}_id", "#{@source}_type"]).includes(@source)
         query
       end
