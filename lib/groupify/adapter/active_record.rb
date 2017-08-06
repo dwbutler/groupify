@@ -134,7 +134,7 @@ module Groupify
         parent_is_group = (default_parent_type == :group)
       else
         parent_is_group  = parent.class.include?(Groupify::ActiveRecord::Group)
-        detected_modules = [detected_group, parent.class.include?(Groupify::ActiveRecord::GroupMember)].count{ |bool| bool == true }
+        detected_modules = [parent_is_group, parent.class.include?(Groupify::ActiveRecord::GroupMember)].count{ |bool| bool == true }
 
         if detected_modules == 0
           raise "The specified record is neither group nor group member."
