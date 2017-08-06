@@ -42,48 +42,15 @@ end
 # autoload :CustomUser, 'active_record/custom_user'
 # autoload :CustomGroup, 'active_record/custom_group'
 
-class User < ActiveRecord::Base
-  groupify :group_member
-  groupify :named_group_member
-
-  has_group :organizations, class_name: "Organization"
-  has_group :classrooms, class_name: "Classroom"
-end
-
-class Manager < User
-end
-
-class Widget < ActiveRecord::Base
-  groupify :group_member
-end
-
-module Namespaced
-  class Member < ActiveRecord::Base
-    groupify :group_member
-  end
-end
-
-class Project < ActiveRecord::Base
-  groupify :named_group_member
-end
-
-class Group < ActiveRecord::Base
-  groupify :group, members: [:users, :widgets, "namespaced/members"], default_members: :users
-end
-
-class Organization < Group
-  groupify :group_member
-
-  has_members :managers, :organizations
-end
-
-class GroupMembership < ActiveRecord::Base
-  groupify :group_membership
-end
-
-class Classroom < ActiveRecord::Base
-  groupify :group
-end
+require_relative './active_record/user'
+require_relative './active_record/manager'
+require_relative './active_record/widget'
+require_relative './active_record/namespaced/member'
+require_relative './active_record/project'
+require_relative './active_record/group'
+require_relative './active_record/organization'
+require_relative './active_record/group_membership'
+require_relative './active_record/classroom'
 
 describe Group do
   it { should respond_to :members}
@@ -164,18 +131,9 @@ describe Groupify::ActiveRecord do
           config.group_membership_class_name = 'CustomGroupMembership'
         end
 
-        class CustomGroupMembership < ActiveRecord::Base
-          groupify :group_membership
-        end
-
-        class CustomUser < ActiveRecord::Base
-          groupify :group_member
-          groupify :named_group_member
-        end
-
-        class CustomGroup < ActiveRecord::Base
-          groupify :group, members: [:custom_users]
-        end
+        require_relative './active_record/custom_group_membership'
+        require_relative './active_record/custom_user'
+        require_relative './active_record/custom_group'
       end
 
       after do
