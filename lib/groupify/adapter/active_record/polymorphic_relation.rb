@@ -8,7 +8,7 @@ module Groupify
         @child_type = parent_type == :group ? :member : :group
 
         super(@child_type) do |query|
-          query = query.merge(parent.__send__(:"group_memberships_as_#{@child_type}"))
+          query = query.merge(parent.__send__(:"group_memberships_as_#{parent_type}"))
           query = query.instance_eval(&query_filter) if block_given?
           query
         end
