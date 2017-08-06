@@ -26,8 +26,8 @@ module Groupify
           class_name: @group_class_name
       end
 
-      def polymorphic_groups(&query_filter)
-        PolymorphicRelation.new(self, :member, &query_filter)
+      def polymorphic_groups(&group_membership_filter)
+        PolymorphicRelation.new(self, :member, &group_membership_filter)
       end
 
       def in_group?(group, opts = {})

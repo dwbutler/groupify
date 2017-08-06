@@ -4,9 +4,9 @@ module Groupify
       include Enumerable
       extend Forwardable
 
-      def initialize(source, &query_filter)
+      def initialize(source, &group_membership_filter)
         @source = source
-        @query = build_query(&query_filter)
+        @query = build_query(&group_membership_filter)
       end
 
       def each(&block)
@@ -36,7 +36,7 @@ module Groupify
 
     protected
 
-      def build_query(&query_filter)
+      def build_query(&group_membership_filter)
         query = Groupify.group_membership_klass.where.not(:"#{@source}_id" => nil)
         query = yield(query) if block_given?
         query = query.group(["#{@source}_id", "#{@source}_type"]).includes(@source)
