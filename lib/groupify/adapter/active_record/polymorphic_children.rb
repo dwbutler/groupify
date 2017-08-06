@@ -5,7 +5,7 @@ module Groupify
       extend Forwardable
       include CollectionExtensions
 
-      def initialize(parent, parent_type, child_class_for_builder = nil, &query_filter)
+      def initialize(parent, parent_type, &query_filter)
         @collection_parent, @collection_parent_type = parent, parent_type
         @child_type = parent_type == :group ? :member : :group
         @collection = build_query(&query_filter)
