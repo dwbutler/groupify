@@ -24,8 +24,8 @@ module Groupify
           class_name: Groupify.group_membership_class_name
       end
 
-      def polymorphic_members
-        PolymorphicRelation.new(self, :group){ |query| query.merge(group_memberships_as_group) }
+      def polymorphic_members(&query_filter)
+        PolymorphicRelation.new(self, :group){ |query| query_filter.call(query.merge(group_memberships_as_group)) }
       end
 
       def member_classes
