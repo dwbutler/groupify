@@ -6,25 +6,21 @@ module Groupify
 
       def initialize(source, &group_membership_filter)
         @source = source
-        @query = build_query(&group_membership_filter)
+        @collection = build_collection(&group_membership_filter)
       end
 
       def each(&block)
-        @query.map do |group_membership|
+        @collection.map do |group_membership|
           group_membership.__send__(@source).tap(&block)
         end
       end
 
-      def inspect
-        "#<#{self.class}:0x#{self.__id__.to_s(16)} #{to_a.inspect}>"
-      end
-
-      def_delegators :@query, :reload
+      def_delegators :@collection, :reload
 
       def count
-        return @query.size if @query.loaded?
+        return @collection.size if @collection.loaded?
 
-        queried_count = @query.count
+        queried_count = @collection.count
         # The `count` is a Hash when GROUP BY is used
         # PostgreSQL uses DISTINCT ON, which may be different
         queried_count = queried_count.keys.size if queried_count.is_a?(Hash)
@@ -40,23 +36,27 @@ module Groupify
       alias_method :empty?, :none?
       alias_method :blank?, :none?
 
-    protected
-
-      def build_query(&group_membership_filter)
-        query = Groupify.group_membership_klass.where.not(:"#{@source}_id" => nil)
-        query = query.instance_eval(&group_membership_filter) if block_given?
-        query = query.includes(@source)
-
-        distinct(query)
+      def inspect
+        "#<#{self.class}:0x#{self.__id__.to_s(16)} #{to_a.inspect}>"
       end
 
-      def distinct(query)
+    protected
+
+      def build_collection(&group_membership_filter)
+        collection = Groupify.group_membership_klass.where.not(:"#{@source}_id" => nil)
+        collection = collection.instance_eval(&group_membership_filter) if block_given?
+        collection = collection.includes(@source)
+
+        distinct(collection)
+      end
+
+      def distinct(collection)
         id, type = "#{@source}_id", "#{@source}_type"
 
         if ActiveRecord.is_db?('postgres', 'pg')
-          query.select("DISTINCT ON (#{ActiveRecord.quote(id)}, #{ActiveRecord.quote(type)}) *")
+          collection.select("DISTINCT ON (#{ActiveRecord.quote(id)}, #{ActiveRecord.quote(type)}) *")
         else
-          query.group([id, type])
+          collection.group([id, type])
         end
       end
     end

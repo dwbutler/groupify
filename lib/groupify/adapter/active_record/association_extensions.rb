@@ -6,7 +6,10 @@ module Groupify
       include CollectionExtensions
 
       def parent_proxy
-        @parent_proxy ||= ParentProxy.new(proxy_association.owner, proxy_association.through_reflection.name.match(/_(group|member)$/)[1].to_sym)
+        @parent_proxy ||= ParentProxy.new(
+                            proxy_association.owner,
+                            proxy_association.through_reflection.name.match(/_(group|member)$/)[1].to_sym
+                          )
       end
 
     protected

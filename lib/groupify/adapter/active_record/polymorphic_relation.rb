@@ -5,7 +5,7 @@ module Groupify
 
       def initialize(parent_proxy, &group_membership_filter)
         @parent_proxy = parent_proxy
-
+        
         super(parent_proxy.child_type) do
           query = merge(parent_proxy.memberships_association)
           query = query.instance_eval(&group_membership_filter) if block_given?
@@ -14,7 +14,7 @@ module Groupify
       end
 
       def as(membership_type)
-        @query = super
+        @collection = super
 
         self
       end
@@ -24,11 +24,7 @@ module Groupify
       # association.
       def_delegators :default_association, :build, :create, :create!
 
-      attr_reader :parent_proxy
-
-      def collection
-        @query
-      end
+      attr_reader :collection, :parent_proxy
 
     protected
 

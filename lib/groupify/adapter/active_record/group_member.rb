@@ -64,16 +64,16 @@ module Groupify
 
       module ClassMethods
         def as(membership_type)
-          member_query.as(membership_type)
+          member_scope.as(membership_type)
         end
 
         def in_group(group)
-          group.present? ? member_query.merge_children(group).distinct : none
+          group.present? ? member_scope.merge_children(group).distinct : none
         end
 
         def in_any_group(*groups)
           groups.flatten!
-          groups.present? ? member_query.merge_children(groups).distinct : none
+          groups.present? ? member_scope.merge_children(groups).distinct : none
         end
 
         def in_all_groups(*groups)
@@ -81,12 +81,11 @@ module Groupify
 
           return none unless groups.present?
 
-          id   = ActiveRecord.quote('group_id')
-          type = ActiveRecord.quote('group_type')
+          id, type = ActiveRecord.quote('group_id'), ActiveRecord.quote('group_type')
           # Count distinct on ID and type combo
           concatenated_columns = ActiveRecord.is_db?('sqlite') ? "#{id} || #{type}" : "CONCAT(#{id}, #{type})"
 
-          member_query.merge_children(groups).
+          member_scope.merge_children(groups).
             group(ActiveRecord.quote('id', self)).
             having("COUNT(DISTINCT #{concatenated_columns}) = ?", groups.count).
             distinct
@@ -103,7 +102,7 @@ module Groupify
         end
 
         def in_other_groups(*groups)
-          member_query.merge_children_without(groups)
+          member_scope.merge_children_without(groups)
         end
 
         def shares_any_group(other)
@@ -117,7 +116,7 @@ module Groupify
         end
 
         def has_group(association_name, options = {})
-          ActiveRecord.create_association(self, association_name,
+          ActiveRecord.create_children_association(self, association_name,
             options.merge(
               through: :group_memberships_as_member,
               source: :group,
@@ -128,8 +127,8 @@ module Groupify
           self
         end
 
-        def member_query
-          @member_query ||= ParentQueryBuilder.new(self, :member)
+        def member_scope
+          @member_scope ||= ParentQueryBuilder.new(self, :member)
         end
       end
     end
