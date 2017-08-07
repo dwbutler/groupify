@@ -47,15 +47,17 @@ module Groupify
         query = query.instance_eval(&group_membership_filter) if block_given?
         query = query.includes(@source)
 
+        distinct(query)
+      end
+
+      def distinct(query)
         id, type = "#{@source}_id", "#{@source}_type"
 
-        query = if ActiveRecord.is_db?('postgres', 'pg')
-                  query.select("DISTINCT ON (#{ActiveRecord.quote(id)}, #{ActiveRecord.quote(type)}) *")
-                else
-                  query.group([id, type])
-                end
-
-        query
+        if ActiveRecord.is_db?('postgres', 'pg')
+          query.select("DISTINCT ON (#{ActiveRecord.quote(id)}, #{ActiveRecord.quote(type)}) *")
+        else
+          query.group([id, type])
+        end
       end
     end
   end

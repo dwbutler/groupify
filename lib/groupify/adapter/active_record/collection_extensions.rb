@@ -26,7 +26,7 @@ module Groupify
       end
 
       def collection
-        raise "Not implemented"
+        self
       end
 
       def parent_proxy
