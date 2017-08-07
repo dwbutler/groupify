@@ -117,23 +117,15 @@ module Groupify
         end
 
         def has_group(association_name, options = {})
-          association_class, association_name = Groupify.infer_class_and_association_name(association_name)
-          model_klass = options[:class_name] || association_class || @group_class_name
+          ActiveRecord.create_association(self, association_name,
+            options.merge(
+              through: :group_memberships_as_member,
+              source: :group,
+              default_base_class: @group_class_name
+            )
+          )
 
-          unless options[:source_type]
-            # only try to look up base class if needed - can cause circular dependency issue
-            source_type = ActiveRecord.base_class_name(model_klass){ @group_class_name }
-          end
-
-          has_many association_name.to_sym, ->{ distinct }, {
-            through: :group_memberships_as_member,
-            source: :group,
-            source_type: source_type,
-            extend: Groupify::ActiveRecord::AssociationExtensions
-          }.merge(options)
-
-        rescue NameError => ex
-          raise "Can't infer base class for #{model_klass.inspect}: #{ex.message}. Try specifying the `:source_type` option such as `has_group(#{association_name.inspect}, source_type: 'BaseClass')` in case there is a circular dependency."
+          self
         end
 
         def member_query

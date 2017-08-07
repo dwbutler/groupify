@@ -55,7 +55,7 @@ module Groupify
         end
 
         def default_member_class
-          @default_member_class ||= (User rescue false)
+          @default_member_class ||= (User rescue nil)
         end
 
         def default_member_class=(klass)
@@ -75,26 +75,17 @@ module Groupify
         end
 
         def has_member(association_name, options = {})
-          association_class, association_name = Groupify.infer_class_and_association_name(association_name)
-          model_klass = options[:class_name] || association_class
-          member_klass = model_klass.to_s.constantize
-
-          (@member_klasses ||= Set.new) << member_klass
-
-          unless options[:source_type]
-            # only try to look up base class if needed - can cause circular dependency issue
-            source_type = ActiveRecord.base_class_name(member_klass) || member_klass || default_member_class
-          end
-
-          has_many association_name, ->{ distinct }, {
+          member_klass = ActiveRecord.create_association(self, association_name,
+            options.merge(
               through: :group_memberships_as_group,
               source: :member,
-              source_type: source_type,
-              extend: Groupify::ActiveRecord::AssociationExtensions
-            }.merge(options)
+              default_base_class: default_member_class
+            )
+          )
 
-        rescue NameError => ex
-          raise "Can't infer base class for #{member_klass.inspect}: #{ex.message}. Try specifying the `:source_type` option such as `has_member(#{association_name.inspect}, source_type: 'BaseClass')` in case there is a circular dependency."
+          (@member_klasses ||= Set.new) << member_klass.to_s.constantize
+
+          self
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
