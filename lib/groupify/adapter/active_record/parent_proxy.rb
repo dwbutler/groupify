@@ -19,7 +19,6 @@ module Groupify
         clear_association_cache
 
         membership_type = options[:as]
-        exception_on_invalidation = options[:exception_on_invalidation]
 
         to_add_directly = []
         to_add_with_membership_type = []
@@ -32,7 +31,7 @@ module Groupify
           unless already_children[child] && already_children[child].find{ |m| m.membership_type.nil? }
             to_add_directly << memberships_association.build(@child_type => child)
           end
-          
+
           # add a second entry for the given membership type
           if membership_type.present?
             membership =  memberships_association.
@@ -53,7 +52,7 @@ module Groupify
         list_to_validate.each do |child|
           next if child.valid?
 
-          if exception_on_invalidation
+          if options[:exception_on_invalidation]
             raise ::ActiveRecord::RecordInvalid.new(child)
           else
             return false

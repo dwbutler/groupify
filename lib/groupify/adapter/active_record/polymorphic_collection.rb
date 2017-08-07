@@ -46,13 +46,13 @@ module Groupify
         query = Groupify.group_membership_klass.where.not(:"#{@source}_id" => nil)
         query = query.instance_eval(&group_membership_filter) if block_given?
         query = query.includes(@source)
-        query = case ::ActiveRecord::Base.connection.adapter_name.downcase
-                when /postgres/, /pg/
-                  id_column   = ActiveRecord.quote(Groupify.group_membership_klass, "#{@source}_id")
-                  type_column = ActiveRecord.quote(Groupify.group_membership_klass, "#{@source}_type")
-                  query.select("DISTINCT ON (#{id_column}, #{type_column}) *")
-                else #when /mysql/, /sqlite/
-                  query.group(["#{@source}_id", "#{@source}_type"])
+
+        id, type = "#{@source}_id", "#{@source}_type"
+
+        query = if ActiveRecord.is_db?('postgres', 'pg')
+                  query.select("DISTINCT ON (#{ActiveRecord.quote(id)}, #{ActiveRecord.quote(type)}) *")
+                else
+                  query.group([id, type])
                 end
 
         query

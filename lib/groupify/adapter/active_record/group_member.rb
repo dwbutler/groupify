@@ -64,16 +64,16 @@ module Groupify
 
       module ClassMethods
         def as(membership_type)
-          memberships_merge{as(membership_type)}
+          member_query.as(membership_type)
         end
 
         def in_group(group)
-          group.present? ? memberships_merge(group.group_memberships_as_group).distinct : none
+          group.present? ? member_query.merge_children(group).distinct : none
         end
 
         def in_any_group(*groups)
           groups.flatten!
-          groups.present? ? memberships_merge{for_groups(groups)}.distinct : none
+          groups.present? ? member_query.merge_children(groups).distinct : none
         end
 
         def in_all_groups(*groups)
@@ -81,18 +81,13 @@ module Groupify
 
           return none unless groups.present?
 
-          group_id_column = ActiveRecord.quote(Groupify.group_membership_klass, 'group_id')
-          group_type_column = ActiveRecord.quote(Groupify.group_membership_klass, 'group_type')
+          id   = ActiveRecord.quote('group_id')
+          type = ActiveRecord.quote('group_type')
           # Count distinct on ID and type combo
-          concatenated_columns =  case connection.adapter_name.downcase
-                                  when /sqlite/
-                                    "#{group_id_column} || #{group_type_column}"
-                                  else #when /mysql/, /postgres/, /pg/
-                                    "CONCAT(#{group_id_column}, #{group_type_column})"
-                                  end
+          concatenated_columns = ActiveRecord.is_db?('sqlite') ? "#{id} || #{type}" : "CONCAT(#{id}, #{type})"
 
-          memberships_merge{for_groups(groups)}.
-            group(ActiveRecord.quote(self, 'id')).
+          member_query.merge_children(groups).
+            group(ActiveRecord.quote('id', self)).
             having("COUNT(DISTINCT #{concatenated_columns}) = ?", groups.count).
             distinct
         end
@@ -103,12 +98,12 @@ module Groupify
           return none unless groups.present?
 
           in_all_groups(*groups).
-            where.not(id: in_other_groups(*groups).select(ActiveRecord.quote(self, 'id'))).
+            where.not(id: in_other_groups(*groups).select(ActiveRecord.quote('id', self))).
             distinct
         end
 
         def in_other_groups(*groups)
-          memberships_merge{not_for_groups(groups)}
+          member_query.merge_children_without(groups)
         end
 
         def shares_any_group(other)
@@ -141,8 +136,8 @@ module Groupify
           raise "Can't infer base class for #{model_klass.inspect}: #{ex.message}. Try specifying the `:source_type` option such as `has_group(#{association_name.inspect}, source_type: 'BaseClass')` in case there is a circular dependency."
         end
 
-        def memberships_merge(merge_criteria = nil, &group_membership_filter)
-          ActiveRecord.memberships_merge(self, :member, criteria: merge_criteria, filter: group_membership_filter)
+        def member_query
+          @member_query ||= ParentQueryBuilder.new(self, :member)
         end
       end
     end

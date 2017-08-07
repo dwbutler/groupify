@@ -57,29 +57,29 @@ module Groupify
 
       module ClassMethods
         def as(membership_type)
-          memberships_merge{as(membership_type)}
+          named_member_query.as(membership_type)
         end
 
         def in_named_group(named_group)
           return none unless named_group.present?
 
-          memberships_merge{where(group_name: named_group)}.distinct
+          named_member_query.merge_memberships{where(group_name: named_group)}.distinct
         end
 
         def in_any_named_group(*named_groups)
           named_groups.flatten!
           return none unless named_groups.present?
 
-          memberships_merge{where(group_name: named_groups.flatten)}.distinct
+          named_member_query.merge_memberships{where(group_name: named_groups.flatten)}.distinct
         end
 
         def in_all_named_groups(*named_groups)
           named_groups.flatten!
           return none unless named_groups.present?
 
-          memberships_merge{where(group_name: named_groups)}.
-            group(ActiveRecord.quote(self, 'id')).
-            having("COUNT(DISTINCT #{ActiveRecord.quote(Groupify.group_membership_klass, 'group_name')}) = ?", named_groups.count).
+          named_member_query.merge_memberships{where(group_name: named_groups)}.
+            group(ActiveRecord.quote('id', self)).
+            having("COUNT(DISTINCT #{ActiveRecord.quote('group_name')}) = ?", named_groups.count).
             distinct
         end
 
@@ -88,20 +88,20 @@ module Groupify
           return none unless named_groups.present?
 
           in_all_named_groups(*named_groups).
-            where.not(id: in_other_named_groups(*named_groups).select(ActiveRecord.quote(self, 'id'))).
+            where.not(id: in_other_named_groups(*named_groups).select(ActiveRecord.quote('id', self))).
             distinct
         end
 
         def in_other_named_groups(*named_groups)
-          memberships_merge{where.not(group_name: named_groups)}
+          named_member_query.merge_memberships{where.not(group_name: named_groups)}
         end
 
         def shares_any_named_group(other)
           in_any_named_group(other.named_groups.to_a)
         end
 
-        def memberships_merge(merge_criteria = nil, &group_membership_filter)
-          ActiveRecord.memberships_merge(self, :member, criteria: merge_criteria, filter: group_membership_filter)
+        def named_member_query
+          @named_member_query ||= ParentQueryBuilder.new(self, :member)
         end
       end
     end
