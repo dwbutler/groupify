@@ -113,6 +113,9 @@ module Groupify
               group_id: destination_group.id,
               group_type: ActiveRecord.base_class_name(destination_group)
             )
+
+            destination_group.__send__(:clear_association_cache)
+            source_group.__send__(:clear_association_cache)
             source_group.destroy
           end
         end
