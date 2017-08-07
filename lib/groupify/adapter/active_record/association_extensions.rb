@@ -9,12 +9,8 @@ module Groupify
         self
       end
 
-      def collection_parent
-        proxy_association.owner
-      end
-
-      def collection_parent_type
-        ActiveRecord.infer_parent_and_types(proxy_association)[1]
+      def parent_proxy
+        @parent_proxy ||= ParentProxy.new(proxy_association.owner, parent_type)
       end
 
     protected
@@ -28,6 +24,10 @@ module Groupify
         end
 
         super
+      end
+
+      def parent_type
+        @parent_type ||= proxy_association.through_reflection.name == :group_memberships_as_group ? :group : :member
       end
     end
   end

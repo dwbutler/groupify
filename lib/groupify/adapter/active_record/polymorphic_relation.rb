@@ -3,12 +3,11 @@ module Groupify
     class PolymorphicRelation < PolymorphicCollection
       include CollectionExtensions
 
-      def initialize(parent, parent_type, &group_membership_filter)
-        @collection_parent, @collection_parent_type = parent, parent_type
-        @child_type = parent_type == :group ? :member : :group
+      def initialize(parent_proxy, &group_membership_filter)
+        @parent_proxy = parent_proxy
 
-        super(@child_type) do
-          query = merge(parent.__send__(:"group_memberships_as_#{parent_type}"))
+        super(parent_proxy.child_type) do
+          query = merge(parent_proxy.memberships_association)
           query = query.instance_eval(&group_membership_filter) if block_given?
           query
         end
@@ -25,16 +24,16 @@ module Groupify
       # association.
       def_delegators :default_association, :build, :create, :create!
 
-    protected
-
-      attr_reader :collection_parent, :collection_parent_type
+      attr_reader :parent_proxy
 
       def collection
         @query
       end
 
+    protected
+
       def default_association
-        @collection_parent.__send__(Groupify.__send__(:"#{@child_type}s_association_name"))
+        @parent_proxy.children_association
       end
     end
   end

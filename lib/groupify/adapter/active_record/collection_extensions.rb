@@ -25,25 +25,23 @@ module Groupify
         add_children(children.flatten, opts)
       end
 
+      def collection
+        raise "Not implemented"
+      end
+
+      def parent_proxy
+        raise "Not implemented"
+      end
+
     protected
 
       def add_children(children, options = {})
-        ActiveRecord.add_children_to_parent(
-          collection_parent,
-          children,
-          options.merge(parent_type: collection_parent_type)
-        )
+        parent_proxy.add_children(children, options)
       end
 
       def remove_children(children, destruction_type, membership_type = nil)
-        ActiveRecord.find_memberships_for(
-          collection_parent,
-          children,
-          parent_type: collection_parent_type,
-          as: membership_type
-        ).__send__(:"#{destruction_type}_all")
-
-        collection_parent.__send__(:clear_association_cache)
+        parent_proxy.find_memberships_for(children, as: membership_type).__send__(:"#{destruction_type}_all")
+        parent_proxy.clear_association_cache
 
         children.each{|record| record.__send__(:clear_association_cache)}
 

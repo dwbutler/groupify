@@ -24,8 +24,12 @@ module Groupify
           class_name: Groupify.group_membership_class_name
       end
 
+      def group_proxy
+        @group_proxy ||= ParentProxy.new(self, :group)
+      end
+
       def polymorphic_members(&group_membership_filter)
-        PolymorphicRelation.new(self, :group, &group_membership_filter)
+        PolymorphicRelation.new(group_proxy, &group_membership_filter)
       end
 
       def member_classes
@@ -33,9 +37,9 @@ module Groupify
       end
 
       def add(*members)
-        opts = members.extract_options!.merge(parent_type: :group)
+        opts = members.extract_options!
 
-        ActiveRecord.add_children_to_parent(self, members.flatten, opts)
+        group_proxy.add_children(members.flatten, opts)
 
         self
       end
@@ -116,7 +120,7 @@ module Groupify
       protected
 
         def memberships_merge(merge_criteria = nil, &group_membership_filter)
-          ActiveRecord.memberships_merge(self, parent_type: :group, criteria: merge_criteria, filter: group_membership_filter)
+          ActiveRecord.memberships_merge(self, :group, criteria: merge_criteria, filter: group_membership_filter)
         end
       end
     end
