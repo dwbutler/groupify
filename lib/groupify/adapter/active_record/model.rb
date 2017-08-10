@@ -21,17 +21,25 @@ module Groupify
         def acts_as_group(opts = {})
           include Groupify::ActiveRecord::Group
 
-          if (member_klass = opts.delete :default_members)
-            self.default_member_class = member_klass.to_s.classify.constantize
+          # Get defaults from parent class for STI
+          self.default_member_class_name = Groupify.superclass_fetch(self, :default_member_class_name, Groupify.member_class_name)
+          self.default_members_association_name = Groupify.superclass_fetch(self, :default_members_association_name, Groupify.members_association_name)
 
-            has_member(Groupify.members_association_name.to_sym,
-              source_type: ActiveRecord.base_class_name(default_member_class),
-              class_name: default_member_class.to_s
-            )
+          if (member_association_names = opts.delete :members)
+            has_members(member_association_names)
           end
 
-          if (member_klasses = opts.delete :members)
-            has_members(member_klasses)
+          if (default_members = opts.delete :default_members)
+            self.default_member_class_name = default_members.to_s.classify
+            # Only use as the association name if none specified (backwards-compatibility)
+            self.default_members_association_name ||= default_members
+          end
+
+          if default_members_association_name
+            has_member(default_members_association_name,
+              source_type: ActiveRecord.base_class_name(default_member_class_name),
+              class_name: default_member_class_name
+            )
           end
         end
 
