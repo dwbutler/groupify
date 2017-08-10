@@ -26,12 +26,12 @@ module Groupify
           class_name: @group_class_name
       end
 
-      def member_proxy
-        @member_proxy ||= ParentProxy.new(self, :member)
+      def as_member
+        @as_member ||= ParentProxy.new(self, :member)
       end
 
       def polymorphic_groups(&group_membership_filter)
-        PolymorphicRelation.new(member_proxy, &group_membership_filter)
+        PolymorphicRelation.new(as_member, &group_membership_filter)
       end
 
       def in_group?(group, opts = {})
@@ -64,16 +64,16 @@ module Groupify
 
       module ClassMethods
         def as(membership_type)
-          member_scope.as(membership_type)
+          member_finder.as(membership_type)
         end
 
         def in_group(group)
-          group.present? ? member_scope.merge_children(group).distinct : none
+          group.present? ? member_finder.merge_children(group).distinct : none
         end
 
         def in_any_group(*groups)
           groups.flatten!
-          groups.present? ? member_scope.merge_children(groups).distinct : none
+          groups.present? ? member_finder.merge_children(groups).distinct : none
         end
 
         def in_all_groups(*groups)
@@ -85,7 +85,7 @@ module Groupify
           # Count distinct on ID and type combo
           concatenated_columns = ActiveRecord.is_db?('sqlite') ? "#{id} || #{type}" : "CONCAT(#{id}, #{type})"
 
-          member_scope.merge_children(groups).
+          member_finder.merge_children(groups).
             group(ActiveRecord.quote('id', self)).
             having("COUNT(DISTINCT #{concatenated_columns}) = ?", groups.count).
             distinct
@@ -102,7 +102,7 @@ module Groupify
         end
 
         def in_other_groups(*groups)
-          member_scope.merge_children_without(groups)
+          member_finder.merge_children_without(groups)
         end
 
         def shares_any_group(other)
@@ -127,8 +127,8 @@ module Groupify
           self
         end
 
-        def member_scope
-          @member_scope ||= ParentQueryBuilder.new(self, :member)
+        def member_finder
+          @member_finder ||= ParentQueryBuilder.new(self, :member)
         end
       end
     end

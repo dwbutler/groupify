@@ -57,27 +57,27 @@ module Groupify
 
       module ClassMethods
         def as(membership_type)
-          named_member_scope.as(membership_type)
+          named_member_finder.as(membership_type)
         end
 
         def in_named_group(named_group)
           return none unless named_group.present?
 
-          named_member_scope.merge_memberships{where(group_name: named_group)}.distinct
+          named_member_finder.merge_memberships{where(group_name: named_group)}.distinct
         end
 
         def in_any_named_group(*named_groups)
           named_groups.flatten!
           return none unless named_groups.present?
 
-          named_member_scope.merge_memberships{where(group_name: named_groups.flatten)}.distinct
+          named_member_finder.merge_memberships{where(group_name: named_groups.flatten)}.distinct
         end
 
         def in_all_named_groups(*named_groups)
           named_groups.flatten!
           return none unless named_groups.present?
 
-          named_member_scope.merge_memberships{where(group_name: named_groups)}.
+          named_member_finder.merge_memberships{where(group_name: named_groups)}.
             group(ActiveRecord.quote('id', self)).
             having("COUNT(DISTINCT #{ActiveRecord.quote('group_name')}) = ?", named_groups.count).
             distinct
@@ -93,15 +93,15 @@ module Groupify
         end
 
         def in_other_named_groups(*named_groups)
-          named_member_scope.merge_memberships{where.not(group_name: named_groups)}
+          named_member_finder.merge_memberships{where.not(group_name: named_groups)}
         end
 
         def shares_any_named_group(other)
           in_any_named_group(other.named_groups.to_a)
         end
 
-        def named_member_scope
-          @named_member_scope ||= ParentQueryBuilder.new(self, :member)
+        def named_member_finder
+          @named_member_finder ||= ParentQueryBuilder.new(self, :member)
         end
       end
     end
