@@ -55,7 +55,7 @@ module Groupify
         end
 
         def default_member_class
-          @default_member_class ||= (User rescue nil)
+          @default_member_class ||= (Groupify.member_class_name.constantize rescue nil)
         end
 
         def default_member_class=(klass)

@@ -3,6 +3,7 @@ require 'active_support'
 module Groupify
   mattr_accessor :group_membership_class_name,
                  :group_class_name,
+                 :member_class_name,
                  :members_association_name,
                  :groups_association_name,
                  :ignore_base_class_inference_errors,
@@ -10,6 +11,7 @@ module Groupify
 
   self.group_class_name = 'Group'
   self.group_membership_class_name = 'GroupMembership'
+  self.member_class_name = 'User'
   self.members_association_name = :members
   self.groups_association_name = :groups
   self.ignore_base_class_inference_errors = true
