@@ -35,13 +35,13 @@ module Groupify
           # add a second entry for the given membership type
           if membership_type.present?
             membership =  memberships_association.
-                            merge(child.__send__(:"group_memberships_as_#{@child_type}")).
+                            merge(memberships_association_for(child, @child_type)).
                             as(membership_type).
                             first_or_initialize
             to_add_with_membership_type << membership unless membership.persisted?
           end
 
-          child.__send__(:clear_association_cache)
+          clear_association_cache_for(child)
         end
 
         clear_association_cache
@@ -66,8 +66,8 @@ module Groupify
         to_add_with_membership_type.
           group_by{ |membership| membership.__send__(@parent_type) }.
           each do |membership_parent, memberships|
-            membership_parent.__send__(:"group_memberships_as_#{@parent_type}") << memberships
-            membership_parent.__send__(:clear_association_cache)
+            memberships_association_for(membership_parent, @parent_type) << memberships
+            clear_association_cache_for(membership_parent)
           end
 
         @parent
@@ -78,11 +78,21 @@ module Groupify
       end
 
       def memberships_association
-        @parent.__send__(:"group_memberships_as_#{@parent_type}")
+        memberships_association_for(@parent, @parent_type)
       end
 
       def clear_association_cache
-        @parent.__send__(:clear_association_cache)
+        clear_association_cache_for(@parent)
+      end
+
+    private
+
+      def memberships_association_for(record, source)
+        record.__send__(:"group_memberships_as_#{source}")
+      end
+
+      def clear_association_cache_for(record)
+        record.__send__(:clear_association_cache)
       end
     end
   end
