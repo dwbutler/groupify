@@ -38,7 +38,7 @@ module Groupify
         return false unless group.present?
 
         group_memberships_as_member.
-          merge(group.group_memberships_as_group).
+          for_groups(group).
           as(opts[:as]).
           exists?
       end
