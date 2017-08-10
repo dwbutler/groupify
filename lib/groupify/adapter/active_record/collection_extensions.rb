@@ -40,7 +40,10 @@ module Groupify
       end
 
       def remove_children(children, destruction_type, membership_type = nil)
-        parent_proxy.find_memberships_for(children, as: membership_type).__send__(:"#{destruction_type}_all")
+        parent_proxy.
+          find_memberships_for(children, as: membership_type).
+          __send__(:"#{destruction_type}_all")
+        
         parent_proxy.clear_association_cache
 
         children.each{|record| record.__send__(:clear_association_cache)}

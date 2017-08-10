@@ -71,11 +71,11 @@ module Groupify
           when Array
             where(build_polymorphic_criteria_for(source, records))
           when ::ActiveRecord::Relation
-            merge(records)
+            all.merge(records)
           when ::ActiveRecord::Base
-            merge(records.__send__(:"group_memberships_as_#{source}"))
+            all.merge(records.__send__(:"group_memberships_as_#{source}"))
           else
-            self
+            all
           end
         end
 
