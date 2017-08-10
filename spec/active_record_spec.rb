@@ -129,10 +129,47 @@ describe Groupify::ActiveRecord do
         group.add user, as: 'manager'
         organization.add user
         organization.add user, as: 'owner'
-        
+
         expect(user.polymorphic_groups.count).to eq(2)
         expect(user.group_memberships_as_member.count).to eq(4)
       end
+
+      context "default group association disabled" do
+        let(:user) { TestUser.create! }
+        let(:group) { TestGroup.create! }
+
+        before do
+          @previous_groups_association_name = Groupify.groups_association_name
+          @previous_members_association_name = Groupify.members_association_name
+          Groupify.groups_association_name = false
+          Groupify.members_association_name = false
+
+          class TestUser < ActiveRecord::Base
+            self.table_name = 'users'
+            groupify :group_member
+          end
+
+          class TestGroup < ActiveRecord::Base
+            self.table_name = 'groups'
+            groupify :group
+          end
+        end
+
+        after do
+          Groupify.groups_association_name = @previous_groups_association_name
+        end
+
+        it "there is no groups or members association" do
+          expect(Groupify.groups_association_name).to eq(false)
+          expect(user.class.default_groups_association_name).to eq(false)
+          expect(user.as_member.children_association).to eq(nil)
+
+          expect(Groupify.members_association_name).to eq(false)
+          expect(group.class.default_members_association_name).to eq(false)
+          expect(group.as_group.children_association).to eq(nil)
+        end
+      end
+
     end
   end
 end
