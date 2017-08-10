@@ -77,19 +77,20 @@ module Groupify
         end
 
         # Define which classes are members of this group
-        def has_members(*association_names)
+        def has_members(*association_names, &extension)
           association_names.flatten.each do |association_name|
-            has_member(association_name)
+            has_member(association_name, &extension)
           end
         end
 
-        def has_member(association_name, options = {})
+        def has_member(association_name, options = {}, &extension)
           member_klass = ActiveRecord.create_children_association(self, association_name,
             options.merge(
               through: :group_memberships_as_group,
               source: :member,
               default_base_class: default_member_class_name
-            )
+            ),
+            &extension
           )
 
           (@member_klasses ||= Set.new) << member_klass.to_s.constantize

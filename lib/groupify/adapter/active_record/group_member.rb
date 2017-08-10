@@ -108,9 +108,9 @@ module Groupify
           in_any_group(other.polymorphic_groups)
         end
 
-        def has_groups(*association_names)
+        def has_groups(*association_names, &extension)
           association_names.flatten.each do |association_name|
-            has_group(association_name)
+            has_group(association_name, &extension)
           end
         end
 
@@ -130,13 +130,14 @@ module Groupify
           @default_groups_association_name = name && name.to_sym
         end
 
-        def has_group(association_name, options = {})
+        def has_group(association_name, options = {}, &extension)
           ActiveRecord.create_children_association(self, association_name,
             options.merge(
               through: :group_memberships_as_member,
               source: :group,
               default_base_class: default_group_class_name
-            )
+            ),
+            &extension
           )
 
           self
