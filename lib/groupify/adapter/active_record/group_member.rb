@@ -15,15 +15,14 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
+        @default_group_class_name = nil
+        @default_groups_association_name = nil
+
         has_many :group_memberships_as_member,
           as: :member,
           autosave: true,
           dependent: :destroy,
           class_name: Groupify.group_membership_class_name
-
-        has_group Groupify.groups_association_name.to_sym,
-          source_type: ActiveRecord.base_class_name(@group_class_name),
-          class_name: @group_class_name
       end
 
       def as_member
@@ -115,12 +114,28 @@ module Groupify
           end
         end
 
+        def default_group_class_name
+          @default_group_class_name ||= Groupify.group_class_name
+        end
+
+        def default_group_class_name=(klass)
+          @default_group_class_name = klass
+        end
+
+        def default_groups_association_name
+          @default_groups_association_name ||= Groupify.groups_association_name
+        end
+
+        def default_groups_association_name=(name)
+          @default_groups_association_name = name && name.to_sym
+        end
+
         def has_group(association_name, options = {})
           ActiveRecord.create_children_association(self, association_name,
             options.merge(
               through: :group_memberships_as_member,
               source: :group,
-              default_base_class: @group_class_name
+              default_base_class: default_group_class_name
             )
           )
 

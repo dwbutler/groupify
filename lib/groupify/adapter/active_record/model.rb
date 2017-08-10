@@ -44,8 +44,31 @@ module Groupify
         end
 
         def acts_as_group_member(opts = {})
-          @group_class_name = opts[:group_class_name] || Groupify.group_class_name
           include Groupify::ActiveRecord::GroupMember
+
+          # Get defaults from parent class for STI
+          self.default_group_class_name = Groupify.superclass_fetch(self, :default_group_class_name, Groupify.group_class_name)
+          self.default_groups_association_name = Groupify.superclass_fetch(self, :default_groups_association_name, Groupify.groups_association_name)
+
+          if (group_association_names = opts.delete :groups)
+            has_groups(group_association_names)
+          end
+
+          if (default_groups = opts.delete :default_groups)
+            self.default_group_class_name = default_groups.to_s.classify
+            self.default_groups_association_name ||= default_groups
+          end
+
+          # Deprecated: for backwards-compatibility
+          if (group_class_name = opts.delete :group_class_name)
+            self.default_group_class_name = group_class_name
+          end
+
+          if default_groups_association_name
+            has_group default_groups_association_name,
+              source_type: ActiveRecord.base_class_name(default_group_class_name),
+              class_name: default_group_class_name
+          end
         end
 
         def acts_as_named_group_member(opts = {})
