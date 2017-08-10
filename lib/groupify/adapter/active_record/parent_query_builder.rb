@@ -2,7 +2,7 @@ module Groupify
   module ActiveRecord
     class ParentQueryBuilder < SimpleDelegator
       def initialize(scope, parent_type)
-        @scope = scope.extending(Groupify::ActiveRecord::AssociationExtensions)
+        @scope = scope.all.extending(Groupify::ActiveRecord::AssociationExtensions)
         @parent_type = parent_type
         @child_type = parent_type == :group ? :member : :group
 
