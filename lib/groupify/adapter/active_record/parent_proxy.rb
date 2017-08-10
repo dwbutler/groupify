@@ -2,6 +2,79 @@ module Groupify
   module ActiveRecord
     class ParentProxy
 
+      def self.configure(klass, parent_type, opts = {})
+        child_type = parent_type == :group ? :member : :group
+
+        if parent_type == :member
+          member_backwards_compatibility = %[
+            # Deprecated: for backwards-compatibility
+            if (group_class_name = opts.delete :group_class_name)
+              self.default_group_class_name = group_class_name
+            end
+          ]
+        end
+
+        klass.class_eval %[
+          opts = #{opts.inspect}
+          # Get defaults from parent class for STI
+          self.default_#{child_type}_class_name = Groupify.superclass_fetch(self, :default_#{child_type}_class_name, Groupify.#{child_type}_class_name)
+          self.default_#{child_type}s_association_name = Groupify.superclass_fetch(self, :default_#{child_type}s_association_name, Groupify.#{child_type}s_association_name)
+
+          if (#{child_type}_association_names = opts.delete :#{child_type}s)
+            has_#{child_type}s(#{child_type}_association_names)
+          end
+
+          #{member_backwards_compatibility}
+
+          if (default_#{child_type}s = opts.delete :default_#{child_type}s)
+            self.default_#{child_type}_class_name = default_#{child_type}s.to_s.classify
+            # Only use as the association name if none specified (backwards-compatibility)
+            self.default_#{child_type}s_association_name ||= default_#{child_type}s
+          end
+
+          if default_#{child_type}s_association_name
+            has_#{child_type}(default_#{child_type}s_association_name,
+              source_type: ActiveRecord.base_class_name(default_#{child_type}_class_name),
+              class_name: default_#{child_type}_class_name
+            )
+          end
+        ]
+
+        # children_name = :"#{child_type}s"
+        # default_children_type = :"default_#{children_name}"
+        # default_association_method = :"#{default_children_type}_association_name"
+        # has_child_method = :"has_#{children_name}"
+        #
+        # # Get defaults from parent class for STI
+        # [:class_name, :association_name].each do |setting|
+        #   default_setting    = Groupify.__send__(:"#{child_type}_#{setting}")
+        #   superclass_setting = Groupify.superclass_fetch(klass, :"#{default_children_type}_#{setting}", default_setting)
+        #
+        #   klass.__send__(:"#{default_children_type}_#{setting}=", superclass_setting)
+        # end
+        #
+        # if (association_names = opts.delete children_name)
+        #   klass.__send__(has_child_method, association_names)
+        # end
+        #
+        # if (association_name = opts.delete default_children_type)
+        #   klass.__send__(:"default_#{child_type}_class_name=", association_name.to_s.classify)
+        #   # Only use as the association name if none specified (backwards-compatibility)
+        #   unless klass.__send__(default_association_method)
+        #     klass.__send__(:"#{default_association_method}=", association_name)
+        #   end
+        # end
+        #
+        # if (default_association_name = klass.__send__(default_association_method))
+        #   default_class_name = klass.default_member_class_name
+        #
+        #   klass.__send__(has_child_method, default_association_name,
+        #     source_type: ActiveRecord.base_class_name(default_class_name),
+        #     class_name: default_class_name
+        #   )
+        # end
+      end
+
       attr_reader :parent_type, :child_type
 
       def initialize(parent, parent_type)
