@@ -9,7 +9,7 @@ module Groupify
         @child_type = parent_type == :group ? :member : :group
       end
 
-      def find_memberships_for(children, options = {})
+      def find_memberships_for_children(children, options = {})
         memberships_association.__send__(:"for_#{@child_type}s", children).as(options[:as])
       end
 
@@ -23,7 +23,7 @@ module Groupify
         to_add_directly = []
         to_add_with_membership_type = []
 
-        already_children = find_memberships_for(children).includes(@child_type).group_by{ |membership| membership.__send__(@child_type) }
+        already_children = find_memberships_for_children(children).includes(@child_type).group_by{ |membership| membership.__send__(@child_type) }
 
         # first prepare changes
         children.each do |child|
@@ -74,7 +74,7 @@ module Groupify
       end
 
       def children_association
-        @parent_proxy.__send__(Groupify.__send__(:"#{@child_type}s_association_name"))
+        @parent.__send__(Groupify.__send__(:"#{@child_type}s_association_name"))
       end
 
       def memberships_association
