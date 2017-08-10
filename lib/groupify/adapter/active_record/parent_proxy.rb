@@ -147,7 +147,9 @@ module Groupify
       end
 
       def children_association
-        @parent.__send__(Groupify.__send__(:"#{@child_type}s_association_name"))
+        association_name = @parent.class.__send__(:"default_#{@child_type}s_association_name")
+
+        @parent.__send__(association_name) if association_name
       end
 
       def memberships_association
