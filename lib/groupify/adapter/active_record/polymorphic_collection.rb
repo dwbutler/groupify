@@ -10,7 +10,7 @@ module Groupify
       end
 
       def each(&block)
-        @collection.map do |group_membership|
+        distinct_compat.map do |group_membership|
           group_membership.__send__(@source).tap(&block)
         end
       end
@@ -18,13 +18,7 @@ module Groupify
       def_delegators :@collection, :reload
 
       def count
-        return @collection.size if @collection.loaded?
-
-        queried_count = @collection.count
-        # The `count` is a Hash when GROUP BY is used
-        # PostgreSQL uses DISTINCT ON, which may be different
-        queried_count = queried_count.keys.size if queried_count.is_a?(Hash)
-        queried_count
+        @collection.loaded? ? @collection.size : count_compat
       end
 
       alias_method :size, :count
@@ -46,18 +40,33 @@ module Groupify
         collection = Groupify.group_membership_klass.where.not(:"#{@source}_id" => nil)
         collection = collection.instance_eval(&group_membership_filter) if block_given?
         collection = collection.includes(@source)
-
-        distinct(collection)
       end
 
-      def distinct(collection)
-        id, type = "#{@source}_id", "#{@source}_type"
+      def distinct_compat
+        id, type = ActiveRecord.quote("#{@source}_id"), ActiveRecord.quote("#{@source}_type")
 
-        if ActiveRecord.is_db?('postgres', 'pg')
-          collection.select("DISTINCT ON (#{ActiveRecord.quote(id)}, #{ActiveRecord.quote(type)}) *")
+        # Workaround to "group by" multiple columns in PostgreSQL
+        if ActiveRecord.is_db?('postgres')
+          @collection.select("DISTINCT ON (#{id}, #{type}) *")
         else
-          collection.group([id, type])
+          @collection.group([id, type])
         end
+      end
+
+      def count_compat
+        # Workaround to "count distinct" on multiple columns in PostgreSQL
+        # (uses different syntax when aggregating distinct)
+        if ActiveRecord.is_db?('postgres')
+          id, type = ActiveRecord.quote("#{@source}_id"), ActiveRecord.quote("#{@source}_type")
+
+          queried_count = @collection.select("DISTINCT (#{id}, #{type})").count
+        else
+          queried_count = distinct_compat.count
+          # The `count` is a Hash when GROUP BY is used
+          queried_count = queried_count.keys.size if queried_count.is_a?(Hash)
+        end
+
+        queried_count
       end
     end
   end
