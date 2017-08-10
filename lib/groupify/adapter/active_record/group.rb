@@ -64,7 +64,7 @@ module Groupify
 
         # Returns the member classes defined for this class, as well as for the super classes
         def member_classes
-          (@member_klasses ||= Set.new).merge(superclass.method_defined?(:member_classes) ? superclass.member_classes : [])
+          (@member_klasses ||= Set.new).merge(Groupify.superclass_fetch(self, :member_classes, []))
         end
 
         # Define which classes are members of this group
