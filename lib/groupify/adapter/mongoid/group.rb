@@ -15,7 +15,8 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
-        @default_member_class = nil
+        @default_member_class_name = nil
+        @default_members_association_name = nil
         @member_klasses ||= Set.new
       end
 
@@ -61,7 +62,23 @@ module Groupify
 
         # Returns the member classes defined for this class, as well as for the super classes
         def member_classes
-          (@member_klasses ||= Set.new).merge(superclass.method_defined?(:member_classes) ? superclass.member_classes : [])
+          (@member_klasses ||= Set.new).merge(Groupify.superclass_fetch(self, :member_classes, []))
+        end
+
+        def default_member_class_name
+          @default_member_class_name ||= Groupify.member_class_name
+        end
+
+        def default_member_class_name=(klass)
+          @default_member_class_name = klass
+        end
+
+        def default_members_association_name
+          @default_members_association_name ||= Groupify.members_association_name
+        end
+
+        def default_members_association_name=(name)
+          @default_members_association_name = name && name.to_sym
         end
 
         # Define which classes are members of this group
@@ -73,7 +90,7 @@ module Groupify
 
         def has_member(association_name, options = {})
           association_class, association_name = Groupify.infer_class_and_association_name(association_name)
-          model_klass = options[:class_name] || association_class
+          model_klass = options[:class_name] || association_class || default_member_class_name
           member_klass = model_klass.to_s.constantize
 
           (@member_klasses ||= Set.new) << member_klass

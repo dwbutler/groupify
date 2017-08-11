@@ -16,7 +16,8 @@ module Groupify
       include MemberScopedAs
 
       included do
-        has_group Groupify.groups_association_name.to_sym
+        @default_group_class_name = nil
+        @default_groups_association_name = nil
 
         class GroupMembership
           include ::Mongoid::Document
@@ -31,8 +32,6 @@ module Groupify
 
           field :as, as: :membership_type, type: String
         end
-
-        GroupMembership.send :has_and_belongs_to_many, :groups, class_name: @group_class_name, inverse_of: nil
 
         embeds_many :group_memberships, class_name: GroupMembership.to_s, as: :member do
           def as(membership_type)
@@ -85,6 +84,22 @@ module Groupify
           in_any_group(other.groups.to_a)
         end
 
+        def default_group_class_name
+          @default_group_class_name ||= Groupify.group_class_name
+        end
+
+        def default_group_class_name=(klass)
+          @default_group_class_name = klass
+        end
+
+        def default_groups_association_name
+          @default_groups_association_name ||= Groupify.groups_association_name
+        end
+
+        def default_groups_association_name=(name)
+          @default_groups_association_name = name && name.to_sym
+        end
+
         def has_groups(*association_names)
           association_names.flatten.each do |association_name|
             has_group(association_name)
@@ -92,7 +107,9 @@ module Groupify
         end
 
         def has_group(association_name, options = {})
-          options = {autosave: true, dependent: :nullify, inverse_of: nil, class_name: @group_class_name}.merge(options)
+          association_class, association_name = Groupify.infer_class_and_association_name(association_name)
+          options = {autosave: true, dependent: :nullify, inverse_of: nil}.merge(options)
+          model_klass = options[:class_name] || association_class || default_base_class
 
           has_and_belongs_to_many association_name, options do
             def as(membership_type)
@@ -125,6 +142,13 @@ module Groupify
               end
             end
           end
+
+          GroupMembership.send(:has_and_belongs_to_many,
+            association_name, {
+              class_name: model_klass,
+              inverse_of: nil}.
+            merge(options.slice(:class_name))
+          )
         end
       end
     end
