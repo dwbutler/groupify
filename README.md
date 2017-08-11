@@ -92,24 +92,17 @@ Add the following configuration in `config/initializers/groupify.rb` to change t
 Groupify.configure do |config|
   config.group_class_name = 'MyCustomGroup'
   config.member_class_name = 'MyCustomMember'
-  # Set to `false` if you don't want default associations
+
+  # Set to `false` if you don't want default associations automatically created
   config.default_groups_association_name = :default_groups
   config.default_members_association_name = :default_members
+
   # ActiveRecord only
   config.group_membership_class_name = 'MyCustomGroupMembership'
 end
 ```
 
-The group name can also be set on a model-by-model basis for each group member by passing
-the `group_class_name` option:
-
-```ruby
-class Member < ActiveRecord::Base
-  groupify :group_member, group_class_name: 'MyOtherCustomGroup'
-end
-```
-
-### Member Associations on Group
+### Groups: Configuring Group Members
 
 Your group class can be configured to create associations for each expected member type.
 For example, let's say that your group class will have users and assignments as members.
@@ -147,6 +140,7 @@ end
 class InternationalOrganization < Organization
   has_member :offices, class_name: 'CustomOfficeClass'
   has_member :equipment, class_name: 'CustomEquipmentClass'
+
   # mitigate issues with inheritance and circular dependencies with groups and members
   has_member :specific_equipment, class_name: 'SpecificEquipment', source_type: 'CustomEquipmentClass'
 end
@@ -181,7 +175,7 @@ user = CustomUserClass.create!
 org.add user, as: 'admin'
 ```
 
-### Group Associations on Member
+### Group Members: Configuring Groups
 
 Your member class can be configured to create associations for each expected group type.
 For example, let's say that your member class will have multiple types of organizations as groups.
@@ -201,13 +195,29 @@ class InternationalOrganization < Organization
 end
 
 class Member < ActiveRecord::Base
-  groupify :group_member, groups: [:organizations, :international_organizations]
+  groupify :group_member, groups: [:groups, :organizations, :international_organizations], default_groups: :groups
 end
 ```
 
 In addition to your configuration, Groupify will create a default `groups` association.
 The default association name can be customized with the `Groupify.default_groups_association_name`
 setting.
+
+The `default_groups` option specified in the example above sets the model type when accessing the
+default groups association (e.g. `groups`). Based on the example, `member.groups` would return the
+groups the member has a membership to. Note: if `Groupify.default_groups_association_name` is set to `false`
+then the `default_groups` name will be used as the default members association name for this class
+(e.g. `member.groups` in this case).
+
+Note: the `group_class_name` option can be specified as the default group class for backwards-compatibility. However,
+unlike the `default_groups` option, a default association will not be created if `Groupify.default_groups_association_name`
+is set to `false`.
+
+```ruby
+class Member < ActiveRecord::Base
+  groupify :group_member, group_class_name: 'MyOtherCustomGroup'
+end
+```
 
 If you are using single table inheritance (STI), child classes inherit the group associations
 of the parent. If your child class needs to add more members, use the `has_groups` method. You can specify
@@ -236,7 +246,7 @@ class Member < ActiveRecord::Base
 end
 ```
 
-### Polymoprhic Groups and Members (Active Record Only)
+### Polymorphic Groups and Members (Active Record Only)
 
 When you configure multiple models as group or member, you may need to retrieve all groups or members,
 particularly if they are not single-table inheritance models. When your models are distributed across
@@ -249,7 +259,7 @@ results.
 
 You can filter on membership type:
 
-```
+```ruby
 # member example
 user.polymorphic_groups.as(:manager)
 
@@ -260,7 +270,7 @@ group.polymorphic_members.as(:manager)
 If you want to treat the collection like a scope, you can pass in a block which modifies the
 criteria for retrieving the group memberships.
 
-```
+```ruby
 # member example
 user.polymorphic_groups{where(group_type: 'CustomGroup')}
 
@@ -271,7 +281,7 @@ group.polymorphic_members{where(member_type: 'CustomMember')}
 If you want to treat the collection like an association, you can add groups to the collection and
 group memberships will be created.
 
-```
+```ruby
 # member example
 group = Group.new
 user.polymorphic_groups << group
