@@ -43,11 +43,11 @@ module Groupify
         end
 
         def polymorphic_groups
-          PolymorphicCollection.new(:group){merge(all)}
+          PolymorphicCollection.new(:group)
         end
 
         def polymorphic_members
-          PolymorphicCollection.new(:member){merge(all)}
+          PolymorphicCollection.new(:member)
         end
 
         def for_groups(groups)
