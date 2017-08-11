@@ -23,10 +23,8 @@ end
 
 require 'groupify/adapter/active_record'
 
-def debug_sql
-  logger, ActiveRecord::Base.logger = ActiveRecord::Base.logger, Logger.new(STDOUT)
-  yield
-  ActiveRecord::Base.logger = logger
+Groupify.configure do |config|
+  config.configure_legacy_defaults!
 end
 
 # autoload :User, 'active_record/user'

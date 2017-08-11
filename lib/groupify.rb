@@ -9,18 +9,28 @@ module Groupify
                  :ignore_base_class_inference_errors,
                  :ignore_association_class_inference_errors
 
-  self.group_class_name = 'Group'
   self.group_membership_class_name = 'GroupMembership'
-  self.member_class_name = 'User'
+  self.group_class_name = nil # 'Group'
+  self.member_class_name = nil # 'User'
   # Set to `false` if default association should not be created
-  self.members_association_name = :members
+  self.members_association_name = false # :members
   # Set to `false` if default association should not be created
-  self.groups_association_name = :groups
+  self.groups_association_name = false # :groups
   self.ignore_base_class_inference_errors = true
   self.ignore_association_class_inference_errors = true
 
   def self.configure
     yield self
+  end
+
+  def self.configure_legacy_defaults!
+    configure do |config|
+      config.group_class_name  = 'Group'
+      config.member_class_name = 'User'
+
+      config.groups_association_name  = :groups
+      config.members_association_name = :members
+    end
   end
 
   def self.group_membership_klass
