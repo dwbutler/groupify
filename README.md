@@ -84,7 +84,7 @@ end
 
 ### Groupify Model Names
 
-The default model names for groups, group members and group memberships are configurable.
+The default classes for groups, group members and group memberships are configurable.
 The default association name for groups and members is also configurable.
 Add the following configuration in `config/initializers/groupify.rb` to change the model names for all classes:
 
@@ -93,12 +93,31 @@ Groupify.configure do |config|
   config.group_class_name = 'MyCustomGroup'
   config.member_class_name = 'MyCustomMember'
 
-  # Set to `false` if you don't want default associations automatically created
-  config.default_groups_association_name = :default_groups
-  config.default_members_association_name = :default_members
+  # Default to `false` so default associations are not automatically created
+  config.default_groups_association_name = :groups
+  config.default_members_association_name = :members
 
   # ActiveRecord only
   config.group_membership_class_name = 'MyCustomGroupMembership'
+end
+```
+
+#### Backwards-compatible Configuration Defaults
+
+The new default configuration does *not* create default associations or make assumptions about your
+group and group member class names. If you would like to retain the *legacy* defaults, you can
+utilize the `configure_legacy_defaults!` convenience method.
+
+```ruby
+Groupify.configure do |config|
+  config.configure_legacy_defaults!
+
+  # These are the legacy defaults configured for you:
+  # config.group_class_name  = 'Group'
+  # config.member_class_name = 'User'
+  #
+  # config.groups_association_name  = :groups
+  # config.members_association_name = :members
 end
 ```
 
@@ -116,13 +135,14 @@ end
 
 In addition to your configuration, Groupify will create a default `members` association.
 The default association name can be customized with the `Groupify.default_members_association_name`
-setting.
+setting. If the association name is set to `false`, no default association is created.
 
-The `default_members` option specified in the example above sets the model type when accessing the
+The `default_members` option specified in the example above is used to infer the model class when accessing the
 default members association (e.g. `members`). Based on the example, `group.members` would return the
 users who are members of this group. Note: if `Groupify.default_members_association_name` is set to `false`
-then the `default_members` name will be used as the default members association name for this class
-(e.g. `group.users` in this case).
+then the name specified for `default_members` will be used as the default members association name for this class
+(e.g. `group.users` in this case). If that were the case, you would not need to specify `members: [:users]` because
+it would be overwritten with a new default association.
 
 If you are using single table inheritance (STI), child classes inherit the member associations
 of the parent. If your child class needs to add more members, use the `has_members` method. You can specify
