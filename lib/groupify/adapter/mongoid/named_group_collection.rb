@@ -4,22 +4,19 @@ module Groupify
     module NamedGroupCollection
       # Criteria to filter by membership type
       def as(membership_type)
-        return self unless membership_type
+        return self unless membership_type.present?
 
         membership = @member.group_memberships.as(membership_type).first
-        if membership
-          membership.named_groups
-        else
-          self.class.new
-        end
+
+        membership ? membership.named_groups : self.class.new
       end
 
-      def <<(named_group, opts={})
+      def <<(named_group, opts = {})
         named_group = named_group.to_sym
         super(named_group)
         uniq!
 
-        if @member && opts[:as]
+        if @member && opts[:as].present?
           membership = @member.group_memberships.find_or_initialize_by(as: opts[:as])
           membership.named_groups << named_group
           membership.save!
@@ -28,45 +25,39 @@ module Groupify
         self
       end
 
-      def merge(*args)
-        opts = args.extract_options!
-        named_groups = args.flatten
+      def merge(*named_groups)
+        opts = named_groups.extract_options!
 
-        named_groups.each do |named_group|
+        named_groups.flatten.each do |named_group|
           add(named_group, opts)
         end
       end
 
-      def delete(*args)
-        opts = args.extract_options!
-        named_groups = args.flatten
+      def delete(*named_groups)
+        membership_type = named_groups.extract_options![:as]
+        named_groups.flatten!
 
         if @member
-          if opts[:as]
-            membership = @member.group_memberships.as(opts[:as]).first
-            if membership
-              if ::Mongoid::VERSION > "4"
-                membership.pull_all(named_groups: named_groups)
-              else
-                membership.pull_all(:named_groups, named_groups)
-              end
-            end
-
-            return
+          if membership_type.present?
+            skip_default = true
+            memberships = [@member.group_memberships.as(membership_type).first]
           else
             memberships = @member.group_memberships.where(:named_groups.in => named_groups)
-            memberships.each do |membership|
-              if ::Mongoid::VERSION > "4"
-                membership.pull_all(named_groups: named_groups)
-              else
-                membership.pull_all(:named_groups, named_groups)
-              end
+          end
+
+          memberships.each do |membership|
+            if ::Mongoid::VERSION > "4"
+              membership.pull_all(named_groups: named_groups)
+            else
+              membership.pull_all(:named_groups, named_groups)
             end
           end
         end
 
-        named_groups.each do |named_group|
-          super(named_group)
+        unless skip_default
+          named_groups.each do |named_group|
+            super(named_group)
+          end
         end
       end
 

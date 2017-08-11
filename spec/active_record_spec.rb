@@ -23,45 +23,32 @@ end
 
 require 'groupify/adapter/active_record'
 
-class User < ActiveRecord::Base
-  groupify :group_member
-  groupify :named_group_member
+Groupify.configure do |config|
+  config.configure_legacy_defaults!
 end
 
-class Manager < User
-end
+# autoload :User, 'active_record/user'
+# autoload :Manager, 'active_record/manager'
+# autoload :Widget, 'active_record/widget'
+# autoload :Namespaced, 'active_record/namespaced'
+# autoload :Project, 'active_record/project'
+# autoload :Group, 'active_record/group'
+# autoload :Organization, 'active_record/organization'
+# autoload :GroupMembership, 'active_record/group_membership'
+# autoload :Classroom, 'active_record/classroom'
+# autoload :CustomGroupMembership, 'active_record/custom_group_membership'
+# autoload :CustomUser, 'active_record/custom_user'
+# autoload :CustomGroup, 'active_record/custom_group'
 
-class Widget < ActiveRecord::Base
-  groupify :group_member
-end
-
-module Namespaced
-  class Member < ActiveRecord::Base
-    groupify :group_member
-  end
-end
-
-class Project < ActiveRecord::Base
-  groupify :named_group_member
-end
-
-class Group < ActiveRecord::Base
-  groupify :group, members: [:users, :widgets, "namespaced/members"], default_members: :users
-end
-
-class Organization < Group
-  groupify :group_member
-
-  has_members :managers, :organizations
-end
-
-class GroupMembership < ActiveRecord::Base
-  groupify :group_membership
-end
-
-class Classroom < ActiveRecord::Base
-  groupify :group
-end
+require_relative './active_record/user'
+require_relative './active_record/manager'
+require_relative './active_record/widget'
+require_relative './active_record/namespaced/member'
+require_relative './active_record/project'
+require_relative './active_record/group'
+require_relative './active_record/organization'
+require_relative './active_record/group_membership'
+require_relative './active_record/classroom'
 
 describe Group do
   it { should respond_to :members}
@@ -78,6 +65,78 @@ end
 
 describe Groupify::ActiveRecord do
   let(:user) { User.create! }
+  let(:group) { Group.create!(id: 10) }
+  let(:classroom) { Classroom.create!(id: 10) }
+  let(:organization) { Organization.create!(id: 11) }
+
+  describe "polymorphic groups" do
+    context "memberships" do
+      it "finds multiple records for different models with same ID" do
+        group.add user
+        classroom.add user
+        organization.add user
+
+        expect(group.id).to eq(10)
+        expect(classroom.id).to eq(10)
+        expect(organization.id).to eq(11)
+
+        membership_groups = user.group_memberships_as_member.map(&:group)
+
+        expect(membership_groups).to include(group, classroom, organization)
+        expect(GroupMembership.for_groups([group, classroom]).count).to eq(2)
+        expect(GroupMembership.for_groups([group, classroom]).map(&:group)).to include(group, classroom)
+        expect(GroupMembership.for_groups([group, classroom]).distinct.count).to eq(2)
+        expect(GroupMembership.for_groups([group, classroom, organization]).count).to eq(3)
+        expect(GroupMembership.for_groups([group, classroom, organization]).map(&:group)).to include(group, classroom, organization)
+        expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.size).to eq(1)
+        expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.first).to eq(user)
+      end
+
+      it "member has groups in has_many through associations after adding member to groups" do
+
+        expect(user.groups.size).to eq(0)
+
+        group.add user
+        organization.add user
+
+        expect(user.groups.size).to eq(2)
+      end
+
+      it "member doesn't have groups in has_many through associations after deleting member from group" do
+        group.add user
+
+        expect(user.groups.size).to eq(1)
+
+        user.groups.delete group
+
+        expect(user.groups.size).to eq(0)
+      end
+
+      it "doesn't select duplicate groups" do
+        group.add user, as: 'manager'
+        group.add user, as: 'user'
+        classroom.add user
+
+        expect(user.polymorphic_groups.count).to eq(2)
+        expect(user.polymorphic_groups.to_a.size).to eq(2)
+        expect(user.groups.count).to eq(1)
+      end
+
+      it "adds based on membership_type" do
+        group.add user
+        group.add user, as: 'manager'
+        organization.add user
+        organization.add user, as: 'owner'
+
+        expect(user.polymorphic_groups.count).to eq(2)
+        expect(user.group_memberships_as_member.count).to eq(4)
+      end
+    end
+  end
+end
+
+describe Groupify::ActiveRecord do
+  let(:user) { User.create! }
   let(:group) { Group.create! }
   let(:widget) { Widget.create! }
   let(:namespaced_member) { Namespaced::Member.create! }
@@ -90,18 +149,9 @@ describe Groupify::ActiveRecord do
           config.group_membership_class_name = 'CustomGroupMembership'
         end
 
-        class CustomGroupMembership < ActiveRecord::Base
-          groupify :group_membership
-        end
-
-        class CustomUser < ActiveRecord::Base
-          groupify :group_member
-          groupify :named_group_member
-        end
-
-        class CustomGroup < ActiveRecord::Base
-          groupify :group, members: [:custom_users]
-        end
+        require_relative './active_record/custom_group_membership'
+        require_relative './active_record/custom_user'
+        require_relative './active_record/custom_group'
       end
 
       after do
@@ -209,7 +259,29 @@ describe Groupify::ActiveRecord do
         expect(group.users).to include(*users)
       end
 
-      it "only allows members to be added to their configured group type" do
+      it "only adds group to member.groups once when added directly to association" do
+        user.groups << group
+        user.groups << group
+
+        expect(user.groups.count).to eq(1)
+
+        user.groups.reload
+
+        expect(user.groups.count).to eq(1)
+      end
+
+      it "only adds member to group.members once when added directly to association" do
+        group.members << user
+        group.members << user
+
+        expect(group.members.count).to eq(1)
+
+        group.members.reload
+
+        expect(group.members.count).to eq(1)
+      end
+
+      xit "only allows members to be added to their configured group type" do
         classroom = Classroom.create!
         expect { classroom.add(user) }.to raise_error(ActiveRecord::AssociationTypeMismatch)
         expect { user.groups << classroom }.to raise_error(ActiveRecord::AssociationTypeMismatch)
@@ -220,6 +292,29 @@ describe Groupify::ActiveRecord do
         child_org = Organization.create!
         parent_org.add(child_org)
         expect(parent_org.organizations).to include(child_org)
+      end
+
+      it "can have subclassed associations for groups of a specific kind" do
+        org = Organization.create!
+
+        user.groups << group
+        user.groups << org
+
+        expect(user.groups).to include(group)
+        expect(user.groups).to include(org)
+
+        expect(user.organizations).to_not include(group)
+        expect(user.organizations).to include(org)
+
+        expect(org.members).to include(user)
+        expect(group.members).to include(user)
+
+        expect(user.organizations.count).to eq(1)
+        expect(user.organizations.first).to be_a(Organization)
+
+        expect(user.groups.count).to eq(2)
+        expect(user.groups.first).to be_a(Organization)
+        expect(user.groups[1]).to be_a(Group)
       end
     end
 
@@ -250,6 +345,9 @@ describe Groupify::ActiveRecord do
         group.users.delete(user)
         group.widgets.destroy(widget)
 
+        expect(user.groups).to_not include(group)
+        expect(widget.groups).to_not include(group)
+
         expect(group.widgets).to_not include(widget)
         expect(group.users).to_not include(user)
 
@@ -263,6 +361,9 @@ describe Groupify::ActiveRecord do
 
         user.groups.delete(group)
         widget.groups.destroy(group)
+
+        expect(group.users).to_not include(user)
+        expect(group.widgets).to_not include(widget)
 
         expect(group.widgets).to_not include(widget)
         expect(group.users).to_not include(user)

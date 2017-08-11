@@ -15,7 +15,8 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
-        @default_member_class = nil
+        @default_member_class_name = nil
+        @default_members_association_name = nil
         @member_klasses ||= Set.new
       end
 
@@ -27,10 +28,10 @@ module Groupify
         self.class.member_classes
       end
 
-      def add(*args)
-        opts = args.extract_options!
-        membership_type = opts[:as]
-        members = args.flatten
+      def add(*members)
+        membership_type = members.extract_options![:as]
+        members.flatten!
+
         return unless members.present?
 
         members.each do |member|
@@ -61,37 +62,73 @@ module Groupify
 
         # Returns the member classes defined for this class, as well as for the super classes
         def member_classes
-          (@member_klasses ||= Set.new).merge(superclass.method_defined?(:member_classes) ? superclass.member_classes : [])
+          (@member_klasses ||= Set.new).merge(Groupify.superclass_fetch(self, :member_classes, []))
+        end
+
+        def default_member_class_name
+          @default_member_class_name ||= Groupify.member_class_name
+        end
+
+        def default_member_class_name=(klass)
+          @default_member_class_name = klass
+        end
+
+        def default_members_association_name
+          @default_members_association_name ||= Groupify.members_association_name
+        end
+
+        def default_members_association_name=(name)
+          @default_members_association_name = name && name.to_sym
         end
 
         # Define which classes are members of this group
-        def has_members(*names)
-          Array.wrap(names.flatten).each do |name|
-            klass = name.to_s.classify.constantize
-            register(klass)
+        def has_members(*association_names)
+          association_names.flatten.each do |association_name|
+            has_member(association_name)
           end
+        end
+
+        def has_member(association_name, opts = {})
+          association_class, association_name = Groupify.infer_class_and_association_name(association_name)
+          model_klass = opts[:class_name] || association_class || default_member_class_name
+          member_klass = model_klass.to_s.constantize
+
+          (@member_klasses ||= Set.new) << member_klass
+
+          has_many association_name, {
+            class_name: member_klass.to_s,
+            dependent: :nullify,
+            foreign_key: 'group_ids',
+            extend: MemberAssociationExtensions
+          }.merge(opts)
+
+          member_klass
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.
         def merge!(source_group, destination_group)
           # Ensure that all the members of the source can be members of the destination
-          invalid_member_classes = (source_group.member_classes - destination_group.member_classes)
-          invalid_member_classes.each do |klass|
-            if klass.in(group_ids: [source_group.id]).count > 0
-              raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
-            end
+          invalid_member_classes = source_group.member_classes - destination_group.member_classes
+          invalid_found = invalid_member_classes.any?{ |klass| klass.in(group_ids: [source_group.id]).count > 0 }
+
+          if invalid_found
+            raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
           end
 
           source_group.member_classes.each do |klass|
             klass.in(group_ids: [source_group.id]).update_all(:$set => {:"group_ids.$" => destination_group.id})
 
             if klass.relations['group_memberships']
+              scope = klass.in(:"group_memberships.group_ids" => [source_group.id])
+              criteria_for_add_to_set = {:"group_memberships.$.group_ids" => destination_group.id}
+              criteria_for_pull = {:"group_memberships.$.group_ids" => source_group.id}
+
               if ::Mongoid::VERSION > "4"
-                klass.in(:"group_memberships.group_ids" => [source_group.id]).add_to_set(:"group_memberships.$.group_ids" => destination_group.id)
-                klass.in(:"group_memberships.group_ids" => [source_group.id]).pull(:"group_memberships.$.group_ids" => source_group.id)
+                scope.add_to_set(criteria_for_add_to_set)
+                scope.pull(criteria_for_pull)
               else
-                klass.in(:"group_memberships.group_ids" => [source_group.id]).add_to_set(:"group_memberships.$.group_ids", destination_group.id)
-                klass.in(:"group_memberships.group_ids" => [source_group.id]).pull(:"group_memberships.$.group_ids", source_group.id)
+                scope.add_to_set(*criteria_for_add_to_set.to_a.flatten)
+                scope.pull(*criteria_for_pull.to_a.flatten)
               end
             end
           end
@@ -101,29 +138,21 @@ module Groupify
 
         protected
 
-        def register(member_klass)
-          (@member_klasses ||= Set.new) << member_klass
-          associate_member_class(member_klass)
-          member_klass
-        end
-
         module MemberAssociationExtensions
           def as(membership_type)
-            return self unless membership_type
-            where(:group_memberships.elem_match => { as: membership_type.to_s, group_ids: [base.id] })
+            membership_type.present? ? where(:group_memberships.elem_match => {as: membership_type, group_ids: [base.id]}) : self
           end
 
-          def destroy(*args)
-            delete(*args)
+          def destroy(*members)
+            delete(*members)
           end
 
-          def delete(*args)
-            opts = args.extract_options!
-            members = args
+          def delete(*members)
+            membership_type = members.extract_options![:as]
 
-            if opts[:as]
+            if membership_type.present?
               members.each do |member|
-                member.group_memberships.as(opts[:as]).first.groups.delete(base)
+                member.group_memberships.as(membership_type).first.groups.delete(base)
               end
             else
               members.each do |member|
@@ -134,16 +163,6 @@ module Groupify
 
               super(*members)
             end
-          end
-        end
-
-        def associate_member_class(member_klass)
-          association_name ||= member_klass.model_name.plural.to_sym
-
-          has_many association_name, class_name: member_klass.to_s, dependent: :nullify, foreign_key: 'group_ids', extend: MemberAssociationExtensions
-
-          if member_klass == default_member_class
-            has_many :members, class_name: member_klass.to_s, dependent: :nullify, foreign_key: 'group_ids', extend: MemberAssociationExtensions
           end
         end
       end

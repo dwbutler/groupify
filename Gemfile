@@ -8,9 +8,9 @@ end
 group :test do
   gem "rspec", ">= 3"
 
-  gem "database_cleaner", "~> 1.5.3"
-  gem "combustion", "0.5.5"
-  gem "appraisal"
+  gem "database_cleaner", ">= 1.5.3"
+  gem "combustion", ">= 0.5.5"
+  #gem "appraisal"
   gem 'coveralls', require: false
   gem "codeclimate-test-reporter", require: nil
 end
@@ -27,6 +27,6 @@ end
 
 platforms :ruby do
   gem "sqlite3"
-  gem "mysql2", "~> 0.3.11"
+  gem "mysql2", ">= 0.3.11"
   gem "pg"
 end
