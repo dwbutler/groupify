@@ -10,31 +10,31 @@ module Groupify
       end
 
       def as(membership_type)
-        merge_memberships{as(membership_type)}
+        with_memberships{as(membership_type)}
       end
 
-      def merge_children(child_or_children)
+      def with_children(child_or_children)
         scope = if child_or_children.is_a?(::ActiveRecord::Base)
                   # single child
-                  merge_memberships(criteria: child_or_children.__send__(:"group_memberships_as_#{@child_type}"))
+                  with_memberships(criteria: child_or_children.__send__(:"group_memberships_as_#{@child_type}"))
                 else
                   method_name = :"for_#{@child_type}s"
-                  merge_memberships{__send__(method_name, child_or_children)}
+                  with_memberships{__send__(method_name, child_or_children)}
                 end
 
         if block_given?
-          scope = scope.merge_memberships(&group_membership_filter)
+          scope = scope.with_memberships(&group_membership_filter)
         end
 
         scope
       end
 
-      def merge_children_without(children)
+      def without_children(children)
         method_name = :"not_for_#{@child_type}s"
-        merge_memberships{__send__(method_name, children)}
+        with_memberships{__send__(method_name, children)}
       end
 
-      def merge_memberships(options = {}, &group_membership_filter)
+      def with_memberships(options = {}, &group_membership_filter)
         criteria = []
         criteria << @scope.joins(:"group_memberships_as_#{@parent_type}")
         criteria << options[:criteria] if options[:criteria]
