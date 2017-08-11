@@ -106,12 +106,12 @@ module Groupify
           end
         end
 
-        def has_group(association_name, options = {})
+        def has_group(association_name, opts = {})
           association_class, association_name = Groupify.infer_class_and_association_name(association_name)
-          options = {autosave: true, dependent: :nullify, inverse_of: nil}.merge(options)
-          model_klass = options[:class_name] || association_class || default_base_class
+          opts = {autosave: true, dependent: :nullify, inverse_of: nil}.merge(opts)
+          model_klass = opts[:class_name] || association_class || default_base_class
 
-          has_and_belongs_to_many association_name, options do
+          has_and_belongs_to_many association_name, opts do
             def as(membership_type)
               # `membership_type.present?` causes tests to fail for `MongoidManager` class....
               return self unless membership_type
@@ -147,7 +147,7 @@ module Groupify
             association_name, {
               class_name: model_klass,
               inverse_of: nil}.
-            merge(options.slice(:class_name))
+            merge(opts.slice(:class_name))
           )
         end
       end

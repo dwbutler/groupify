@@ -130,9 +130,9 @@ module Groupify
           @default_groups_association_name = name && name.to_sym
         end
 
-        def has_group(association_name, options = {}, &extension)
+        def has_group(association_name, opts = {}, &extension)
           ActiveRecord.create_children_association(self, association_name,
-            options.merge(
+            opts.merge(
               through: :group_memberships_as_member,
               source: :group,
               default_base_class: default_group_class_name

@@ -66,7 +66,7 @@ module Groupify
           where.not(build_polymorphic_criteria_for(:member, members))
         end
 
-        def for_polymorphic(source, records, options = {})
+        def for_polymorphic(source, records, opts = {})
           case records
           when Array
             where(build_polymorphic_criteria_for(source, records))

@@ -88,9 +88,9 @@ module Groupify
           end
         end
 
-        def has_member(association_name, options = {})
+        def has_member(association_name, opts = {})
           association_class, association_name = Groupify.infer_class_and_association_name(association_name)
-          model_klass = options[:class_name] || association_class || default_member_class_name
+          model_klass = opts[:class_name] || association_class || default_member_class_name
           member_klass = model_klass.to_s.constantize
 
           (@member_klasses ||= Set.new) << member_klass
@@ -100,7 +100,7 @@ module Groupify
             dependent: :nullify,
             foreign_key: 'group_ids',
             extend: MemberAssociationExtensions
-          }.merge(options)
+          }.merge(opts)
 
           member_klass
         end

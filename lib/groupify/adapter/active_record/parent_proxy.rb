@@ -82,16 +82,16 @@ module Groupify
         @child_type = parent_type == :group ? :member : :group
       end
 
-      def find_memberships_for_children(children, options = {})
-        memberships_association.__send__(:"for_#{@child_type}s", children).as(options[:as])
+      def find_memberships_for_children(children, opts = {})
+        memberships_association.__send__(:"for_#{@child_type}s", children).as(opts[:as])
       end
 
-      def add_children(children, options = {})
+      def add_children(children, opts = {})
         return @parent if children.none?
 
         clear_association_cache
 
-        membership_type = options[:as]
+        membership_type = opts[:as]
 
         to_add_directly = []
         to_add_with_membership_type = []
@@ -125,7 +125,7 @@ module Groupify
         list_to_validate.each do |child|
           next if child.valid?
 
-          if options[:exception_on_invalidation]
+          if opts[:exception_on_invalidation]
             raise ::ActiveRecord::RecordInvalid.new(child)
           else
             return false

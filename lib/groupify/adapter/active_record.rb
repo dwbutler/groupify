@@ -41,17 +41,17 @@ module Groupify
       raise
     end
 
-    def self.create_children_association(klass, association_name, options = {})
+    def self.create_children_association(klass, association_name, opts = {})
       association_class, association_name = Groupify.infer_class_and_association_name(association_name)
-      default_base_class = options.delete(:default_base_class)
-      model_klass = options[:class_name] || association_class || default_base_class
+      default_base_class = opts.delete(:default_base_class)
+      model_klass = opts[:class_name] || association_class || default_base_class
 
       # only try to look up base class if needed - can cause circular dependency issue
-      options[:source_type] ||= ActiveRecord.base_class_name(model_klass, default_base_class)
+      opts[:source_type] ||= ActiveRecord.base_class_name(model_klass, default_base_class)
 
       klass.has_many association_name, ->{ distinct }, {
         extend: Groupify::ActiveRecord::AssociationExtensions
-      }.merge(options)
+      }.merge(opts)
 
       model_klass
       

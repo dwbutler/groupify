@@ -34,10 +34,10 @@ module Groupify
         with_memberships{__send__(method_name, children)}
       end
 
-      def with_memberships(options = {}, &group_membership_filter)
+      def with_memberships(opts = {}, &group_membership_filter)
         criteria = []
         criteria << @scope.joins(:"group_memberships_as_#{@parent_type}")
-        criteria << options[:criteria] if options[:criteria]
+        criteria << opts[:criteria] if opts[:criteria]
         criteria << Groupify.group_membership_klass.instance_eval(&group_membership_filter) if block_given?
 
         # merge all criteria together

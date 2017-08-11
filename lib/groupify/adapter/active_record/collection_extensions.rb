@@ -35,8 +35,8 @@ module Groupify
 
     protected
 
-      def add_children(children, options = {})
-        parent_proxy.add_children(children, options)
+      def add_children(children, opts = {})
+        parent_proxy.add_children(children, opts)
       end
 
       def remove_children(children, destruction_type, membership_type = nil)
