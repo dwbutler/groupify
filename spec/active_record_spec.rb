@@ -436,6 +436,31 @@ describe Groupify::ActiveRecord do
       end
     end
 
+    context "when retrieving membership types" do
+      it "gets a list of membership types for a group" do
+        group.add user, as: :owner
+        group.add user, as: :admin
+
+        expect(user.membership_types_for_group(group)).to include(nil, 'owner', 'admin')
+      end
+
+      it "gets a list of membership types for a named group" do
+        project = Project.create!
+
+        project.named_groups.add :workgroup, as: :owner
+        project.named_groups.add :workgroup, as: :admin
+
+        expect(project.membership_types_for_named_group(:workgroup)).to include(nil, 'owner', 'admin')
+      end
+
+        it "gets a list of membership types for a member" do
+          group.add user, as: :owner
+          group.add user, as: :admin
+
+          expect(group.membership_types_for_member(user)).to include(nil, 'owner', 'admin')
+        end
+    end
+
     context 'when merging groups' do
       let(:task) { Task.create! }
       let(:manager) { Manager.create! }

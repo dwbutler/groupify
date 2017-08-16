@@ -32,6 +32,16 @@ module Groupify
         end
       end
 
+      # returns `nil` membership type with results
+      def membership_types_for_named_group(named_group)
+        group_memberships_as_member.
+          where(group_name: named_group).
+          select(:membership_type).
+          distinct.
+          pluck(:membership_type).
+          sort_by(&:to_s)
+      end
+
       def in_named_group?(named_group, opts = {})
         named_groups.include?(named_group, opts)
       end

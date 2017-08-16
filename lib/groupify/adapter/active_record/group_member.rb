@@ -33,6 +33,16 @@ module Groupify
         PolymorphicRelation.new(as_member, &group_membership_filter)
       end
 
+      # returns `nil` membership type with results
+      def membership_types_for_group(group)
+        group_memberships_as_member.
+          for_groups([group]).
+          select(:membership_type).
+          distinct.
+          pluck(:membership_type).
+          sort_by(&:to_s)
+      end
+
       def in_group?(group, opts = {})
         return false unless group.present?
 

@@ -18,7 +18,7 @@ module Groupify
       end
 
       def membership_type=(membership_type)
-        self[:membership_type] = membership_type.to_s if membership_type.present?
+        super(membership_type.to_s) if membership_type.present?
       end
 
       def as=(membership_type)
