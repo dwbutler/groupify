@@ -326,8 +326,9 @@ See _Usage_ below for additional functionality, such as how to specify membershi
 ### Create groups and add members
 
 ```ruby
-group = Group.new
-user = User.new
+# NOTE: ActiveRecord groups and members must be persisted before creating memberships.
+group = Group.create!
+user = User.create!
 
 user.groups << group
 # or
