@@ -1,5 +1,3 @@
-require 'groupify/adapter/active_record/association_extensions'
-
 module Groupify
   module ActiveRecord
 
@@ -15,7 +13,7 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
-        include Groupify::ActiveRecord::ModelMembershipExtensions.build_for(:group)
+        include Groupify::ActiveRecord::ModelExtensions.build_for(:group)
       end
 
       def add(*members)

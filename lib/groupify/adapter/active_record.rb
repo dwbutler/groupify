@@ -49,6 +49,8 @@ module Groupify
       # only try to look up base class if needed - can cause circular dependency issue
       opts[:source_type] ||= ActiveRecord.base_class_name(model_klass, default_base_class)
 
+      require 'groupify/adapter/active_record/association_extensions'
+
       klass.has_many association_name, ->{ distinct }, {
         extend: Groupify::ActiveRecord::AssociationExtensions
       }.merge(opts), &extension

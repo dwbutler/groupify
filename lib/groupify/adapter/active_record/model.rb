@@ -5,7 +5,7 @@ module Groupify
 
       included do
         require 'groupify/adapter/active_record/model_scope_extensions'
-        require 'groupify/adapter/active_record/model_membership_extensions'
+        require 'groupify/adapter/active_record/model_extensions'
 
         # Define a scope that returns nothing.
         # This is built into ActiveRecord 4, but not 3

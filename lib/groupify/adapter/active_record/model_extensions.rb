@@ -1,6 +1,6 @@
 module Groupify
   module ActiveRecord
-    module ModelMembershipExtensions
+    module ModelExtensions
       def self.build_for(official_parent_type, options = {})
         module_name = "#{official_parent_type.to_s.classify}MembershipExtensions"
 
