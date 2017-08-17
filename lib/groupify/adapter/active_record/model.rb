@@ -4,6 +4,9 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
+        require 'groupify/adapter/active_record/model_scope_extensions'
+        require 'groupify/adapter/active_record/model_membership_extensions'
+
         # Define a scope that returns nothing.
         # This is built into ActiveRecord 4, but not 3
         unless self.class.respond_to? :none
@@ -19,10 +22,9 @@ module Groupify
         end
 
         def acts_as_group(opts = {})
-          require 'groupify/adapter/active_record/group_scope_extensions'
-
           include Groupify::ActiveRecord::Group
-          extend Groupify::ActiveRecord::GroupScopeExtensions
+          include Groupify::ActiveRecord::ModelMembershipExtensions.build_for(:group)
+          extend Groupify::ActiveRecord::ModelScopeExtensions.build_for(:group, child_methods: true)
 
           # Get defaults from parent class for STI
           self.default_member_class_name = Groupify.superclass_fetch(self, :default_member_class_name, Groupify.member_class_name)
@@ -47,10 +49,9 @@ module Groupify
         end
 
         def acts_as_group_member(opts = {})
-          require 'groupify/adapter/active_record/group_member_scope_extensions'
-
           include Groupify::ActiveRecord::GroupMember
-          extend Groupify::ActiveRecord::GroupMemberScopeExtensions
+          include Groupify::ActiveRecord::ModelMembershipExtensions.build_for(:group_member)
+          extend Groupify::ActiveRecord::ModelScopeExtensions.build_for(:group_member, child_methods: true)
 
           # Get defaults from parent class for STI
           self.default_group_class_name = Groupify.superclass_fetch(self, :default_group_class_name, Groupify.group_class_name)
@@ -78,10 +79,8 @@ module Groupify
         end
 
         def acts_as_named_group_member(opts = {})
-          require 'groupify/adapter/active_record/named_group_member_scope_extensions'
-
           include Groupify::ActiveRecord::NamedGroupMember
-          extend Groupify::ActiveRecord::NamedGroupMemberScopeExtensions
+          extend Groupify::ActiveRecord::ModelScopeExtensions.build_for(:named_group_member)
         end
 
         def acts_as_group_membership(opts = {})

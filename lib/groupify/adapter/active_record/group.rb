@@ -25,12 +25,8 @@ module Groupify
           class_name: Groupify.group_membership_class_name
       end
 
-      def as_group
-        @as_group ||= ParentProxy.new(self, :group)
-      end
-
       def polymorphic_members(&group_membership_filter)
-        PolymorphicRelation.new(as_group, &group_membership_filter)
+        PolymorphicRelation.new(self, :member, &group_membership_filter)
       end
 
       # returns `nil` membership type with results
@@ -50,7 +46,7 @@ module Groupify
       def add(*members)
         opts = members.extract_options!
 
-        as_group.add_children(members.flatten, opts)
+        add_members(members.flatten, opts)
 
         self
       end

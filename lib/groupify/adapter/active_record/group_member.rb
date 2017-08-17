@@ -25,12 +25,8 @@ module Groupify
           class_name: Groupify.group_membership_class_name
       end
 
-      def as_member
-        @as_member ||= ParentProxy.new(self, :member)
-      end
-
       def polymorphic_groups(&group_membership_filter)
-        PolymorphicRelation.new(as_member, &group_membership_filter)
+        PolymorphicRelation.new(self, :group, &group_membership_filter)
       end
 
       # returns `nil` membership type with results

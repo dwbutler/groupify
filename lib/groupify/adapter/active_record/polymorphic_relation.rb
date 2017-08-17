@@ -3,13 +3,14 @@ module Groupify
     class PolymorphicRelation < PolymorphicCollection
       include CollectionExtensions
 
-      attr_reader :collection, :parent_proxy
+      attr_reader :collection
 
-      def initialize(parent_proxy, &group_membership_filter)
-        @parent_proxy = parent_proxy
+      def initialize(owner, source_name, &group_membership_filter)
+        @owner = owner
+        parent_type = source_name == :group ? :member : :group
 
-        super(parent_proxy.child_type) do
-          query = merge(parent_proxy.memberships)
+        super(source_name) do
+          query = merge(owner.__send__(:"group_memberships_as_#{parent_type}"))
           query = query.instance_eval(&group_membership_filter) if block_given?
           query
         end

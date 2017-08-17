@@ -4,14 +4,16 @@ module Groupify
       include Enumerable
       extend Forwardable
 
-      def initialize(source, &group_membership_filter)
-        @source = source
+      attr_reader :source
+
+      def initialize(source_name, &group_membership_filter)
+        @source_name = source_name
         @collection = build_collection(&group_membership_filter)
       end
 
       def each(&block)
         distinct_compat.map do |group_membership|
-          group_membership.__send__(@source).tap(&block)
+          group_membership.__send__(@source_name).tap(&block)
         end
       end
 
@@ -37,15 +39,15 @@ module Groupify
     protected
 
       def build_collection(&group_membership_filter)
-        collection = Groupify.group_membership_klass.where.not(:"#{@source}_id" => nil)
+        collection = Groupify.group_membership_klass.where.not(:"#{@source_name}_id" => nil)
         collection = collection.instance_eval(&group_membership_filter) if block_given?
-        collection = collection.includes(@source)
+        collection = collection.includes(@source_name)
 
         collection
       end
 
       def distinct_compat
-        id, type = ActiveRecord.quote("#{@source}_id"), ActiveRecord.quote("#{@source}_type")
+        id, type = ActiveRecord.quote("#{@source_name}_id"), ActiveRecord.quote("#{@source_name}_type")
 
         # Workaround to "group by" multiple columns in PostgreSQL
         if ActiveRecord.is_db?('postgres')
@@ -59,7 +61,7 @@ module Groupify
         # Workaround to "count distinct" on multiple columns in PostgreSQL
         # (uses different syntax when aggregating distinct)
         if ActiveRecord.is_db?('postgres')
-          id, type = ActiveRecord.quote("#{@source}_id"), ActiveRecord.quote("#{@source}_type")
+          id, type = ActiveRecord.quote("#{@source_name}_id"), ActiveRecord.quote("#{@source_name}_type")
 
           queried_count = @collection.select("DISTINCT (#{id}, #{type})").count
         else

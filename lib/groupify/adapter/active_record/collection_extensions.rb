@@ -25,22 +25,26 @@ module Groupify
         self
       end
 
-      def parent_proxy
+      def owner
+        raise "Not implemented"
+      end
+
+      def source_name
         raise "Not implemented"
       end
 
     protected
 
       def add_children(children, opts = {})
-        parent_proxy.add_children(children, opts)
+        owner.__send__(:"add_#{source_name}s", children, opts)
       end
 
       def remove_children(children, destruction_type, membership_type = nil)
-        parent_proxy.
-          find_memberships_for_children(children, as: membership_type).
+        owner.
+          __send__(:"find_memberships_for_#{source_name}s", children, as: membership_type).
           __send__(:"#{destruction_type}_all")
 
-        parent_proxy.clear_association_cache
+        owner.__send__(:clear_association_cache)
 
         children.each{|record| record.__send__(:clear_association_cache)}
 
