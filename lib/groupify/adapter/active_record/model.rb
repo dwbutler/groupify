@@ -19,6 +19,8 @@ module Groupify
         end
 
         def acts_as_group(opts = {})
+          require 'groupify/adapter/active_record/group_scope_extensions'
+
           include Groupify::ActiveRecord::Group
           extend Groupify::ActiveRecord::GroupScopeExtensions
 
@@ -45,6 +47,8 @@ module Groupify
         end
 
         def acts_as_group_member(opts = {})
+          require 'groupify/adapter/active_record/group_member_scope_extensions'
+
           include Groupify::ActiveRecord::GroupMember
           extend Groupify::ActiveRecord::GroupMemberScopeExtensions
 
@@ -74,6 +78,8 @@ module Groupify
         end
 
         def acts_as_named_group_member(opts = {})
+          require 'groupify/adapter/active_record/named_group_member_scope_extensions'
+
           include Groupify::ActiveRecord::NamedGroupMember
           extend Groupify::ActiveRecord::NamedGroupMemberScopeExtensions
         end
