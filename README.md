@@ -266,6 +266,29 @@ class Member < ActiveRecord::Base
 end
 ```
 
+### Implementing Group and Group Member on a Single Model (Active Record only)
+
+When a model is designated both as a group and a group member, some things can become ambiguous internally
+to Groupify. Usually the context can be inferred. However, when it can't, Groupify assumes that your model
+is a member.
+
+For example, if a `Group` can be a member and a group, the following will return groups:
+
+```ruby
+class Group < ActiveRecord::Base
+  groupify :group
+  groupify :group_member
+end
+
+member = Group.create!
+group  = Group.create!
+
+group.add member, as: :owner
+
+# This will return members who are in groups with the given membership type
+Group.as(:owner) # [member]
+```
+
 ### Polymorphic Groups and Members (Active Record Only)
 
 When you configure multiple models as group or member, you may need to retrieve all groups or members,

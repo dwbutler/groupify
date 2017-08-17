@@ -42,7 +42,6 @@ module Groupify
                   self.default_#{child_type}s_association_name ||= default_#{child_type}s
                 end
 
-                # Deprecated: for backwards-compatibility
                 if (#{child_type}_class_name = opts.delete :#{child_type}_class_name)
                   self.default_#{child_type}_class_name = #{child_type}_class_name
                 end
@@ -94,7 +93,7 @@ module Groupify
 
                 (@#{child_type}_klasses ||= Set.new) << #{child_type}_klass.to_s.constantize
               rescue NameError
-                puts "Unable to add \#{#{child_type}_klass} to @#{child_type}_klasses"
+                puts "Error: Unable to add \#{#{child_type}_klass} to @#{child_type}_klasses"
               ensure
                 self
               end
@@ -132,7 +131,7 @@ module Groupify
               to_add_directly = []
               to_add_with_membership_type = []
 
-              already_children = find_memberships_for_#{child_type}s(children).includes(@child_type).group_by{ |membership| membership.#{child_type} }
+              already_children = find_memberships_for_#{child_type}s(children).includes(:#{child_type}).group_by{ |membership| membership.#{child_type} }
 
               # first prepare changes
               children.each do |child|

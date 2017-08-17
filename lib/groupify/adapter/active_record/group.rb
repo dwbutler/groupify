@@ -14,6 +14,7 @@ module Groupify
 
       included do
         include Groupify::ActiveRecord::ModelExtensions.build_for(:group)
+        extend Groupify::ActiveRecord::ModelScopeExtensions.build_for(:group, child_methods: true)
       end
 
       def add(*members)

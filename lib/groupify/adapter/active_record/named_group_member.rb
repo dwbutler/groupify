@@ -13,6 +13,8 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
+        extend Groupify::ActiveRecord::ModelScopeExtensions.build_for(:named_group_member)
+
         unless respond_to?(:group_memberships_as_member)
           has_many :group_memberships_as_member,
             as: :member,
@@ -69,21 +71,21 @@ module Groupify
         def in_named_group(named_group)
           return none unless named_group.present?
 
-          with_memberships{where(group_name: named_group)}.distinct
+          with_memberships_for_member{where(group_name: named_group)}.distinct
         end
 
         def in_any_named_group(*named_groups)
           named_groups.flatten!
           return none unless named_groups.present?
 
-          with_memberships{where(group_name: named_groups.flatten)}.distinct
+          with_memberships_for_member{where(group_name: named_groups.flatten)}.distinct
         end
 
         def in_all_named_groups(*named_groups)
           named_groups.flatten!
           return none unless named_groups.present?
 
-          with_memberships{where(group_name: named_groups)}.
+          with_memberships_for_member{where(group_name: named_groups)}.
             group(ActiveRecord.quote('id', self)).
             having("COUNT(DISTINCT #{ActiveRecord.quote('group_name')}) = ?", named_groups.count).
             distinct
@@ -99,7 +101,7 @@ module Groupify
         end
 
         def in_other_named_groups(*named_groups)
-          with_memberships{where.not(group_name: named_groups)}
+          with_memberships_for_member{where.not(group_name: named_groups)}
         end
 
         def shares_any_named_group(other)

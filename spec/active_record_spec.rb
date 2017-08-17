@@ -40,6 +40,7 @@ end
 # autoload :CustomUser, 'active_record/custom_user'
 # autoload :CustomGroup, 'active_record/custom_group'
 
+require_relative './active_record/ambiguous'
 require_relative './active_record/user'
 require_relative './active_record/manager'
 require_relative './active_record/widget'
@@ -389,6 +390,31 @@ describe Groupify::ActiveRecord do
 
         expect(widget).not_to be_destroyed
         expect(widget.reload.groups).to be_empty
+      end
+    end
+
+    context "when designating a model as a group and member" do
+      it "finds members" do
+        member1 = Ambiguous.create!(name: "member1")
+        member2 = Ambiguous.create!(name: "member2")
+        group1 = Ambiguous.create!(name: "group1")
+        group2 = Ambiguous.create!(name: "group2")
+
+        group1.add member1
+        group2.add member2, as: 'member'
+
+        expect(group1.members).to include(member1)
+        expect(group2.members).to include(member2)
+        
+        expect(group2.members.as(:member)).to include(member2)
+        expect(member2.groups.as(:member)).to include(group2)
+
+        expect(Ambiguous.as(:member)).to include(member2)
+        expect(Ambiguous.as(:member)).to_not include(group2)
+
+        expect(Ambiguous.with_member(member1)).to include(group1)
+        expect(Ambiguous.with_member(member1)).to_not include(member1)
+        expect(Ambiguous.with_member(member1)).to_not include(member2)
       end
     end
 
