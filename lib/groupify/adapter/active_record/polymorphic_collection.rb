@@ -40,6 +40,8 @@ module Groupify
         collection = Groupify.group_membership_klass.where.not(:"#{@source}_id" => nil)
         collection = collection.instance_eval(&group_membership_filter) if block_given?
         collection = collection.includes(@source)
+
+        collection
       end
 
       def distinct_compat

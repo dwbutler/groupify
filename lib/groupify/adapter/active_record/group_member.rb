@@ -72,17 +72,13 @@ module Groupify
       end
 
       module ClassMethods
-        def as(membership_type)
-          member_finder.as(membership_type)
-        end
-
         def in_group(group)
-          group.present? ? member_finder.with_children(group).distinct : none
+          group.present? ? with_groups(group).distinct : none
         end
 
         def in_any_group(*groups)
           groups.flatten!
-          groups.present? ? member_finder.with_children(groups).distinct : none
+          groups.present? ? with_groups(groups).distinct : none
         end
 
         def in_all_groups(*groups)
@@ -94,7 +90,7 @@ module Groupify
           # Count distinct on ID and type combo
           concatenated_columns = ActiveRecord.is_db?('sqlite') ? "#{id} || #{type}" : "CONCAT(#{id}, #{type})"
 
-          member_finder.with_children(groups).
+          with_groups(groups).
             group(ActiveRecord.quote('id', self)).
             having("COUNT(DISTINCT #{concatenated_columns}) = ?", groups.count).
             distinct
@@ -111,7 +107,7 @@ module Groupify
         end
 
         def in_other_groups(*groups)
-          member_finder.without_children(groups)
+          without_groups(groups)
         end
 
         def shares_any_group(other)
@@ -151,10 +147,6 @@ module Groupify
           )
 
           self
-        end
-
-        def member_finder
-          @member_finder ||= ParentQueryBuilder.new(self, :member)
         end
       end
     end

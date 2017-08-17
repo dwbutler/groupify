@@ -20,6 +20,7 @@ module Groupify
 
         def acts_as_group(opts = {})
           include Groupify::ActiveRecord::Group
+          extend Groupify::ActiveRecord::GroupScopeExtensions
 
           # Get defaults from parent class for STI
           self.default_member_class_name = Groupify.superclass_fetch(self, :default_member_class_name, Groupify.member_class_name)
@@ -45,6 +46,7 @@ module Groupify
 
         def acts_as_group_member(opts = {})
           include Groupify::ActiveRecord::GroupMember
+          extend Groupify::ActiveRecord::GroupMemberScopeExtensions
 
           # Get defaults from parent class for STI
           self.default_group_class_name = Groupify.superclass_fetch(self, :default_group_class_name, Groupify.group_class_name)
@@ -73,6 +75,7 @@ module Groupify
 
         def acts_as_named_group_member(opts = {})
           include Groupify::ActiveRecord::NamedGroupMember
+          extend Groupify::ActiveRecord::NamedGroupMemberScopeExtensions
         end
 
         def acts_as_group_membership(opts = {})

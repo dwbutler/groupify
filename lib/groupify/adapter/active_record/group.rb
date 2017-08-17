@@ -62,7 +62,7 @@ module Groupify
 
       module ClassMethods
         def with_member(member)
-          group_finder.with_children(member)
+          with_members(member)
         end
 
         # Returns the member classes defined for this class, as well as for the super classes
@@ -112,7 +112,7 @@ module Groupify
         def merge!(source_group, destination_group)
           # Ensure that all the members of the source can be members of the destination
           invalid_member_classes = source_group.member_classes - destination_group.member_classes
-          invalid_found = invalid_member_classes.any?{ |klass| klass.member_finder.with_children(source_group).count > 0 }
+          invalid_found = invalid_member_classes.any?{ |klass| klass.with_groups(source_group).count > 0 }
 
           if invalid_found
             raise ArgumentError.new("#{source_group.class} has members that cannot belong to #{destination_group.class}")
@@ -128,10 +128,6 @@ module Groupify
             source_group.__send__(:clear_association_cache)
             source_group.destroy
           end
-        end
-
-        def group_finder
-          @group_finder ||= ParentQueryBuilder.new(self, :group)
         end
       end
     end

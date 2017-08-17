@@ -1,10 +1,6 @@
 module Groupify
   module ActiveRecord
     module CollectionExtensions
-      def as(membership_type)
-        collection.merge(Groupify.group_membership_klass.as(membership_type))
-      end
-
       def delete(*records)
         remove_children(records, :destroy, records.extract_options![:as])
       end
