@@ -10,8 +10,6 @@ module Groupify
     autoload :GroupMembership, 'groupify/adapter/active_record/group_membership'
     autoload :PolymorphicCollection, 'groupify/adapter/active_record/polymorphic_collection'
     autoload :PolymorphicRelation, 'groupify/adapter/active_record/polymorphic_relation'
-    autoload :ParentProxy, 'groupify/adapter/active_record/parent_proxy'
-    autoload :ParentQueryBuilder, 'groupify/adapter/active_record/parent_query_builder'
     autoload :NamedGroupCollection, 'groupify/adapter/active_record/named_group_collection'
     autoload :NamedGroupMember, 'groupify/adapter/active_record/named_group_member'
 
