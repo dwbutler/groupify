@@ -46,27 +46,6 @@ module Groupify
             def without_#{child_type}s(children)
               with_memberships{not_for_#{child_type}s(children)}
             end
-
-            def delete(*records)
-              remove_children(records, :destroy, records.extract_options![:as])
-            end
-
-            def destroy(*records)
-              remove_children(records, :destroy, records.extract_options![:as])
-            end
-
-            # Defined to create alias methods before
-            # the association is extended with this module
-            def <<(*children)
-              opts = children.extract_options!.merge(exception_on_invalidation: false)
-              add_children(children.flatten, opts)
-            end
-
-            def add(*children)
-              opts = children.extract_options!.merge(exception_on_invalidation: true)
-              add_children(children.flatten, opts)
-            end
-
           )
 
           class_eval(base_methods)

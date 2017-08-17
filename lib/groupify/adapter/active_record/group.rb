@@ -15,40 +15,13 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
-        @default_member_class_name = nil
-        @default_members_association_name = nil
-        @member_klasses ||= Set.new
-
-        has_many :group_memberships_as_group,
-          dependent: :destroy,
-          as: :group,
-          class_name: Groupify.group_membership_class_name
-      end
-
-      def polymorphic_members(&group_membership_filter)
-        PolymorphicRelation.new(self, :member, &group_membership_filter)
-      end
-
-      # returns `nil` membership type with results
-      def membership_types_for_member(member)
-        group_memberships_as_group.
-          for_members([member]).
-          select(:membership_type).
-          distinct.
-          pluck(:membership_type).
-          sort_by(&:to_s)
-      end
-
-      def member_classes
-        self.class.member_classes
+        include Groupify::ActiveRecord::ModelMembershipExtensions.build_for(:group)
       end
 
       def add(*members)
         opts = members.extract_options!
 
         add_members(members.flatten, opts)
-
-        self
       end
 
       # Merge a source group into this group.
@@ -59,49 +32,6 @@ module Groupify
       module ClassMethods
         def with_member(member)
           with_members(member)
-        end
-
-        # Returns the member classes defined for this class, as well as for the super classes
-        def member_classes
-          (@member_klasses ||= Set.new).merge(Groupify.superclass_fetch(self, :member_classes, []))
-        end
-
-        def default_member_class_name
-          @default_member_class_name ||= Groupify.member_class_name
-        end
-
-        def default_member_class_name=(klass)
-          @default_member_class_name = klass
-        end
-
-        def default_members_association_name
-          @default_members_association_name ||= Groupify.members_association_name
-        end
-
-        def default_members_association_name=(name)
-          @default_members_association_name = name && name.to_sym
-        end
-
-        # Define which classes are members of this group
-        def has_members(*association_names, &extension)
-          association_names.flatten.each do |association_name|
-            has_member(association_name, &extension)
-          end
-        end
-
-        def has_member(association_name, opts = {}, &extension)
-          member_klass = ActiveRecord.create_children_association(self, association_name,
-            opts.merge(
-              through: :group_memberships_as_group,
-              source: :member,
-              default_base_class: default_member_class_name
-            ),
-            &extension
-          )
-
-          (@member_klasses ||= Set.new) << member_klass.to_s.constantize
-
-          self
         end
 
         # Merge two groups. The members of the source become members of the destination, and the source is destroyed.

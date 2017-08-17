@@ -15,28 +15,7 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
-        @default_group_class_name = nil
-        @default_groups_association_name = nil
-
-        has_many :group_memberships_as_member,
-          as: :member,
-          autosave: true,
-          dependent: :destroy,
-          class_name: Groupify.group_membership_class_name
-      end
-
-      def polymorphic_groups(&group_membership_filter)
-        PolymorphicRelation.new(self, :group, &group_membership_filter)
-      end
-
-      # returns `nil` membership type with results
-      def membership_types_for_group(group)
-        group_memberships_as_member.
-          for_groups([group]).
-          select(:membership_type).
-          distinct.
-          pluck(:membership_type).
-          sort_by(&:to_s)
+        include Groupify::ActiveRecord::ModelMembershipExtensions.build_for(:group_member)
       end
 
       def in_group?(group, opts = {})
@@ -108,41 +87,6 @@ module Groupify
 
         def shares_any_group(other)
           in_any_group(other.polymorphic_groups)
-        end
-
-        def has_groups(*association_names, &extension)
-          association_names.flatten.each do |association_name|
-            has_group(association_name, &extension)
-          end
-        end
-
-        def default_group_class_name
-          @default_group_class_name ||= Groupify.group_class_name
-        end
-
-        def default_group_class_name=(klass)
-          @default_group_class_name = klass
-        end
-
-        def default_groups_association_name
-          @default_groups_association_name ||= Groupify.groups_association_name
-        end
-
-        def default_groups_association_name=(name)
-          @default_groups_association_name = name && name.to_sym
-        end
-
-        def has_group(association_name, opts = {}, &extension)
-          ActiveRecord.create_children_association(self, association_name,
-            opts.merge(
-              through: :group_memberships_as_member,
-              source: :group,
-              default_base_class: default_group_class_name
-            ),
-            &extension
-          )
-
-          self
         end
       end
     end
