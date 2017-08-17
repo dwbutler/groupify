@@ -2,7 +2,7 @@ module Groupify
   module ActiveRecord
     module ModelExtensions
       def self.build_for(official_parent_type, options = {})
-        module_name = "#{official_parent_type.to_s.classify}MembershipExtensions"
+        module_name = "#{official_parent_type.to_s.classify}ModelExtensions"
 
         const_get(module_name.to_sym)
       rescue NameError
@@ -11,9 +11,9 @@ module Groupify
         child_type = parent_type == :group ? :member : :group
 
         new_module = Module.new do
-          class_eval %Q(
-            extend ActiveSupport::Concern
+          extend ActiveSupport::Concern
 
+          class_eval %Q(
             included do
               @default_#{child_type}_class_name = nil
               @default_#{child_type}s_association_name = nil
@@ -181,13 +181,13 @@ module Groupify
 
               self
             end
-
-          protected
-
-            def clear_association_cache_for(record)
-              record.__send__(:clear_association_cache)
-            end
           )
+
+        protected
+
+          def clear_association_cache_for(record)
+            record.__send__(:clear_association_cache)
+          end
         end
 
         self.const_set(module_name, new_module)
