@@ -556,6 +556,22 @@ describe Groupify::ActiveRecord do
         expect(User.as(:manager)).to include(user)
       end
 
+      it "finds members by multiple membership types" do
+        organization = Organization.create!
+        classroom = Classroom.create!
+
+        organization.add user, as: 'manager'
+        organization.add user, as: 'employee'
+        classroom.add user, as: 'teacher'
+        group.add user, as: 'manager'
+
+        expect(User.as(:teacher, :manager)).to include(user)
+        expect(User.as(:teacher, :employee)).to include(user)
+        expect(user.polymorphic_groups.as(:manager, :employee)).to include(organization, group)
+        expect(user.polymorphic_groups.as(:manager, :employee)).to_not include(classroom)
+        expect(user.polymorphic_groups.as(:teacher, :manager)).to include(classroom, organization, group)
+      end
+
       it "finds members by group with membership type" do
         group.add user, as: 'employee'
 
@@ -817,6 +833,11 @@ describe Groupify::ActiveRecord do
         expect(user.named_groups.as(:employee)).to_not include(:team1)
         expect(user.named_groups.as(:developer)).to_not include(:team1)
         expect(user.named_groups.as(:employee)).to include(:team2)
+      end
+
+      it "finds all named group memberships for multiple membership types" do
+        expect(user.named_groups.as(:manager, :developer)).to include(:team3, :team1)
+        expect(user.named_groups.as(:manager, :developer)).to_not include(:team2)
       end
     end
   end

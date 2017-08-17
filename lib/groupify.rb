@@ -68,6 +68,10 @@ module Groupify
 
     [klass, association_name.to_sym]
   end
+
+  def self.clean_membership_types(*membership_types)
+    membership_types.flatten.compact.map(&:to_s).reject(&:empty?)
+  end
 end
 
 require 'groupify/railtie' if defined?(Rails)

@@ -12,8 +12,8 @@ module Groupify
 
         new_module = Module.new do
           base_methods = %Q(
-            def as(membership_type)
-              with_memberships{as(membership_type)}
+            def as(*membership_types)
+              with_memberships{as(membership_types)}
             end
 
             def with_memberships(opts = {}, &group_membership_filter)

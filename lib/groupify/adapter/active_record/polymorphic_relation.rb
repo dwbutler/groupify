@@ -16,8 +16,8 @@ module Groupify
         end
       end
 
-      def as(membership_type)
-        @collection = @collection.as(membership_type)
+      def as(*membership_types)
+        @collection = @collection.as(membership_types)
 
         self
       end

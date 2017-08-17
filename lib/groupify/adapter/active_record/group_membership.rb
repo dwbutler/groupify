@@ -38,8 +38,10 @@ module Groupify
           end
         end
 
-        def as(membership_type)
-          membership_type.present? ? where(membership_type: membership_type.to_s) : all
+        def as(*membership_types)
+          membership_types = Groupify.clean_membership_types(membership_types)
+
+          membership_types.any? ? where(membership_type: membership_types) : all
         end
 
         def polymorphic_groups
