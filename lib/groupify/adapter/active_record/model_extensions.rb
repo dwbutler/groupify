@@ -117,8 +117,8 @@ module Groupify
                 sort_by(&:to_s)
             end
 
-            def find_memberships_for_#{child_type}s(children, opts = {})
-              group_memberships_as_#{parent_type}.for_#{child_type}s(children).as(opts[:as])
+            def find_memberships_for_#{child_type}s(children)
+              group_memberships_as_#{parent_type}.for_#{child_type}s(children)
             end
 
             def add_#{child_type}s(children, opts = {})

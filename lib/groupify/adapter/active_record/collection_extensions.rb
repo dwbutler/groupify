@@ -41,7 +41,8 @@ module Groupify
 
       def remove_children(children, destruction_type, membership_type = nil)
         owner.
-          __send__(:"find_memberships_for_#{source_name}s", children, as: membership_type).
+          __send__(:"find_memberships_for_#{source_name}s", children).
+          as(membership_type).
           __send__(:"#{destruction_type}_all")
 
         owner.__send__(:clear_association_cache)
