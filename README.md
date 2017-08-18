@@ -9,7 +9,7 @@ model? Use named groups instead to add members to named groups such as
 ## Compatibility
 
 The following ORMs are supported:
- * ActiveRecord 4.1+, 5.x
+ * ActiveRecord 4.2+, 5.x
  * Mongoid 4.x, 5.x, 6.x
 
 The following Rubies are supported:

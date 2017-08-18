@@ -19,5 +19,5 @@ Gem::Specification.new do |gem|
   gem.required_ruby_version = ">= 2.2"
 
   gem.add_development_dependency "mongoid", ">= 4"
-  gem.add_development_dependency "activerecord", ">= 4", "< 5.2"
+  gem.add_development_dependency "activerecord", ">= 4.2", "< 5.2"
 end
