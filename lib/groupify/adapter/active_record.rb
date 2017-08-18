@@ -46,6 +46,7 @@ module Groupify
 
       # only try to look up base class if needed - can cause circular dependency issue
       opts[:source_type] ||= ActiveRecord.base_class_name(model_klass, default_base_class)
+      opts[:class_name]  ||= model_klass.to_s unless opts[:source_type].to_s == model_klass.to_s
 
       require 'groupify/adapter/active_record/association_extensions'
 

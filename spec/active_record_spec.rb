@@ -93,6 +93,22 @@ describe Groupify::ActiveRecord do
         expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.first).to eq(user)
       end
 
+      it "infers class name for association based on association name" do
+        organization  = Organization.create!
+        organization1 = Organization.create!
+        organization2 = Organization.create!
+        group = Group.create!
+        manager = Manager.create!
+
+        organization.add organization1
+        organization.add organization2
+        organization.add group
+        organization.add manager
+
+        expect(organization.organizations.count).to eq(2)
+        expect(organization.organizations).to include(organization1, organization2)
+      end
+
       it "member has groups in has_many through associations after adding member to groups" do
 
         expect(user.groups.size).to eq(0)
@@ -405,7 +421,7 @@ describe Groupify::ActiveRecord do
 
         expect(group1.members).to include(member1)
         expect(group2.members).to include(member2)
-        
+
         expect(group2.members.as(:member)).to include(member2)
         expect(member2.groups.as(:member)).to include(group2)
 
