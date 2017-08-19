@@ -148,6 +148,83 @@ describe Groupify::ActiveRecord do
         expect(user.polymorphic_groups.count).to eq(2)
         expect(user.group_memberships_as_member.count).to eq(4)
       end
+
+      it "properly checks group inclusion with complex relationships (Rails 4.2 bug)" do
+        class Parent < ActiveRecord::Base
+          groupify :group_member
+          groupify :named_group_member
+          has_group :personas
+
+          has_many :enrollments, inverse_of: :some_user
+          has_many :enrolled_students, ->{ distinct }, through: :enrollments, source: :student
+        end
+        class Student < ActiveRecord::Base
+          groupify :group
+          groupify :group_member
+          has_group :universities
+
+          has_many :enrollments, inverse_of: :student
+        end
+        class University < Group
+          has_member :students
+
+          has_many :enrollments, inverse_of: :university, autosave: true
+        end
+        class Enrollment < ActiveRecord::Base
+          belongs_to :parent, inverse_of: :enrollments
+          belongs_to :student, inverse_of: :enrollments, autosave: true
+          belongs_to :university, inverse_of: :enrollments
+        end
+
+        parent = Parent.create!
+        student1 = Student.create!(id: 1)
+        student2 = Student.create!(id: 2)
+
+        student1.add parent
+        student2.add parent
+
+        university1 = University.new(id: 11)
+        university1.enrollments.build(parent: parent, student: student1)
+        university1.save!
+
+        university1.add student1
+
+        university2 = University.new(id: 22)
+        university2.enrollments.build(parent: parent, student: student2)
+        university2.save!
+
+        university2.add student2
+
+        # Initially, things are as expected
+
+        expect(student1.in_group?(university1)).to eq(true)
+        expect(student1.in_group?(university2)).to eq(false)
+        expect(student2.in_group?(university1)).to eq(false)
+        expect(student2.in_group?(university2)).to eq(true)
+
+        expect(parent.enrolled_students[0].id).to eq(1)
+        expect(parent.enrolled_students[0].in_group?(university1)).to eq(true)
+        expect(parent.enrolled_students[0].in_group?(university2)).to eq(false)
+
+        expect(parent.enrolled_students[1].id).to eq(2)
+        expect(parent.enrolled_students[1].in_group?(university1)).to eq(false)
+        expect(parent.enrolled_students[1].in_group?(university2)).to eq(true)
+
+        # After getting records fresh from the database, a bug in Rails 4
+        # returns the same `exists?` result (inside `in_group?`) for each record.
+        #
+        # This seems to be a result of some internal cache that retrieves the
+        # wrong internal records or values when merging or querying.
+
+        parent = Parent.first
+        university2 = University.find(22)
+
+        student2 = Student.find(2)
+
+        results = parent.enrolled_students.map{ |s| [s.id, s.in_group?(university2)]}
+
+        expect(results).to eq([[1, false], [2, true]])
+      end
     end
   end
 end

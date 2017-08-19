@@ -75,6 +75,8 @@ module Groupify
           when ::ActiveRecord::Relation
             all.merge(records)
           when ::ActiveRecord::Base
+            # Nasty bug causes wrong results in Rails 4.2
+            records = records.reload if ::ActiveRecord.version < Gem::Version.new("5.0.0")
             all.merge(records.__send__(:"group_memberships_as_#{source}"))
           else
             all
