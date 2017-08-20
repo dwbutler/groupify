@@ -18,7 +18,7 @@ module Groupify
       end
 
       def add(*members)
-        opts = members.extract_options!
+        opts = members.extract_options!.merge(exception_on_invalidation: true)
 
         add_members(members.flatten, opts)
       end
