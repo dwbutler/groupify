@@ -202,13 +202,15 @@ describe Groupify::ActiveRecord do
         expect(student2.in_group?(university1)).to eq(false)
         expect(student2.in_group?(university2)).to eq(true)
 
-        expect(parent.enrolled_students[0].id).to eq(1)
-        expect(parent.enrolled_students[0].in_group?(university1)).to eq(true)
-        expect(parent.enrolled_students[0].in_group?(university2)).to eq(false)
+        enrolled_students = parent.enrolled_students.to_a.sort_by(&:id)
 
-        expect(parent.enrolled_students[1].id).to eq(2)
-        expect(parent.enrolled_students[1].in_group?(university1)).to eq(false)
-        expect(parent.enrolled_students[1].in_group?(university2)).to eq(true)
+        expect(enrolled_students[0].id).to eq(1)
+        expect(enrolled_students[0].in_group?(university1)).to eq(true)
+        expect(enrolled_students[0].in_group?(university2)).to eq(false)
+
+        expect(enrolled_students[1].id).to eq(2)
+        expect(enrolled_students[1].in_group?(university1)).to eq(false)
+        expect(enrolled_students[1].in_group?(university2)).to eq(true)
 
         # After getting records fresh from the database, a bug in Rails 4
         # returns the same `exists?` result (inside `in_group?`) for each record.
