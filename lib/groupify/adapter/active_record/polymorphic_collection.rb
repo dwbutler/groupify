@@ -28,7 +28,6 @@ module Groupify
       def_delegators :to_a, :[], :pretty_print
 
       alias_method :to_ary, :to_a
-      alias_method :[], :to_a
       alias_method :empty?, :none?
       alias_method :blank?, :none?
 

@@ -78,13 +78,7 @@ module Groupify
             if join_name
               all.joins(join_name).merge(records)
             else
-              if ActiveRecord.is_db?('mysql')
-                all.where(source => records)
-              else
-                # PSQL/SQLite cause SQL syntax error: bind message supplies 3 parameters, but prepared statement "a211" requires 2
-                # all.where(source => records)
-                return for_polymorphic(source, records.to_a, opts)
-              end
+              all.where(source => records)
             end
           when ::ActiveRecord::Base
             # Nasty bug causes wrong results in Rails 4.2
