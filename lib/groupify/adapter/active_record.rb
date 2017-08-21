@@ -66,5 +66,40 @@ module Groupify
 
       raise message.join(' ')
     end
+
+    # Returns `false` if this is not an association
+    def self.group_memberships_association_name_for_association(scope)
+      case scope
+      when ::ActiveRecord::Associations::CollectionProxy, ::ActiveRecord::AssociationRelation
+        scope_reflection = scope.proxy_association.reflection
+
+        loop do
+          break if scope_reflection.nil?
+
+          case scope_reflection.name
+          when :group_memberships_as_group, :group_memberships_as_member
+            break
+          end
+
+          scope_reflection = scope_reflection.through_reflection
+        end
+
+        scope_reflection && scope_reflection.name
+      else
+        false
+      end
+    end
+
+    class InvalidAssociationError < StandardError
+    end
+
+    def self.check_group_memberships_for_association!(scope)
+      association_name = group_memberships_association_name_for_association(scope)
+
+      return association_name unless association_name.nil?
+
+      association_example = "#{scope.proxy_association.owner.class}##{scope.proxy_association.reflection.name}"
+      raise InvalidAssociationError, "You can't use the #{association_example} association because it does not go through the group memberships association."
+    end
   end
 end

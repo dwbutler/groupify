@@ -16,9 +16,9 @@ module Groupify
           # See `detect_result_type_for` for more details.
           def as(*membership_types)
             if detect_result_type_for(current_scope || self) == :member
-              with_memberships_for_member{as(membership_types)}
+              with_memberships_for_member{as(*membership_types)}
             else
-              with_memberships_for_group{as(membership_types)}
+              with_memberships_for_group{as(*membership_types)}
             end
           end
 
@@ -47,7 +47,7 @@ module Groupify
                 scope = scope.with_memberships_for_#{parent_type}(&group_membership_filter)
               end
 
-              scope
+              scope.distinct
             end
 
             def without_#{child_type}s(children)
@@ -64,9 +64,13 @@ module Groupify
           # If it implements both, then we see if we can infer things from joins.
           # Defaults to assume it's a group.
           def detect_result_type_for(scope)
+            group_memberships_association_name = ActiveRecord.check_group_memberships_for_association!(scope)
+
+            if group_memberships_association_name
+              return group_memberships_association_name == :group_memberships_as_group ? :member : :group
+            end
+
             case scope
-            when ::ActiveRecord::Associations::CollectionProxy, ::ActiveRecord::AssociationRelation
-              return scope.source_name.to_sym
             when Class # assume inherits ::ActiveRecord::Base
               klass = scope
             when ::ActiveRecord::Base

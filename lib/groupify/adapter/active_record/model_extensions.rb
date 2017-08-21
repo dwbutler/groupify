@@ -93,7 +93,7 @@ module Groupify
 
                 (@#{child_type}_klasses ||= Set.new) << #{child_type}_klass.to_s.constantize
               rescue NameError
-                puts "Error: Unable to add \#{#{child_type}_klass} to @#{child_type}_klasses"
+                Rails.logger.warn "Error: Unable to add \#{#{child_type}_klass} to @#{child_type}_klasses"
               ensure
                 self
               end
@@ -108,9 +108,9 @@ module Groupify
             end
 
             # returns `nil` membership type with results
-            def membership_types_for_#{child_type}(#{child_type})
+            def membership_types_for_#{child_type}(record)
               group_memberships_as_#{parent_type}.
-                for_#{child_type}s([#{child_type}]).
+                for_#{child_type}s([record]).
                 select(:membership_type).
                 distinct.
                 pluck(:membership_type).

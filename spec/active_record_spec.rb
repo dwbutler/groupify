@@ -27,19 +27,6 @@ Groupify.configure do |config|
   config.configure_legacy_defaults!
 end
 
-# autoload :User, 'active_record/user'
-# autoload :Manager, 'active_record/manager'
-# autoload :Widget, 'active_record/widget'
-# autoload :Namespaced, 'active_record/namespaced'
-# autoload :Project, 'active_record/project'
-# autoload :Group, 'active_record/group'
-# autoload :Organization, 'active_record/organization'
-# autoload :GroupMembership, 'active_record/group_membership'
-# autoload :Classroom, 'active_record/classroom'
-# autoload :CustomGroupMembership, 'active_record/custom_group_membership'
-# autoload :CustomUser, 'active_record/custom_user'
-# autoload :CustomGroup, 'active_record/custom_group'
-
 require_relative './active_record/ambiguous'
 require_relative './active_record/user'
 require_relative './active_record/manager'
@@ -50,6 +37,10 @@ require_relative './active_record/group'
 require_relative './active_record/organization'
 require_relative './active_record/group_membership'
 require_relative './active_record/classroom'
+require_relative './active_record/parent'
+require_relative './active_record/student'
+require_relative './active_record/university'
+require_relative './active_record/enrollment'
 
 describe Group do
   it { should respond_to :members}
@@ -150,32 +141,6 @@ describe Groupify::ActiveRecord do
       end
 
       it "properly checks group inclusion with complex relationships (Rails 4.2 bug)" do
-        class Parent < ActiveRecord::Base
-          groupify :group_member
-          groupify :named_group_member
-          has_group :personas
-
-          has_many :enrollments, inverse_of: :some_user
-          has_many :enrolled_students, ->{ distinct }, through: :enrollments, source: :student
-        end
-        class Student < ActiveRecord::Base
-          groupify :group
-          groupify :group_member
-          has_group :universities
-
-          has_many :enrollments, inverse_of: :student
-        end
-        class University < Group
-          has_member :students
-
-          has_many :enrollments, inverse_of: :university, autosave: true
-        end
-        class Enrollment < ActiveRecord::Base
-          belongs_to :parent, inverse_of: :enrollments
-          belongs_to :student, inverse_of: :enrollments, autosave: true
-          belongs_to :university, inverse_of: :enrollments
-        end
-
         parent = Parent.create!
         student1 = Student.create!(id: 1)
         student2 = Student.create!(id: 2)
@@ -226,6 +191,42 @@ describe Groupify::ActiveRecord do
         results = parent.enrolled_students.map{ |s| [s.id, s.in_group?(university2)]}
 
         expect(results).to eq([[1, false], [2, true]])
+      end
+
+      it "properly joins on group memberships table when chaining" do
+        parent1 = Parent.create!
+        student1 = Student.create!
+
+        student1.add parent1
+
+        parent2 = Parent.create!
+        student2 = Student.create!
+
+        student2.add parent2
+
+        university1 = University.new
+        university1.enrollments.build(parent: parent1, student: student1)
+        university1.save!
+
+        university1.add student1, as: :athlete
+
+        university2 = University.new
+        university2.enrollments.build(parent: parent1, student: student1)
+        university2.enrollments.build(parent: parent2, student: student2)
+        university2.save!
+
+        university2.add student1
+        university2.add student2, as: :athlete
+
+        expect(University.with_member(parent1.enrolled_students)).to include(university1, university2)
+
+        expect(University.with_members(parent1.enrolled_students).as(:athlete)).to include(university1)
+        expect(University.with_members(parent1.enrolled_students).as(:athlete)).to_not include(university2)
+      end
+
+      xit "doesn't allow merging associations that don't go through group memberships" do
+        expect{ University.with_member(Parent.new.enrolled_students) }.to raise_error(Groupify::ActiveRecord::InvalidAssociationError)
+        expect{ University.with_memberships_for_group(criteria: Parent.new.enrolled_students) }.to raise_error(Groupify::ActiveRecord::InvalidAssociationError)
       end
     end
   end
