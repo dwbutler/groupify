@@ -7,8 +7,7 @@ module Groupify
         const_get(module_name.to_sym)
       rescue NameError
         # convert :group_member and :named_group_member
-        parent_type = official_parent_type == :group ? :group : :member
-        child_type = parent_type == :group ? :member : :group
+        parent_type, child_type = official_parent_type == :group ? [:group, :member] : [:member, :group]
 
         new_module = Module.new do
           extend ActiveSupport::Concern
