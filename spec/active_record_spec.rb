@@ -190,7 +190,7 @@ describe Groupify::ActiveRecord do
 
         results = parent.enrolled_students.map{ |s| [s.id, s.in_group?(university2)]}
 
-        expect(results).to eq([[1, false], [2, true]])
+        expect(results.sort_by(&:first)).to eq([[1, false], [2, true]])
       end
 
       it "properly joins on group memberships table when chaining" do
