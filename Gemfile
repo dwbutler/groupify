@@ -8,8 +8,8 @@ end
 group :test do
   gem "rspec", ">= 3"
 
-  gem "database_cleaner", ">= 1.5.3"
-  gem "combustion", ">= 0.5.5"
+  gem "database_cleaner", ">= 1.6.1"
+  gem "combustion", ">= 0.7.0"
   gem "appraisal"
   gem 'coveralls', require: false
   gem "codeclimate-test-reporter", require: nil
