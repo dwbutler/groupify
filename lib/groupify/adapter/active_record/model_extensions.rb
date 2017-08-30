@@ -31,24 +31,24 @@ module Groupify
                 self.default_#{child_type}_class_name = Groupify.superclass_fetch(self, :default_#{child_type}_class_name, Groupify.#{child_type}_class_name)
                 self.default_#{child_type}s_association_name = Groupify.superclass_fetch(self, :default_#{child_type}s_association_name, Groupify.#{child_type}s_association_name)
 
-                if (#{child_type}_association_names = opts.delete :#{child_type}s)
-                  has_#{child_type}s(#{child_type}_association_names)
+                if (association_names = opts.delete :#{child_type}s)
+                  has_#{child_type}s(association_names)
                 end
 
-                if (default_#{child_type}s = opts.delete :default_#{child_type}s)
-                  self.default_#{child_type}_class_name = default_#{child_type}s.to_s.classify
+                if (default_association_name = opts.delete :default_#{child_type}s)
+                  self.default_#{child_type}_class_name = default_association_name.to_s.classify
                   # Only use as the association name if none specified (backwards-compatibility)
-                  self.default_#{child_type}s_association_name ||= default_#{child_type}s
+                  self.default_#{child_type}s_association_name ||= default_association_name
                 end
 
-                if (#{child_type}_class_name = opts.delete :#{child_type}_class_name)
-                  self.default_#{child_type}_class_name = #{child_type}_class_name
+                if (default_class_name = opts.delete :#{child_type}_class_name)
+                  self.default_#{child_type}_class_name = default_class_name
                 end
 
-                if default_#{child_type}s_association_name
-                  has_#{child_type}(default_#{child_type}s_association_name,
-                    source_type: ActiveRecord.base_class_name(default_#{child_type}_class_name),
-                    class_name: default_#{child_type}_class_name
+                if self.default_#{child_type}s_association_name
+                  has_#{child_type}(self.default_#{child_type}s_association_name,
+                    source_type: ActiveRecord.base_class_name(self.default_#{child_type}_class_name),
+                    class_name: self.default_#{child_type}_class_name
                   )
                 end
               end
@@ -85,7 +85,7 @@ module Groupify
                   opts.merge(
                     through: :group_memberships_as_#{parent_type},
                     source: :#{child_type},
-                    default_base_class: default_#{child_type}_class_name
+                    default_base_class: self.default_#{child_type}_class_name
                   ),
                   &extension
                 )
