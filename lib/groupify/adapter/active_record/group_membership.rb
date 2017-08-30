@@ -93,21 +93,29 @@ module Groupify
         # This is for polymorphic associations where the ID may be from
         # different tables.
         def build_polymorphic_criteria_for(source, records)
-          records_by_base_class  = records.group_by{ |record| ActiveRecord.base_class_name(record) }
-          id_column, type_column = arel_table[:"#{source}_id"], arel_table[:"#{source}_type"]
+          case records
+          when ::ActiveRecord::Relation
+            {
+              :"#{source}_type" => ActiveRecord.base_class_name(records.klass),
+              :"#{source}_id"   => records.select(:id)
+            }
+          else
+            id_column, type_column = arel_table[:"#{source}_id"], arel_table[:"#{source}_type"]
+            records_by_base_class  = records.group_by{ |record| ActiveRecord.base_class_name(record) }
 
-          criteria = records_by_base_class.map do |type, grouped_records|
-            arel_table.grouping(
-                type_column.eq(type).
-              and(
-                id_column.in(grouped_records.map(&:id))
+            criteria = records_by_base_class.map do |type, grouped_records|
+              arel_table.grouping(
+                  type_column.eq(type).
+                and(
+                  id_column.in(grouped_records.map(&:id))
+                )
               )
-            )
-          end
+            end
 
-          # Generates something like:
-          #   (group_type = `Group` AND group_id IN (?)) OR (group_type = `Team` AND group_id IN(?))
-          criteria.reduce(:or)
+            # Generates something like:
+            #   (group_type = `Group` AND group_id IN (?)) OR (group_type = `Team` AND group_id IN(?))
+            criteria.reduce(:or)
+          end
         end
       end
     end

@@ -10,7 +10,7 @@ group :test do
 
   gem "database_cleaner", ">= 1.5.3"
   gem "combustion", ">= 0.5.5"
-  #gem "appraisal"
+  gem "appraisal"
   gem 'coveralls', require: false
   gem "codeclimate-test-reporter", require: nil
 end
