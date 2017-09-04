@@ -15,13 +15,11 @@ module Groupify
       included do
         extend Groupify::ActiveRecord::ModelScopeExtensions.build_for(:named_group_member)
 
-        unless respond_to?(:group_memberships_as_member)
-          has_many :group_memberships_as_member,
-            as: :member,
-            autosave: true,
-            dependent: :destroy,
-            class_name: Groupify.group_membership_class_name
-        end
+        has_many :group_memberships_as_member,
+          as: :member,
+          autosave: true,
+          dependent: :destroy,
+          class_name: Groupify.group_membership_class_name
       end
 
       def named_groups

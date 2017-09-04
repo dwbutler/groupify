@@ -63,8 +63,29 @@ describe Groupify::ActiveRecord do
 
   describe "polymorphic groups" do
     context "memberships" do
-      it "builds associations before auto-saving" do
+      it "auto-saves new group record when adding a member" do
         group = Group.new
+        group.add user
+
+        expect(group.persisted?).to eq true
+        expect(user.persisted?).to eq true
+        expect(group.users.size).to eq 1
+        expect(user.groups.size).to eq 1
+        expect(group.users).to include(user)
+        expect(user.groups).to include(group)
+
+        user.reload
+
+        expect(user.groups.first).to eq group
+
+        group.reload
+
+        expect(group.users.first).to eq user
+      end
+
+      it "auto-saves new member record when adding to a group" do
+        group = Group.create!
+        user = User.new
         group.add user
 
         expect(group.persisted?).to eq true
