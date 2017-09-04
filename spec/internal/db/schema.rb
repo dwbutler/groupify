@@ -24,6 +24,11 @@ ActiveRecord::Schema.define(version: 0) do
     t.string     :name
   end
 
+  create_table :custom_projects do |t|
+    t.string     :name
+    t.string     :type
+  end
+
   create_table :organizations do |t|
     t.string     :name
   end

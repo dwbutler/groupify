@@ -298,15 +298,19 @@ describe Groupify::ActiveRecord do
 
     context "member with custom group model" do
       before do
+        class CustomProject < ActiveRecord::Base
+          groupify :group
+        end
+
         class ProjectMember < ActiveRecord::Base
-          groupify :group_member, group_class_name: 'Project'
+          groupify :group_member, group_class_name: 'CustomProject'
         end
       end
 
       it "overrides the default group name on a per-model basis" do
         member = ProjectMember.create!
         member.groups.create!
-        expect(member.groups.first).to be_a Project
+        expect(member.groups.first).to be_a CustomProject
       end
     end
   end
