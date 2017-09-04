@@ -1,5 +1,9 @@
 module Groupify
   module ActiveRecord
+    # This class acts as an association facade building on `PolymorphicCollection`
+    # by implementing the Groupify helper methods on this collection. This class
+    # also mimics an association by tracking the parent record that owns the
+    # association.
     class PolymorphicRelation < PolymorphicCollection
       include CollectionExtensions
 

@@ -1,5 +1,12 @@
 module Groupify
   module ActiveRecord
+    # This `PolymorphicCollection` class acts as a facade to mimic the querying
+    # capabilities of an ActiveRecord::Relation while internally returning results
+    # which are actually retrieved from a method or association on the actual
+    # results. In other words, this class queries on the "join record"
+    # and returns records from one of the associations that would have
+    # to otherwise query across multiple tables. To avoid N+1, `includes`
+    # is added to the query chain to make things more efficient.
     class PolymorphicCollection
       include Enumerable
       extend Forwardable
