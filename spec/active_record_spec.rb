@@ -63,6 +63,26 @@ describe Groupify::ActiveRecord do
 
   describe "polymorphic groups" do
     context "memberships" do
+      it "builds associations before auto-saving" do
+        group = Group.new
+        group.add user
+
+        expect(group.persisted?).to eq true
+        expect(user.persisted?).to eq true
+        expect(group.users.size).to eq 1
+        expect(user.groups.size).to eq 1
+        expect(group.users).to include(user)
+        expect(user.groups).to include(group)
+
+        user.reload
+
+        expect(user.groups.first).to eq group
+
+        group.reload
+
+        expect(group.users.first).to eq user
+      end
+
       it "finds multiple records for different models with same ID" do
         group.add user
         classroom.add user

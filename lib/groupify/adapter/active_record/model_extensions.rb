@@ -20,6 +20,7 @@ module Groupify
 
               has_many :group_memberships_as_#{parent_type},
                 as: :#{parent_type},
+                inverse_of: :#{parent_type},
                 autosave: true,
                 dependent: :destroy,
                 class_name: Groupify.group_membership_class_name
@@ -167,17 +168,33 @@ module Groupify
               end
 
               # create memberships without membership type
-              group_memberships_as_#{parent_type} << to_add_directly
+              assign_memberships_to_#{parent_type}(self, *to_add_directly)
 
               # create memberships with membership type
               to_add_with_membership_type.
                 group_by{ |membership| membership.#{parent_type} }.
                 each do |membership_parent, memberships|
-                  membership_parent.group_memberships_as_#{parent_type} << memberships
+                  assign_memberships_to_#{parent_type}(membership_parent, *memberships)
                   clear_association_cache_for(membership_parent)
                 end
 
               self
+            end
+
+          protected
+
+            def assign_memberships_to_#{parent_type}(target, *memberships)
+              memberships.flatten!
+
+              target.group_memberships_as_#{parent_type} << memberships
+
+              return if target.persisted?
+
+              memberships.each do |membership|
+                unless membership.#{child_type}.group_memberships_as_#{child_type}.include?(membership)
+                  membership.#{child_type}.group_memberships_as_#{child_type} << membership
+                end
+              end
             end
           )
 
