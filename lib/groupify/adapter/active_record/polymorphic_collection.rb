@@ -59,7 +59,7 @@ module Groupify
         if ActiveRecord.is_db?('postgres')
           @collection.select("DISTINCT ON (#{id}, #{type}) *")
         else
-          @collection.group([id, type])
+          @collection.select([id, type]).distinct
         end
       end
 
