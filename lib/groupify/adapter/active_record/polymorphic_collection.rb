@@ -53,30 +53,15 @@ module Groupify
       end
 
       def distinct_compat
-        id, type = ActiveRecord.quote("#{@source_name}_id"), ActiveRecord.quote("#{@source_name}_type")
-
-        # Workaround to "group by" multiple columns in PostgreSQL
-        if ActiveRecord.is_db?('postgres')
-          @collection.select("DISTINCT ON (#{id}, #{type}) *")
-        else
-          @collection.select([id, type]).distinct
-        end
+        @collection.select(ActiveRecord.prepare_distinct(*distinct_columns)).distinct
       end
 
       def count_compat
-        # Workaround to "count distinct" on multiple columns in PostgreSQL
-        # (uses different syntax when aggregating distinct)
-        if ActiveRecord.is_db?('postgres')
-          id, type = ActiveRecord.quote("#{@source_name}_id"), ActiveRecord.quote("#{@source_name}_type")
+        @collection.select(ActiveRecord.prepare_concat(*distinct_columns)).distinct.count
+      end
 
-          queried_count = @collection.select("DISTINCT (#{id}, #{type})").count
-        else
-          queried_count = distinct_compat.count
-          # The `count` is a Hash when GROUP BY is used
-          queried_count = queried_count.keys.size if queried_count.is_a?(Hash)
-        end
-
-        queried_count
+      def distinct_columns
+        [ActiveRecord.quote("#{@source_name}_id"), ActiveRecord.quote("#{@source_name}_type")]
       end
     end
   end

@@ -60,9 +60,8 @@ module Groupify
 
           return none unless groups.present?
 
-          id, type = ActiveRecord.quote('group_id'), ActiveRecord.quote('group_type')
           # Count distinct on ID and type combo
-          concatenated_columns = ActiveRecord.is_db?('sqlite') ? "#{id} || #{type}" : "CONCAT(#{id}, #{type})"
+          concatenated_columns = ActiveRecord.prepare_concat('group_id', 'group_type', quote: true)
 
           with_groups(groups).
             group(ActiveRecord.quote('id', self)).

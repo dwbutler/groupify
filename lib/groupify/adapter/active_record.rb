@@ -17,8 +17,32 @@ module Groupify
       strings.any?{ |string| ::ActiveRecord::Base.connection.adapter_name.downcase.include?(string) }
     end
 
-    def self.quote(column_name, model_class = Groupify.group_membership_klass)
+    def self.quote(column_name, model_class = nil)
+      model_class = Groupify.group_membership_klass unless model_class.is_a?(Class)
       "#{model_class.quoted_table_name}.#{model_class.connection.quote_column_name(column_name)}"
+    end
+
+    def self.prepare_concat(*columns)
+      options = columns.extract_options!
+      columns.flatten!
+
+      if options[:quote]
+        columns = columns.map{ |column| quote(column, options[:quote]) }
+      end
+
+      is_db?('sqlite') ? columns.join(' || ') : "CONCAT(#{columns.join(', ')})"
+    end
+
+    def self.prepare_distinct(*columns)
+      options = columns.extract_options!
+      columns.flatten!
+
+      if options[:quote]
+        columns = columns.map{ |column| quote(column, options[:quote]) }
+      end
+
+      # Workaround to "group by" multiple columns in PostgreSQL
+      is_db?('postgres') ? "ON (#{columns.join(', ')}) *" : columns
     end
 
     # Pass in record, class, or string
