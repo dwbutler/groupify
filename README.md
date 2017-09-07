@@ -80,6 +80,17 @@ class User
 end
 ```
 
+## Test Suite
+
+Run the RSpec test suite by installing the `appraisal` gem and dependencies:
+
+    $ gem install appraisal
+    $ appraisal install
+
+And then running tests using `appraisal`:
+
+    $ appraisal rake
+
 ## Advanced Configuration
 
 ### Groupify Model Names
