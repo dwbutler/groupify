@@ -12,7 +12,7 @@ module Groupify
         new_module = Module.new do
           extend ActiveSupport::Concern
 
-          class_eval %Q(
+          class_eval <<-CODE, __FILE__ , __LINE__ + 1
             included do
               @default_#{child_type}_class_name = nil
               @default_#{child_type}s_association_name = nil
@@ -196,7 +196,7 @@ module Groupify
                 end
               end
             end
-          )
+          CODE
 
         protected
 
