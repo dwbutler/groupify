@@ -12,11 +12,9 @@ module Groupify
 
       def add(named_group, opts = {})
         named_group = named_group.to_sym
-        membership_type = opts[:as].to_s if opts[:as].present?
-
-        # always add a nil membership type and then a specific one (if specified)
-        membership_types = [nil, membership_type].uniq
-
+        membership_types = Groupify.clean_membership_types(opts[:as])
+        membership_types << nil # add default membership
+        
         @member.transaction do
           membership_types.each do |membership_type|
             if @member.new_record?
