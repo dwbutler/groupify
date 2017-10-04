@@ -93,24 +93,38 @@ module Groupify
 
     # Returns `false` if this is not an association
     def self.group_memberships_association_name_for_association(scope)
+      find_association_name_through_group_memberships(scope).last
+    rescue ArgumentError
+      false
+    end
+
+    def self.association_name_to_join_for(scope)
+      find_association_name_through_group_memberships(scope).first rescue nil
+    end
+
+    # Finds the association name that goes through group memberships.
+    # e.g. [:members, :group_memberships_as_group]
+    def self.find_association_name_through_group_memberships(scope)
       case scope
       when ::ActiveRecord::Associations::CollectionProxy, ::ActiveRecord::AssociationRelation
-        scope_reflection = scope.proxy_association.reflection
+        scope_reflection    = scope.proxy_association.reflection
+        previous_reflection = nil
 
         loop do
           break if scope_reflection.nil?
-
+          
           case scope_reflection.name
           when :group_memberships_as_group, :group_memberships_as_member
             break
           end
 
-          scope_reflection = scope_reflection.through_reflection
+          previous_reflection = scope_reflection
+          scope_reflection    = scope_reflection.through_reflection
         end
 
-        scope_reflection && scope_reflection.name
+        [previous_reflection && previous_reflection.name, scope_reflection && scope_reflection.name]
       else
-        false
+        raise ArgumentError, "The specified `scope` is not valid"
       end
     end
 

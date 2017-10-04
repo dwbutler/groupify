@@ -36,12 +36,20 @@ module Groupify
 
           child_methods = %Q(
             def with_#{child_type}s(child_or_children)
-              scope = if child_or_children.is_a?(::ActiveRecord::Base)
+              scope = case child_or_children
+                      when ::ActiveRecord::Base
                         # single child
                         with_memberships_for_#{parent_type}(criteria: child_or_children.group_memberships_as_#{child_type})
-                      else
-                        with_memberships_for_#{parent_type}{for_#{child_type}s(child_or_children)}
+                      when ::ActiveRecord::Relation
+                        join_name = ActiveRecord.association_name_to_join_for(child_or_children)
+
+                        if join_name
+                          all.joins(join_name).merge(child_or_children)
+                        end
                       end
+
+              # Fallback
+              scope ||= with_memberships_for_#{parent_type}{for_#{child_type}s(child_or_children)}
 
               if block_given?
                 scope = scope.with_memberships_for_#{parent_type}(&group_membership_filter)

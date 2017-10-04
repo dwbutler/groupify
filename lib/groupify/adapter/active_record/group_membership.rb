@@ -73,13 +73,7 @@ module Groupify
           when Array
             where(build_polymorphic_criteria_for(source, records))
           when ::ActiveRecord::Relation
-            join_name = ActiveRecord.group_memberships_association_name_for_association(records)
-
-            if join_name
-              all.joins(join_name).merge(records)
-            else
-              all.where(source => records)
-            end
+            all.where(source => records)
           when ::ActiveRecord::Base
             # Nasty bug causes wrong results in Rails 4.2
             records = records.reload if ::ActiveRecord.version < Gem::Version.new("5.0.0")
