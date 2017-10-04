@@ -98,10 +98,6 @@ module Groupify
       false
     end
 
-    def self.association_name_to_join_for(scope)
-      find_association_name_through_group_memberships(scope).first rescue nil
-    end
-
     # Finds the association name that goes through group memberships.
     # e.g. [:members, :group_memberships_as_group]
     def self.find_association_name_through_group_memberships(scope)
@@ -112,7 +108,7 @@ module Groupify
 
         loop do
           break if scope_reflection.nil?
-          
+
           case scope_reflection.name
           when :group_memberships_as_group, :group_memberships_as_member
             break
