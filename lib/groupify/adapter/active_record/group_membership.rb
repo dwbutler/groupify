@@ -13,12 +13,12 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
-        belongs_to :member, polymorphic: true
-        belongs_to :group, polymorphic: true
+        belongs_to :member, polymorphic: true, inverse_of: :group_memberships_as_member
+        belongs_to :group, polymorphic: true, inverse_of: :group_memberships_as_group, required: false
       end
 
       def membership_type=(membership_type)
-        self[:membership_type] = membership_type.to_s if membership_type.present?
+        super(membership_type.to_s) if membership_type.present?
       end
 
       def as=(membership_type)
@@ -38,8 +38,10 @@ module Groupify
           end
         end
 
-        def as(membership_type)
-          membership_type.present? ? where(membership_type: membership_type.to_s) : all
+        def as(*membership_types)
+          membership_types = Groupify.clean_membership_types(membership_types)
+
+          membership_types.any? ? where(membership_type: membership_types) : all
         end
 
         def polymorphic_groups
@@ -71,8 +73,10 @@ module Groupify
           when Array
             where(build_polymorphic_criteria_for(source, records))
           when ::ActiveRecord::Relation
-            all.merge(records)
+            all.where(source => records)
           when ::ActiveRecord::Base
+            # Nasty bug causes wrong results in Rails 4.2
+            records = records.reload if ::ActiveRecord.version < Gem::Version.new("5.0.0")
             all.merge(records.__send__(:"group_memberships_as_#{source}"))
           else
             all
@@ -83,21 +87,29 @@ module Groupify
         # This is for polymorphic associations where the ID may be from
         # different tables.
         def build_polymorphic_criteria_for(source, records)
-          records_by_base_class  = records.group_by{ |record| ActiveRecord.base_class_name(record) }
-          id_column, type_column = arel_table[:"#{source}_id"], arel_table[:"#{source}_type"]
+          case records
+          when ::ActiveRecord::Relation
+            {
+              :"#{source}_type" => ActiveRecord.base_class_name(records.klass),
+              :"#{source}_id"   => records.select(:id)
+            }
+          else
+            id_column, type_column = arel_table[:"#{source}_id"], arel_table[:"#{source}_type"]
+            records_by_base_class  = records.group_by{ |record| ActiveRecord.base_class_name(record) }
 
-          criteria = records_by_base_class.map do |type, grouped_records|
-            arel_table.grouping(
-                type_column.eq(type).
-              and(
-                id_column.in(grouped_records.map(&:id))
+            criteria = records_by_base_class.map do |type, grouped_records|
+              arel_table.grouping(
+                  type_column.eq(type).
+                and(
+                  id_column.in(grouped_records.map(&:id))
+                )
               )
-            )
-          end
+            end
 
-          # Generates something like:
-          #   (group_type = `Group` AND group_id IN (?)) OR (group_type = `Team` AND group_id IN(?))
-          criteria.reduce(:or)
+            # Generates something like:
+            #   (group_type = `Group` AND group_id IN (?)) OR (group_type = `Team` AND group_id IN(?))
+            criteria.reduce(:or)
+          end
         end
       end
     end

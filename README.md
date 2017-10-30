@@ -9,7 +9,7 @@ model? Use named groups instead to add members to named groups such as
 ## Compatibility
 
 The following ORMs are supported:
- * ActiveRecord 4.1+, 5.x
+ * ActiveRecord 4.2+, 5.x
  * Mongoid 4.x, 5.x, 6.x
 
 The following Rubies are supported:
@@ -79,6 +79,17 @@ class User
   groupify :named_group_member
 end
 ```
+
+## Test Suite
+
+Run the RSpec test suite by installing the `appraisal` gem and dependencies:
+
+    $ gem install appraisal
+    $ appraisal install
+
+And then running tests using `appraisal`:
+
+    $ appraisal rake
 
 ## Advanced Configuration
 
@@ -266,6 +277,29 @@ class Member < ActiveRecord::Base
 end
 ```
 
+### Implementing Group and Group Member on a Single Model (Active Record only)
+
+When a model is designated both as a group and a group member, some things can become ambiguous internally
+to Groupify. Usually the context can be inferred. However, when it can't, Groupify assumes that your model
+is a member.
+
+For example, if a `Group` can be a member and a group, the following will return groups:
+
+```ruby
+class Group < ActiveRecord::Base
+  groupify :group
+  groupify :group_member
+end
+
+member = Group.create!
+group  = Group.create!
+
+group.add member, as: :owner
+
+# This will return members who are in groups with the given membership type
+Group.as(:owner) # [member]
+```
+
 ### Polymorphic Groups and Members (Active Record Only)
 
 When you configure multiple models as group or member, you may need to retrieve all groups or members,
@@ -326,8 +360,9 @@ See _Usage_ below for additional functionality, such as how to specify membershi
 ### Create groups and add members
 
 ```ruby
-group = Group.new
-user = User.new
+# NOTE: ActiveRecord groups and members must be persisted before creating memberships.
+group = Group.create!
+user = User.create!
 
 user.groups << group
 # or

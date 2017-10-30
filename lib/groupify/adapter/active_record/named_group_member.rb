@@ -13,13 +13,13 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
-        unless respond_to?(:group_memberships_as_member)
-          has_many :group_memberships_as_member,
-            as: :member,
-            autosave: true,
-            dependent: :destroy,
-            class_name: Groupify.group_membership_class_name
-        end
+        extend Groupify::ActiveRecord::ModelScopeExtensions.build_for(:named_group_member)
+
+        has_many :group_memberships_as_member,
+          as: :member,
+          autosave: true,
+          dependent: :destroy,
+          class_name: Groupify.group_membership_class_name
       end
 
       def named_groups
@@ -30,6 +30,16 @@ module Groupify
         named_groups.each do |named_group|
           self.named_groups << named_group
         end
+      end
+
+      # returns `nil` membership type with results
+      def membership_types_for_named_group(named_group)
+        group_memberships_as_member.
+          where(group_name: named_group).
+          select(:membership_type).
+          distinct.
+          pluck(:membership_type).
+          sort_by(&:to_s)
       end
 
       def in_named_group?(named_group, opts = {})
@@ -56,28 +66,24 @@ module Groupify
       end
 
       module ClassMethods
-        def as(membership_type)
-          named_member_finder.as(membership_type)
-        end
-
         def in_named_group(named_group)
           return none unless named_group.present?
 
-          named_member_finder.with_memberships{where(group_name: named_group)}.distinct
+          with_memberships_for_member{where(group_name: named_group)}.distinct
         end
 
         def in_any_named_group(*named_groups)
           named_groups.flatten!
           return none unless named_groups.present?
 
-          named_member_finder.with_memberships{where(group_name: named_groups.flatten)}.distinct
+          with_memberships_for_member{where(group_name: named_groups.flatten)}.distinct
         end
 
         def in_all_named_groups(*named_groups)
           named_groups.flatten!
           return none unless named_groups.present?
 
-          named_member_finder.with_memberships{where(group_name: named_groups)}.
+          with_memberships_for_member{where(group_name: named_groups)}.
             group(ActiveRecord.quote('id', self)).
             having("COUNT(DISTINCT #{ActiveRecord.quote('group_name')}) = ?", named_groups.count).
             distinct
@@ -93,15 +99,11 @@ module Groupify
         end
 
         def in_other_named_groups(*named_groups)
-          named_member_finder.with_memberships{where.not(group_name: named_groups)}
+          with_memberships_for_member{where.not(group_name: named_groups)}
         end
 
         def shares_any_named_group(other)
           in_any_named_group(other.named_groups.to_a)
-        end
-
-        def named_member_finder
-          @named_member_finder ||= ParentQueryBuilder.new(self, :member)
         end
       end
     end

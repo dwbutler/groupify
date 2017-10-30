@@ -5,11 +5,12 @@ module Groupify
     module AssociationExtensions
       include CollectionExtensions
 
-      def parent_proxy
-        @parent_proxy ||= ParentProxy.new(
-                            proxy_association.owner,
-                            proxy_association.through_reflection.name == :group_memberships_as_group ? :group : :member
-                          )
+      def owner
+        proxy_association.owner
+      end
+
+      def source_name
+        ActiveRecord.check_group_memberships_for_association!(self) == :group_memberships_as_group ? :member : :group
       end
 
     protected

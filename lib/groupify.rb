@@ -54,8 +54,7 @@ module Groupify
     begin
       klass = association_name.to_s.classify.constantize
     rescue NameError => ex
-      puts "Error: #{ex.inspect}"
-      #puts ex.backtrace
+      Rails.logger.warn "Error: #{ex.inspect}"
 
       if Groupify.ignore_association_class_inference_errors
         klass = association_name.to_s.classify
@@ -67,6 +66,10 @@ module Groupify
     end
 
     [klass, association_name.to_sym]
+  end
+
+  def self.clean_membership_types(*membership_types)
+    membership_types.flatten.compact.map(&:to_s).reject(&:empty?)
   end
 end
 

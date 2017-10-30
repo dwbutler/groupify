@@ -12,11 +12,9 @@ module Groupify
 
       def add(named_group, opts = {})
         named_group = named_group.to_sym
-        membership_type = opts[:as].to_s if opts[:as].present?
-
-        # always add a nil membership type and then a specific one (if specified)
-        membership_types = [nil, membership_type].uniq
-
+        membership_types = Groupify.clean_membership_types(opts[:as])
+        membership_types << nil # add default membership
+        
         @member.transaction do
           membership_types.each do |membership_type|
             if @member.new_record?
@@ -74,9 +72,11 @@ module Groupify
       alias_method :destroy_all, :clear
 
       # Criteria to filter by membership type
-      def as(membership_type)
-        if membership_type.present?
-          @named_group_memberships.as(membership_type).pluck(:group_name).map(&:to_sym)
+      def as(*membership_types)
+        membership_types = Groupify.clean_membership_types(membership_types)
+
+        if membership_types.any?
+          @named_group_memberships.as(membership_types).pluck(:group_name).map(&:to_sym)
         else
           to_a.map(&:to_sym)
         end
@@ -85,17 +85,19 @@ module Groupify
     protected
 
       def remove(named_groups, destruction_type, membership_type = nil)
-        if named_groups.present?
-          @named_group_memberships.
-            where(group_name: named_groups).
-            as(membership_type).
-            __send__(destruction_type)
+        return unless named_groups.present?
 
-          unless membership_type.present?
-            named_groups.each do |named_group|
-              @hash.delete(named_group)
-            end
-          end
+        membership_types = Groupify.clean_membership_types(membership_type)
+
+        (@named_group_memberships.
+          where(group_name: named_groups).
+          as(membership_types).
+          __send__(destruction_type))
+
+        return if membership_types.any?
+
+        named_groups.each do |named_group|
+          @hash.delete(named_group)
         end
       end
     end

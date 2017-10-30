@@ -1,17 +1,26 @@
 module Groupify
   module ActiveRecord
+    # This `PolymorphicCollection` class acts as a facade to mimic the querying
+    # capabilities of an ActiveRecord::Relation while internally returning results
+    # which are actually retrieved from a method or association on the actual
+    # results. In other words, this class queries on the "join record"
+    # and returns records from one of the associations that would have
+    # to otherwise query across multiple tables. To avoid N+1, `includes`
+    # is added to the query chain to make things more efficient.
     class PolymorphicCollection
       include Enumerable
       extend Forwardable
 
-      def initialize(source, &group_membership_filter)
-        @source = source
+      attr_reader :source
+
+      def initialize(source_name, &group_membership_filter)
+        @source_name = source_name
         @collection = build_collection(&group_membership_filter)
       end
 
       def each(&block)
         distinct_compat.map do |group_membership|
-          group_membership.__send__(@source).tap(&block)
+          group_membership.__send__(@source_name).tap(&block)
         end
       end
 
@@ -26,7 +35,6 @@ module Groupify
       def_delegators :to_a, :[], :pretty_print
 
       alias_method :to_ary, :to_a
-      alias_method :[], :to_a
       alias_method :empty?, :none?
       alias_method :blank?, :none?
 
@@ -37,36 +45,23 @@ module Groupify
     protected
 
       def build_collection(&group_membership_filter)
-        collection = Groupify.group_membership_klass.where.not(:"#{@source}_id" => nil)
+        collection = Groupify.group_membership_klass.where.not(:"#{@source_name}_id" => nil)
         collection = collection.instance_eval(&group_membership_filter) if block_given?
-        collection = collection.includes(@source)
+        collection = collection.includes(@source_name)
+
+        collection
       end
 
       def distinct_compat
-        id, type = ActiveRecord.quote("#{@source}_id"), ActiveRecord.quote("#{@source}_type")
-
-        # Workaround to "group by" multiple columns in PostgreSQL
-        if ActiveRecord.is_db?('postgres')
-          @collection.select("DISTINCT ON (#{id}, #{type}) *")
-        else
-          @collection.group([id, type])
-        end
+        @collection.select(ActiveRecord.prepare_distinct(*distinct_columns)).distinct
       end
 
       def count_compat
-        # Workaround to "count distinct" on multiple columns in PostgreSQL
-        # (uses different syntax when aggregating distinct)
-        if ActiveRecord.is_db?('postgres')
-          id, type = ActiveRecord.quote("#{@source}_id"), ActiveRecord.quote("#{@source}_type")
+        @collection.select(ActiveRecord.prepare_concat(*distinct_columns)).distinct.count
+      end
 
-          queried_count = @collection.select("DISTINCT (#{id}, #{type})").count
-        else
-          queried_count = distinct_compat.count
-          # The `count` is a Hash when GROUP BY is used
-          queried_count = queried_count.keys.size if queried_count.is_a?(Hash)
-        end
-
-        queried_count
+      def distinct_columns
+        [ActiveRecord.quote("#{@source_name}_id"), ActiveRecord.quote("#{@source_name}_type")]
       end
     end
   end
