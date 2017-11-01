@@ -54,7 +54,7 @@ module Groupify
     begin
       klass = association_name.to_s.classify.constantize
     rescue NameError => ex
-      Rails.logger.warn "Error: #{ex.inspect}"
+      Rails.logger.warn "Groupify infer class error: #{ex.message}"
 
       if Groupify.ignore_association_class_inference_errors
         klass = association_name.to_s.classify
