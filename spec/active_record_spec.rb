@@ -23,45 +23,24 @@ end
 
 require 'groupify/adapter/active_record'
 
-class User < ActiveRecord::Base
-  groupify :group_member
-  groupify :named_group_member
+Groupify.configure do |config|
+  config.configure_legacy_defaults!
 end
 
-class Manager < User
-end
-
-class Widget < ActiveRecord::Base
-  groupify :group_member
-end
-
-module Namespaced
-  class Member < ActiveRecord::Base
-    groupify :group_member
-  end
-end
-
-class Project < ActiveRecord::Base
-  groupify :named_group_member
-end
-
-class Group < ActiveRecord::Base
-  groupify :group, members: [:users, :widgets, "namespaced/members"], default_members: :users
-end
-
-class Organization < Group
-  groupify :group_member
-
-  has_members :managers, :organizations
-end
-
-class GroupMembership < ActiveRecord::Base
-  groupify :group_membership
-end
-
-class Classroom < ActiveRecord::Base
-  groupify :group
-end
+require_relative './active_record/ambiguous'
+require_relative './active_record/user'
+require_relative './active_record/manager'
+require_relative './active_record/widget'
+require_relative './active_record/namespaced/member'
+require_relative './active_record/project'
+require_relative './active_record/group'
+require_relative './active_record/organization'
+require_relative './active_record/group_membership'
+require_relative './active_record/classroom'
+require_relative './active_record/parent'
+require_relative './active_record/student'
+require_relative './active_record/university'
+require_relative './active_record/enrollment'
 
 describe Group do
   it { should respond_to :members}
@@ -78,6 +57,224 @@ end
 
 describe Groupify::ActiveRecord do
   let(:user) { User.create! }
+  let(:group) { Group.create!(id: 10) }
+  let(:classroom) { Classroom.create!(id: 10) }
+  let(:organization) { Organization.create!(id: 11) }
+
+  describe "polymorphic groups" do
+    context "memberships" do
+      it "auto-saves new group record when adding a member" do
+        group = Group.new
+        group.add user
+
+        expect(group.persisted?).to eq true
+        expect(user.persisted?).to eq true
+        expect(group.users.size).to eq 1
+        expect(user.groups.size).to eq 1
+        expect(group.users).to include(user)
+        expect(user.groups).to include(group)
+
+        user.reload
+
+        expect(user.groups.first).to eq group
+
+        group.reload
+
+        expect(group.users.first).to eq user
+      end
+
+      it "auto-saves new member record when adding to a group" do
+        group = Group.create!
+        user = User.new
+        group.add user
+
+        expect(group.persisted?).to eq true
+        expect(user.persisted?).to eq true
+        expect(group.users.size).to eq 1
+        expect(user.groups.size).to eq 1
+        expect(group.users).to include(user)
+        expect(user.groups).to include(group)
+
+        user.reload
+
+        expect(user.groups.first).to eq group
+
+        group.reload
+
+        expect(group.users.first).to eq user
+      end
+
+      it "finds multiple records for different models with same ID" do
+        group.add user
+        classroom.add user
+        organization.add user
+
+        expect(group.id).to eq(10)
+        expect(classroom.id).to eq(10)
+        expect(organization.id).to eq(11)
+
+        membership_groups = user.group_memberships_as_member.map(&:group)
+
+        expect(membership_groups).to include(group, classroom, organization)
+        expect(GroupMembership.for_groups([group, classroom]).count).to eq(2)
+        expect(GroupMembership.for_groups([group, classroom]).map(&:group)).to include(group, classroom)
+        expect(GroupMembership.for_groups([group, classroom]).distinct.count).to eq(2)
+        expect(GroupMembership.for_groups([group, classroom, organization]).count).to eq(3)
+        expect(GroupMembership.for_groups([group, classroom, organization]).map(&:group)).to include(group, classroom, organization)
+        expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.size).to eq(1)
+        expect(GroupMembership.for_groups([group, classroom]).map(&:member).uniq.first).to eq(user)
+      end
+
+      it "infers class name for association based on association name" do
+        organization  = Organization.create!
+        organization1 = Organization.create!
+        organization2 = Organization.create!
+        group = Group.create!
+        manager = Manager.create!
+
+        organization.add organization1
+        organization.add organization2
+        organization.add group
+        organization.add manager
+
+        expect(organization.organizations.count).to eq(2)
+        expect(organization.organizations).to include(organization1, organization2)
+      end
+
+      it "member has groups in has_many through associations after adding member to groups" do
+
+        expect(user.groups.size).to eq(0)
+
+        group.add user
+        organization.add user
+
+        expect(user.groups.size).to eq(2)
+      end
+
+      it "member doesn't have groups in has_many through associations after deleting member from group" do
+        group.add user
+
+        expect(user.groups.size).to eq(1)
+
+        user.groups.delete group
+
+        expect(user.groups.size).to eq(0)
+      end
+
+      it "doesn't select duplicate groups" do
+        group.add user, as: 'manager'
+        group.add user, as: 'user'
+        classroom.add user
+
+        expect(user.polymorphic_groups.count).to eq(2)
+        expect(user.polymorphic_groups.to_a.size).to eq(2)
+        expect(user.groups.count).to eq(1)
+      end
+
+      it "adds based on membership_type" do
+        group.add user
+        group.add user, as: 'manager'
+        organization.add user
+        organization.add user, as: 'owner'
+
+        expect(user.polymorphic_groups.count).to eq(2)
+        expect(user.group_memberships_as_member.count).to eq(4)
+      end
+
+      it "properly checks group inclusion with complex relationships (Rails 4.2 bug)" do
+        parent = Parent.create!
+        student1 = Student.create!(id: 1)
+        student2 = Student.create!(id: 2)
+
+        student1.add parent
+        student2.add parent
+
+        university1 = University.new(id: 11)
+        university1.enrollments.build(parent: parent, student: student1)
+        university1.save!
+
+        university1.add student1
+
+        university2 = University.new(id: 22)
+        university2.enrollments.build(parent: parent, student: student2)
+        university2.save!
+
+        university2.add student2
+
+        # Initially, things are as expected
+
+        expect(student1.in_group?(university1)).to eq(true)
+        expect(student1.in_group?(university2)).to eq(false)
+        expect(student2.in_group?(university1)).to eq(false)
+        expect(student2.in_group?(university2)).to eq(true)
+
+        enrolled_students = parent.enrolled_students.to_a.sort_by(&:id)
+
+        expect(enrolled_students[0].id).to eq(1)
+        expect(enrolled_students[0].in_group?(university1)).to eq(true)
+        expect(enrolled_students[0].in_group?(university2)).to eq(false)
+
+        expect(enrolled_students[1].id).to eq(2)
+        expect(enrolled_students[1].in_group?(university1)).to eq(false)
+        expect(enrolled_students[1].in_group?(university2)).to eq(true)
+
+        # After getting records fresh from the database, a bug in Rails 4
+        # returns the same `exists?` result (inside `in_group?`) for each record.
+        #
+        # This seems to be a result of some internal cache that retrieves the
+        # wrong internal records or values when merging or querying.
+
+        parent = Parent.first
+        university2 = University.find(22)
+
+        student2 = Student.find(2)
+
+        results = parent.enrolled_students.map{ |s| [s.id, s.in_group?(university2)]}
+
+        expect(results.sort_by(&:first)).to eq([[1, false], [2, true]])
+      end
+
+      it "properly joins on group memberships table when chaining" do
+        parent1 = Parent.create!
+        student1 = Student.create!
+
+        student1.add parent1
+
+        parent2 = Parent.create!
+        student2 = Student.create!
+
+        student2.add parent2
+
+        university1 = University.new
+        university1.enrollments.build(parent: parent1, student: student1)
+        university1.save!
+
+        university1.add student1, as: :athlete
+
+        university2 = University.new
+        university2.enrollments.build(parent: parent1, student: student1)
+        university2.enrollments.build(parent: parent2, student: student2)
+        university2.save!
+
+        university2.add student1
+        university2.add student2, as: :athlete
+
+        expect(University.with_member(parent1.enrolled_students)).to include(university1, university2)
+
+        expect(University.with_members(parent1.enrolled_students).as(:athlete)).to include(university1)
+        expect(University.with_members(parent1.enrolled_students).as(:athlete)).to_not include(university2)
+      end
+
+      xit "doesn't allow merging associations that don't go through group memberships" do
+        expect{ University.with_member(Parent.new.enrolled_students) }.to raise_error(Groupify::ActiveRecord::InvalidAssociationError)
+        expect{ University.with_memberships_for_group(criteria: Parent.new.enrolled_students) }.to raise_error(Groupify::ActiveRecord::InvalidAssociationError)
+      end
+    end
+  end
+end
+
+describe Groupify::ActiveRecord do
+  let(:user) { User.create! }
   let(:group) { Group.create! }
   let(:widget) { Widget.create! }
   let(:namespaced_member) { Namespaced::Member.create! }
@@ -90,18 +287,9 @@ describe Groupify::ActiveRecord do
           config.group_membership_class_name = 'CustomGroupMembership'
         end
 
-        class CustomGroupMembership < ActiveRecord::Base
-          groupify :group_membership
-        end
-
-        class CustomUser < ActiveRecord::Base
-          groupify :group_member
-          groupify :named_group_member
-        end
-
-        class CustomGroup < ActiveRecord::Base
-          groupify :group, members: [:custom_users]
-        end
+        require_relative './active_record/custom_group_membership'
+        require_relative './active_record/custom_user'
+        require_relative './active_record/custom_group'
       end
 
       after do
@@ -151,15 +339,19 @@ describe Groupify::ActiveRecord do
 
     context "member with custom group model" do
       before do
+        class CustomProject < ActiveRecord::Base
+          groupify :group
+        end
+
         class ProjectMember < ActiveRecord::Base
-          groupify :group_member, group_class_name: 'Project'
+          groupify :group_member, group_class_name: 'CustomProject'
         end
       end
 
       it "overrides the default group name on a per-model basis" do
         member = ProjectMember.create!
         member.groups.create!
-        expect(member.groups.first).to be_a Project
+        expect(member.groups.first).to be_a CustomProject
       end
     end
   end
@@ -209,7 +401,29 @@ describe Groupify::ActiveRecord do
         expect(group.users).to include(*users)
       end
 
-      it "only allows members to be added to their configured group type" do
+      it "only adds group to member.groups once when added directly to association" do
+        user.groups << group
+        user.groups << group
+
+        expect(user.groups.count).to eq(1)
+
+        user.groups.reload
+
+        expect(user.groups.count).to eq(1)
+      end
+
+      it "only adds member to group.members once when added directly to association" do
+        group.members << user
+        group.members << user
+
+        expect(group.members.count).to eq(1)
+
+        group.members.reload
+
+        expect(group.members.count).to eq(1)
+      end
+
+      xit "only allows members to be added to their configured group type" do
         classroom = Classroom.create!
         expect { classroom.add(user) }.to raise_error(ActiveRecord::AssociationTypeMismatch)
         expect { user.groups << classroom }.to raise_error(ActiveRecord::AssociationTypeMismatch)
@@ -220,6 +434,29 @@ describe Groupify::ActiveRecord do
         child_org = Organization.create!
         parent_org.add(child_org)
         expect(parent_org.organizations).to include(child_org)
+      end
+
+      it "can have subclassed associations for groups of a specific kind" do
+        org = Organization.create!
+
+        user.groups << group
+        user.groups << org
+
+        expect(user.groups).to include(group)
+        expect(user.groups).to include(org)
+
+        expect(user.organizations).to_not include(group)
+        expect(user.organizations).to include(org)
+
+        expect(org.members).to include(user)
+        expect(group.members).to include(user)
+
+        expect(user.organizations.count).to eq(1)
+        expect(user.organizations.first).to be_a(Organization)
+
+        expect(user.groups.count).to eq(2)
+        expect(user.groups.first).to be_a(Organization)
+        expect(user.groups[1]).to be_a(Group)
       end
     end
 
@@ -250,6 +487,9 @@ describe Groupify::ActiveRecord do
         group.users.delete(user)
         group.widgets.destroy(widget)
 
+        expect(user.groups).to_not include(group)
+        expect(widget.groups).to_not include(group)
+
         expect(group.widgets).to_not include(widget)
         expect(group.users).to_not include(user)
 
@@ -263,6 +503,9 @@ describe Groupify::ActiveRecord do
 
         user.groups.delete(group)
         widget.groups.destroy(group)
+
+        expect(group.users).to_not include(user)
+        expect(group.widgets).to_not include(widget)
 
         expect(group.widgets).to_not include(widget)
         expect(group.users).to_not include(user)
@@ -288,6 +531,31 @@ describe Groupify::ActiveRecord do
 
         expect(widget).not_to be_destroyed
         expect(widget.reload.groups).to be_empty
+      end
+    end
+
+    context "when designating a model as a group and member" do
+      it "finds members" do
+        member1 = Ambiguous.create!(name: "member1")
+        member2 = Ambiguous.create!(name: "member2")
+        group1 = Ambiguous.create!(name: "group1")
+        group2 = Ambiguous.create!(name: "group2")
+
+        group1.add member1
+        group2.add member2, as: 'member'
+
+        expect(group1.members).to include(member1)
+        expect(group2.members).to include(member2)
+
+        expect(group2.members.as(:member)).to include(member2)
+        expect(member2.groups.as(:member)).to include(group2)
+
+        expect(Ambiguous.as(:member)).to include(member2)
+        expect(Ambiguous.as(:member)).to_not include(group2)
+
+        expect(Ambiguous.with_member(member1)).to include(group1)
+        expect(Ambiguous.with_member(member1)).to_not include(member1)
+        expect(Ambiguous.with_member(member1)).to_not include(member2)
       end
     end
 
@@ -333,6 +601,31 @@ describe Groupify::ActiveRecord do
       it "gracefully handles missing groups" do
         expect(user.in_group?(nil)).to be false
       end
+    end
+
+    context "when retrieving membership types" do
+      it "gets a list of membership types for a group" do
+        group.add user, as: :owner
+        group.add user, as: :admin
+
+        expect(user.membership_types_for_group(group)).to include(nil, 'owner', 'admin')
+      end
+
+      it "gets a list of membership types for a named group" do
+        project = Project.create!
+
+        project.named_groups.add :workgroup, as: :owner
+        project.named_groups.add :workgroup, as: :admin
+
+        expect(project.membership_types_for_named_group(:workgroup)).to include(nil, 'owner', 'admin')
+      end
+
+        it "gets a list of membership types for a member" do
+          group.add user, as: :owner
+          group.add user, as: :admin
+
+          expect(group.membership_types_for_member(user)).to include(nil, 'owner', 'admin')
+        end
     end
 
     context 'when merging groups' do
@@ -428,6 +721,22 @@ describe Groupify::ActiveRecord do
       it "finds members by membership type" do
         group.add user, as: 'manager'
         expect(User.as(:manager)).to include(user)
+      end
+
+      it "finds members by multiple membership types" do
+        organization = Organization.create!
+        classroom = Classroom.create!
+
+        organization.add user, as: 'manager'
+        organization.add user, as: 'employee'
+        classroom.add user, as: 'teacher'
+        group.add user, as: 'manager'
+
+        expect(User.as(:teacher, :manager)).to include(user)
+        expect(User.as(:teacher, :employee)).to include(user)
+        expect(user.polymorphic_groups.as(:manager, :employee)).to include(organization, group)
+        expect(user.polymorphic_groups.as(:manager, :employee)).to_not include(classroom)
+        expect(user.polymorphic_groups.as(:teacher, :manager)).to include(classroom, organization, group)
       end
 
       it "finds members by group with membership type" do
@@ -578,6 +887,14 @@ describe Groupify::ActiveRecord do
       expect(user.named_groups).to be_empty
     end
 
+    it "works when using only named groups and not groups" do
+      project = Project.create!
+      project.named_groups.add(:accounting)
+      expect(project.named_groups).to include(:accounting)
+      project.named_groups.delete_all
+      expect(project.named_groups).to be_empty
+    end
+
     it "checks if a member belongs to one named group" do
       expect(user.in_named_group?(:admin)).to be true
       expect(User.in_named_group(:admin).first).to eql(user)
@@ -691,6 +1008,11 @@ describe Groupify::ActiveRecord do
         expect(user.named_groups.as(:employee)).to_not include(:team1)
         expect(user.named_groups.as(:developer)).to_not include(:team1)
         expect(user.named_groups.as(:employee)).to include(:team2)
+      end
+
+      it "finds all named group memberships for multiple membership types" do
+        expect(user.named_groups.as(:manager, :developer)).to include(:team3, :team1)
+        expect(user.named_groups.as(:manager, :developer)).to_not include(:team2)
       end
     end
   end

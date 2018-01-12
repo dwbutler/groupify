@@ -4,6 +4,9 @@ module Groupify
       extend ActiveSupport::Concern
 
       included do
+        require 'groupify/adapter/active_record/model_scope_extensions'
+        require 'groupify/adapter/active_record/model_extensions'
+
         # Define a scope that returns nothing.
         # This is built into ActiveRecord 4, but not 3
         unless self.class.respond_to? :none
@@ -21,18 +24,13 @@ module Groupify
         def acts_as_group(opts = {})
           include Groupify::ActiveRecord::Group
 
-          if (member_klass = opts.delete :default_members)
-            self.default_member_class = member_klass.to_s.classify.constantize
-          end
-
-          if (member_klasses = opts.delete :members)
-            has_members(member_klasses)
-          end
+          configure_group!(opts)
         end
 
         def acts_as_group_member(opts = {})
-          @group_class_name = opts[:group_class_name] || Groupify.group_class_name
           include Groupify::ActiveRecord::GroupMember
+
+          configure_group_member!(opts)
         end
 
         def acts_as_named_group_member(opts = {})

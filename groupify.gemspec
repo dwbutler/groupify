@@ -2,8 +2,8 @@
 require File.expand_path('../lib/groupify/version', __FILE__)
 
 Gem::Specification.new do |gem|
-  gem.authors       = ["dwbutler"]
-  gem.email         = ["dwbutler@ucla.edu"]
+  gem.authors       = ["dwbutler", "Joel Van Horn"]
+  gem.email         = ["dwbutler@ucla.edu", "joel@joelvanhorn.com"]
   gem.description   = %q{Adds group and membership functionality to Rails models}
   gem.summary       = %q{Group functionality for Rails}
   gem.homepage      = "https://github.com/dwbutler/groupify"
@@ -19,5 +19,5 @@ Gem::Specification.new do |gem|
   gem.required_ruby_version = ">= 2.2"
 
   gem.add_development_dependency "mongoid", ">= 4"
-  gem.add_development_dependency "activerecord", ">= 4", "< 5.2"
+  gem.add_development_dependency "activerecord", ">= 4.2", "< 5.2"
 end

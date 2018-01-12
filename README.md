@@ -9,7 +9,7 @@ model? Use named groups instead to add members to named groups such as
 ## Compatibility
 
 The following ORMs are supported:
- * ActiveRecord 4.x, 5.x
+ * ActiveRecord 4.2+, 5.x
  * Mongoid 4.x, 5.x, 6.x
 
 The following Rubies are supported:
@@ -36,9 +36,9 @@ Or install it yourself as:
 
     $ gem install groupify
 
-### Setup
+## Setup
 
-#### Active Record
+### Active Record
 
 Execute:
 
@@ -63,7 +63,7 @@ class Assignment < ActiveRecord::Base
 end
 ```
 
-#### Mongoid
+### Mongoid
 
 Execute:
 
@@ -74,40 +74,65 @@ Set up your member models:
 ```ruby
 class User
   include Mongoid::Document
-  
+
   groupify :group_member
   groupify :named_group_member
 end
 ```
 
-#### Advanced Configuration
+## Test Suite
 
-##### Groupify Model Names
+Run the RSpec test suite by installing the `appraisal` gem and dependencies:
 
-The default model names for groups and group memberships are configurable. Add the following
-configuration in `config/initializers/groupify.rb` to change the model names for all classes:
+    $ gem install appraisal
+    $ appraisal install
+
+And then running tests using `appraisal`:
+
+    $ appraisal rake
+
+## Advanced Configuration
+
+### Groupify Model Names
+
+The default classes for groups, group members and group memberships are configurable.
+The default association name for groups and members is also configurable.
+Add the following configuration in `config/initializers/groupify.rb` to change the model names for all classes:
 
 ```ruby
 Groupify.configure do |config|
   config.group_class_name = 'MyCustomGroup'
+  config.member_class_name = 'MyCustomMember'
+
+  # Default to `false` so default associations are not automatically created
+  config.default_groups_association_name = :groups
+  config.default_members_association_name = :members
+
   # ActiveRecord only
   config.group_membership_class_name = 'MyCustomGroupMembership'
 end
 ```
 
-The group name can also be set on a model-by-model basis for each group member by passing
-the `group_class_name` option:
+#### Backwards-compatible Configuration Defaults
+
+The new default configuration does *not* create default associations or make assumptions about your
+group and group member class names. If you would like to retain the *legacy* defaults, you can
+utilize the `configure_legacy_defaults!` convenience method.
 
 ```ruby
-class Member < ActiveRecord::Base
-  groupify :group_member, group_class_name: 'MyOtherCustomGroup'
+Groupify.configure do |config|
+  config.configure_legacy_defaults!
+
+  # These are the legacy defaults configured for you:
+  # config.group_class_name  = 'Group'
+  # config.member_class_name = 'User'
+  #
+  # config.groups_association_name  = :groups
+  # config.members_association_name = :members
 end
 ```
 
-Note that each member model can only belong to a single type of group (or child classes
-of that group).
-
-##### Member Associations on Group
+### Groups: Configuring Group Members
 
 Your group class can be configured to create associations for each expected member type.
 For example, let's say that your group class will have users and assignments as members.
@@ -119,11 +144,22 @@ class Group < ActiveRecord::Base
 end
 ```
 
-The `default_members` option sets the model type when accessing the `members` association.
-In the example above, `group.members` would return the users who are members of this group.
+In addition to your configuration, Groupify will create a default `members` association.
+The default association name can be customized with the `Groupify.default_members_association_name`
+setting. If the association name is set to `false`, no default association is created.
 
-If you are using single table inheritance, child classes inherit the member associations
-of the parent. If your child class needs to add more members, use the `has_members` method.
+The `default_members` option specified in the example above is used to infer the model class when accessing the
+default members association (e.g. `members`). Based on the example, `group.members` would return the
+users who are members of this group. Note: if `Groupify.default_members_association_name` is set to `false`
+then the name specified for `default_members` will be used as the default members association name for this class
+(e.g. `group.users` in this case). If that were the case, you would not need to specify `members: [:users]` because
+it would be overwritten with a new default association.
+
+If you are using single table inheritance (STI), child classes inherit the member associations
+of the parent. If your child class needs to add more members, use the `has_members` method. You can specify
+the same options that `has_many through` accepts to customize the association as you please. Note: when using inheritance,
+it is recommended to specify the `source_type` option with the base class when you run into circular dependency
+issues with your groups and members.
 
 Example:
 
@@ -131,17 +167,202 @@ Example:
 class Organization < Group
   has_members :offices, :equipment
 end
+
+class InternationalOrganization < Organization
+  has_member :offices, class_name: 'CustomOfficeClass'
+  has_member :equipment, class_name: 'CustomEquipmentClass'
+
+  # mitigate issues with inheritance and circular dependencies with groups and members
+  has_member :specific_equipment, class_name: 'SpecificEquipment', source_type: 'CustomEquipmentClass'
+end
 ```
 
 Mongoid works the same way by creating Mongoid relations.
+
+With polymorphic groups, the `default_members` option specifies the association
+on the group to which members should be added. When specifying individual `has_member`
+options, `default_members: true` indicates the association is the one to add new
+members to. (If the `default_members` is not specified and the `members` association
+does not exist, adding users to subclasses of a group can cause a
+`ActiveRecord::AssociationTypeMismatch` exception.)
+
+Example:
+
+```ruby
+class GroupBase < ActiveRecord::Base
+  self.table_name = "groups"
+  self.abstract_class = true
+end
+
+class Organization < GroupBase
+  acts_as_group
+  has_member :users, class_name: 'CustomUserClass', default_members: true
+end
+
+org = Organization.create!
+user = CustomUserClass.create!
+
+# adds the user to the `ord.users` association
+org.add user, as: 'admin'
+```
+
+### Group Members: Configuring Groups
+
+Your member class can be configured to create associations for each expected group type.
+For example, let's say that your member class will have multiple types of organizations as groups.
+The following configuration adds `organizations` and `international_organizations` associations
+on the member model:
+
+```ruby
+class Group < ActiveRecord::Base
+  groupify :group, members: [:users, :assignments], default_members: :users
+end
+
+class Organization < Group
+  has_members :offices, :equipment
+end
+
+class InternationalOrganization < Organization
+end
+
+class Member < ActiveRecord::Base
+  groupify :group_member, groups: [:groups, :organizations, :international_organizations], default_groups: :groups
+end
+```
+
+In addition to your configuration, Groupify will create a default `groups` association.
+The default association name can be customized with the `Groupify.default_groups_association_name`
+setting.
+
+The `default_groups` option specified in the example above sets the model type when accessing the
+default groups association (e.g. `groups`). Based on the example, `member.groups` would return the
+groups the member has a membership to. Note: if `Groupify.default_groups_association_name` is set to `false`
+then the `default_groups` name will be used as the default members association name for this class
+(e.g. `member.groups` in this case).
+
+Note: the `group_class_name` option can be specified as the default group class for backwards-compatibility. However,
+unlike the `default_groups` option, a default association will not be created if `Groupify.default_groups_association_name`
+is set to `false`.
+
+```ruby
+class Member < ActiveRecord::Base
+  groupify :group_member, group_class_name: 'MyOtherCustomGroup'
+end
+```
+
+If you are using single table inheritance (STI), child classes inherit the group associations
+of the parent. If your child class needs to add more members, use the `has_groups` method. You can specify
+the same options that `has_many through` accepts to customize the association as you please. Note: when using inheritance,
+it is recommended to specify the `source_type` option with the base class when you run into circular dependency
+issues with your groups and members.
+
+Example:
+
+```ruby
+class Group < ActiveRecord::Base
+  groupify :group, members: [:users, :assignments], default_members: :users
+end
+
+class Organization < Group
+  has_members :offices, :equipment
+end
+
+class InternationalOrganization < Organization
+end
+
+class Member < ActiveRecord::Base
+  groupify :group_member
+
+  has_group :owned_organizations, class_name: 'Organization'
+end
+```
+
+### Implementing Group and Group Member on a Single Model (Active Record only)
+
+When a model is designated both as a group and a group member, some things can become ambiguous internally
+to Groupify. Usually the context can be inferred. However, when it can't, Groupify assumes that your model
+is a member.
+
+For example, if a `Group` can be a member and a group, the following will return groups:
+
+```ruby
+class Group < ActiveRecord::Base
+  groupify :group
+  groupify :group_member
+end
+
+member = Group.create!
+group  = Group.create!
+
+group.add member, as: :owner
+
+# This will return members who are in groups with the given membership type
+Group.as(:owner) # [member]
+```
+
+### Polymorphic Groups and Members (Active Record Only)
+
+When you configure multiple models as group or member, you may need to retrieve all groups or members,
+particularly if they are not single-table inheritance models. When your models are distributed across
+multiple tables, Groupify provides the ability to access all groups or users with the `group.polymorphic_members`
+and `member.polymorphic_groups` helper methods. This returns an `Enumerable` collection of groups or members.
+
+Note: this collection effectively retrieves the group memberships and includes the `group_membership.group` or
+`group_membership.member` to minimize N+1 queries, then returns only the groups or members from the group memberships
+results.
+
+You can filter on membership type:
+
+```ruby
+# member example
+user.polymorphic_groups.as(:manager)
+
+# group example
+group.polymorphic_members.as(:manager)
+```
+
+If you want to treat the collection like a scope, you can pass in a block which modifies the
+criteria for retrieving the group memberships.
+
+```ruby
+# member example
+user.polymorphic_groups{where(group_type: 'CustomGroup')}
+
+# group example
+group.polymorphic_members{where(member_type: 'CustomMember')}
+```
+
+If you want to treat the collection like an association, you can add groups to the collection and
+group memberships will be created.
+
+```ruby
+# member example
+group = Group.new
+user.polymorphic_groups << group
+user.in_group?(group) # true
+# equivalent to:
+user.groups << group
+user.in_group?(group) # true
+
+# group example
+user = User.new
+group.polymorphic_members << user
+user.in_group?(group) # true
+# equivalent to:
+group.members << user
+user.in_group?(group) # true
+```
+
+See _Usage_ below for additional functionality, such as how to specify membership type
 
 ## Usage
 
 ### Create groups and add members
 
 ```ruby
-group = Group.new
-user = User.new
+# NOTE: ActiveRecord groups and members must be persisted before creating memberships.
+group = Group.create!
+user = User.create!
 
 user.groups << group
 # or

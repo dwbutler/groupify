@@ -1,6 +1,6 @@
 RSpec.configure do |config|
   config.order = "random"
-  
+
   config.before(:suite) do
     DatabaseCleaner[:mongoid].strategy = :truncation
   end
@@ -41,9 +41,13 @@ end
 
 require 'groupify/adapter/mongoid'
 
+Groupify.configure do |config|
+  config.configure_legacy_defaults!
+end
+
 class MongoidUser
   include Mongoid::Document
-  
+
   groupify :group_member, group_class_name: 'MongoidGroup'
   groupify :named_group_member
 end
@@ -58,7 +62,7 @@ end
 
 class MongoidTask
   include Mongoid::Document
-  
+
   groupify :group_member, group_class_name: 'MongoidGroup'
 end
 
@@ -70,7 +74,7 @@ end
 
 class MongoidGroup
   include Mongoid::Document
-  
+
   groupify :group, members: [:mongoid_users, :mongoid_tasks, :mongoid_widgets, :mongoid_groups], default_members: :mongoid_users
   groupify :group_member, group_class_name: "MongoidGroup"
 
@@ -104,7 +108,7 @@ describe Groupify::Mongoid do
       expect(MongoidGroup.new.members).to be_empty
       expect(group.members).to be_empty
     end
-    
+
     context "when adding" do
       it "adds a group to a member" do
         user.groups << group
@@ -112,7 +116,7 @@ describe Groupify::Mongoid do
         expect(group.members).to include(user)
         expect(group.users).to include(user)
       end
-      
+
       it "adds a member to a group" do
         expect(user.groups).to be_empty
         group.add user
@@ -144,16 +148,16 @@ describe Groupify::Mongoid do
 
       expect(MongoidProject.member_classes).to include(MongoidUser, MongoidTask, MongoidIssue)
     end
-    
+
     it "finds members by group" do
       group.add user
-      
+
       expect(MongoidUser.in_group(group).first).to eql(user)
     end
 
     it "finds the groups a member belongs to" do
       group.add user
-      
+
       expect(MongoidGroup.with_member(user).first).to eq(group)
     end
 
@@ -260,7 +264,7 @@ describe Groupify::Mongoid do
 
         destination.merge!(source)
         expect(source.destroyed?).to be true
-        
+
         expect(destination.users.to_a).to include(user)
         expect(destination.managers.to_a).to include(manager)
         expect(destination.tasks.to_a).to include(task)
@@ -315,14 +319,14 @@ describe Groupify::Mongoid do
       user.save!
 
       group4 = MongoidGroup.create!
-      
+
       expect(user.groups).to include(group, group2, group3)
 
       expect(MongoidUser.in_group(group).first).to eql(user)
       expect(MongoidUser.in_group(group2).first).to eql(user)
       expect(user.in_group?(group)).to be true
       expect(user.in_group?(group4)).to be false
-      
+
       expect(MongoidUser.in_any_group(group, group4).first).to eql(user)
       expect(MongoidUser.in_any_group(group4)).to be_empty
       expect(user.in_any_group?(group2, group4)).to be true
@@ -346,7 +350,7 @@ describe Groupify::Mongoid do
   context "when using membership types with groups" do
     it 'adds groups to a member with a specific membership type' do
       group.add(user, as: :admin)
-      
+
       expect(user.groups).to include(group)
       expect(group.members).to include(user)
       expect(group.users).to include(user)
@@ -558,7 +562,7 @@ describe Groupify::Mongoid do
 
     it "checks if named groups are shared" do
       user2 = MongoidUser.create!(:named_groups => [:admin])
-      
+
       expect(user.shares_any_named_group?(user2)).to be true
       expect(MongoidUser.shares_any_named_group(user).to_a).to include(user2)
     end

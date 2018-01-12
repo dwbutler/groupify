@@ -24,6 +24,11 @@ ActiveRecord::Schema.define(version: 0) do
     t.string     :name
   end
 
+  create_table :custom_projects do |t|
+    t.string     :name
+    t.string     :type
+  end
+
   create_table :organizations do |t|
     t.string     :name
   end
@@ -55,5 +60,19 @@ ActiveRecord::Schema.define(version: 0) do
 
   create_table :project_members do |t|
     t.string :name
+  end
+
+  create_table :parents do |t|
+    t.string :name
+  end
+
+  create_table :students do |t|
+    t.string :name
+  end
+
+  create_table :enrollments do |t|
+    t.references :parent, index: true
+    t.references :student, index: true
+    t.references :university, index: true
   end
 end
