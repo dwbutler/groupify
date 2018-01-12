@@ -64,9 +64,14 @@ module Groupify
     end
 
     def self.create_children_association(klass, association_name, opts = {}, &extension)
-      association_class, association_name = Groupify.infer_class_and_association_name(association_name)
+      association_class = opts[:class_name]
+
+      unless association_class
+        association_class, association_name = Groupify.infer_class_and_association_name(association_name)
+      end
+
       default_base_class = opts.delete(:default_base_class)
-      model_klass = opts[:class_name] || association_class || default_base_class
+      model_klass = association_class || default_base_class
 
       # only try to look up base class if needed - can cause circular dependency issue
       opts[:source_type] ||= ActiveRecord.base_class_name(model_klass, default_base_class)
