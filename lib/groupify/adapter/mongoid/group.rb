@@ -140,7 +140,7 @@ module Groupify
 
         module MemberAssociationExtensions
           def as(membership_type)
-            membership_type.present? ? where(:group_memberships.elem_match => {as: membership_type, group_ids: [base.id]}) : self
+            membership_type.present? ? where(:group_memberships.elem_match => {as: membership_type, group_ids: [_base.id]}) : self
           end
 
           def destroy(*members)
@@ -152,12 +152,12 @@ module Groupify
 
             if membership_type.present?
               members.each do |member|
-                member.group_memberships.as(membership_type).first.groups.delete(base)
+                member.group_memberships.as(membership_type).first.groups.delete(_base)
               end
             else
               members.each do |member|
-                member.group_memberships.in(groups: base).each do |membership|
-                  membership.groups.delete(base)
+                member.group_memberships.in(groups: _base).each do |membership|
+                  membership.groups.delete(_base)
                 end
               end
 
